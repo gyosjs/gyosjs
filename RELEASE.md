@@ -57,7 +57,7 @@ npm run release:check
 After CI passes on the public repository:
 
 ```bash
-git tag v0.1.0
+git tag v0.1.1
 git push origin main --tags
 npm publish --access public
 ```
@@ -69,15 +69,15 @@ Create the GitHub Release from the same tag and use the matching changelog secti
 Check the exact published version instead of an unpinned latest URL:
 
 ```bash
-npm view gyosjs@0.1.0
-npm install gyosjs@0.1.0
+npm view gyosjs@0.1.1
+npm install gyosjs@0.1.1
 ```
 
 Verify both CDN endpoints:
 
 ```text
-https://cdn.jsdelivr.net/npm/gyosjs@0.1.0/dist/gyos.auto.min.js
-https://unpkg.com/gyosjs@0.1.0/dist/gyos.auto.min.js
+https://cdn.jsdelivr.net/npm/gyosjs@0.1.1/dist/gyos.auto.min.js
+https://unpkg.com/gyosjs@0.1.1/dist/gyos.auto.min.js
 ```
 
 If any artifact is wrong, do not overwrite the version. Fix it and publish a new patch version.

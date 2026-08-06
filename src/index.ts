@@ -173,7 +173,7 @@ const Gyos = {
 	onAfterNavigate,
 	portalCreate,
 	portalDestroy,
-	version: '0.1.0'
+	version: '0.1.1'
 };
 
 export default Gyos;

@@ -6,6 +6,12 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-08-07
+
+### Fixed
+
+- MPA Boost now consumes rejected View Transition `ready` and `finished` promises when a newer navigation skips the active transition, preventing handled navigation cancellation from surfacing as unhandled browser errors.
+
 ## [0.1.0] - 2026-08-04
 
 ### Added
@@ -29,5 +35,6 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 - This is an experimental `0.x` release. Router, morphing, expression evaluation, and browser edge cases should be evaluated against an application's requirements before production adoption.
 
-[Unreleased]: https://github.com/gyosjs/gyosjs/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/gyosjs/gyosjs/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/gyosjs/gyosjs/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/gyosjs/gyosjs/releases/tag/v0.1.0
