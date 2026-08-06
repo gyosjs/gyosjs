@@ -10,7 +10,7 @@ It has two major parts:
 If you are reading this page inside the GyosJS docs site, the inline HTML examples should work directly. If you are copying them into a standalone page, load GyosJS first.
 
 ```html
-<script src="https://cdn.jsdelivr.net/npm/gyosjs/dist/gyos.auto.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gyosjs@0.1.0/dist/gyos.auto.min.js"></script>
 ```
 
 ## Part 1. Build One Practical UI With One Scope
@@ -43,6 +43,7 @@ The important point is not the design. The important point is that one scope kee
 
 ### Example: a working quote draft scope
 
+```html
 <div g-scope="QuoteDraftGuideScope" class="card card-body">
     <div style="display:grid;gap:16px;">
         <div>
@@ -233,6 +234,7 @@ The important point is not the design. The important point is that one scope kee
         }
     });
 </script>
+```
 
 ### Why this example matters
 
@@ -290,6 +292,7 @@ That matters in practice because the UI cannot drift out of sync as easily.
 
 Not every feature needs a named scope. For tiny blocks, inline `g-scope` is often enough.
 
+```html
 <div g-scope="{
     plan: 'Starter',
     seats: 3,
@@ -321,6 +324,7 @@ Not every feature needs a named scope. For tiny blocks, inline `g-scope` is ofte
         Estimated monthly cost: <strong>${total}</strong>
     </p>
 </div>
+```
 
 Use this style when:
 
@@ -371,7 +375,7 @@ At minimum, a boosted page usually starts like this:
         ...
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/gyosjs/dist/gyos.auto.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gyosjs@0.1.0/dist/gyos.auto.min.js"></script>
 </body>
 ```
 
@@ -393,7 +397,7 @@ If your server already returns complete HTML pages, the first upgrade is simple.
 <head>
     <meta charset="UTF-8" />
     <title>Home</title>
-    <script src="https://cdn.jsdelivr.net/npm/gyosjs/dist/gyos.auto.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gyosjs@0.1.0/dist/gyos.auto.min.js"></script>
 </head>
 <body g-boost>
     <div id="app" g-outlet g-snapshot>
@@ -420,7 +424,7 @@ If your server already returns complete HTML pages, the first upgrade is simple.
 <head>
     <meta charset="UTF-8" />
     <title>Pricing</title>
-    <script src="https://cdn.jsdelivr.net/npm/gyosjs/dist/gyos.auto.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gyosjs@0.1.0/dist/gyos.auto.min.js"></script>
 </head>
 <body g-boost>
     <div id="app" g-outlet g-snapshot>
@@ -489,8 +493,7 @@ This is where `g-target` becomes useful.
 
         <a href="/profile/sidebar.html"
            g-target="#sidebar"
-           g-swap="morph"
-           g-current-head>
+           g-swap="morph">
             Refresh sidebar
         </a>
     </main>
@@ -501,7 +504,7 @@ Important details:
 
 - `g-target="#sidebar"` tells the router to swap only `#sidebar`
 - the router first tries to find the same `id` in the incoming response
-- `g-current-head` is useful here because this is a fragment-oriented update, not a full page head change
+- local targets automatically keep the current document head and outside layout scripts
 - `g-swap="morph"` is best when the new DOM is intentionally similar to the current DOM
 
 Use this pattern for:
@@ -525,10 +528,9 @@ Use this pattern for:
     <button
         g-router-link="/articles/page.html"
         g-router-method="GET"
-        g-router-params="%7Bpage%2C%20tag%7D"
+        g-router-params="{ page: page + 1, tag }"
         g-target="#feed-items"
         g-swap="append"
-        g-current-head
         g-router-spin
         @click="page++">
         Load more
@@ -544,6 +546,7 @@ What to notice here:
 - `g-target` narrows the swap to one region
 - `append` is useful when the server returns the next page fragment
 - router-link style partial requests do not change browser history by default
+- router capture evaluates `page + 1` before the bubbling `@click="page++"` advances local state
 
 This is a strong fit for:
 
@@ -639,7 +642,7 @@ If you use `g-target="#sidebar"`, return HTML that actually contains `#sidebar` 
 
 #### Treating every partial like a full navigation
 
-A sidebar refresh usually does not need head updates. That is why `g-current-head` matters in partial flows.
+A sidebar refresh does not update the head when `g-target` resolves locally. Use `g-current-head` only when the first global outlet is intentionally changing while its current head must remain.
 
 #### Using `morph` everywhere
 

@@ -820,6 +820,7 @@ The syntax to listen to events is `@[eventName].[modifiers]="handler"` .
 
 **Demo result:**
 
+```html
 <div g-scope="{ count: 0,logMessage(msg) { alert(msg); }}" class="card card-body">
 <p>Count: { count }</p>
 <button class="btn btn-primary" @click="count++">Increment</button>
@@ -830,6 +831,7 @@ The syntax to listen to events is `@[eventName].[modifiers]="handler"` .
     <button class="btn btn-success" type="submit">Submit</button>
 </form>
 </div>
+```
 
 **In the example:**
 * `@click="count++"` increments the `count` variable when the button is clicked.
@@ -880,6 +882,7 @@ Do not combine `passive` with `prevent`. Browsers intentionally ignore `preventD
 
 **Demo result:**
 
+```html
 <div gd-is-open="false" style="position: relative;">
     <button class="btn btn-primary" @click="isOpen = !isOpen" g-ignore-outside-click>Toggle Dropdown</button>
     <div *if="isOpen" tabindex="0"
@@ -891,6 +894,7 @@ Do not combine `passive` with `prevent`. Browsers intentionally ignore `preventD
         This is a dropdown menu. Click outside or press Escape to close.
     </div>
 </div>
+```
 
 **In which:**
 * `gd-is-open="false"` declares the variable `isOpen` in the scope.
@@ -929,6 +933,7 @@ By using these template syntax features, you can easily build dynamic and intera
 
 **Demo result:**
 
+```html
 <div g-scope class="card card-body">
     <input class="input" type="text" g-model.trim="username" placeholder="Enter username" />
     <p>Hello, { username }!</p><br>
@@ -937,6 +942,7 @@ By using these template syntax features, you can easily build dynamic and intera
     <button class="btn btn-info" @click="username = ''; message = ''">Clear all</button>
 
 </div>
+```
 
 **In which:**
 * `g-model="username"` binds the value of the input to the variable `username`.
@@ -973,11 +979,13 @@ Expressions in GyosJS allow you to perform operations, call functions, and use l
 
 **Demo result:**
 
+```html
 <div g-scope="{ a: 5, b: 10, multiply(x, y) { return x * y; } }" class="card card-body">
     <p>Sum: { a + b }</p>
     <p>Product: { multiply(a, b) }</p>
     <p>Is a greater than b? { a > b ? 'Yes' : 'No' }</p>
 </div>
+```
 
 **In which:**
 * `{ a + b }` calculates the sum of `a` and `b`.
@@ -999,11 +1007,13 @@ Expressions in GyosJS allow you to perform operations, call functions, and use l
 ```
 
 **Demo result:**
+```html
 <div g-scope="{ text: '  hello gyosjs  ', formatText(str) { return str.trim().toUpperCase(); } }" class="card card-body">
     <p>Original: '{ text }'</p>
     <p>Formatted: '{ text.trim() | uppercase | reverse}'</p>
     <p>Custom Formatted: '{ formatText(text) }'</p>
 </div>
+```
 
 **In which:**
 * `{ text.trim() | uppercase | reverse }` uses pipes to process the string.

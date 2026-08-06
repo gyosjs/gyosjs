@@ -47,6 +47,8 @@ At its simplest, boosted navigation needs three things:
 - some element in the document with `g-boost`
 - at least one swap target, usually `[g-outlet]`
 
+Any `g-boost` element is enough for `startRouter()` to install its listeners. Global interception still requires `g-boost` on `body`; otherwise only links and forms with their own `g-boost` are eligible.
+
 The most common setup looks like this:
 
 ```html
@@ -121,12 +123,14 @@ Forms are boosted when:
 - the form is not inside `[g-no-boost]`
 - the form itself has `g-boost`, or the page has global boost
 
-GyosJS handles both `GET` and non-`GET` forms:
+Native boosted forms support the browser's effective form methods:
 
 - `GET`: form fields are merged into the URL query string, and history changes are enabled by default
-- `POST`, `PUT`, `PATCH`, `DELETE`: the request body is sent, but history is not pushed by default
+- `POST`: the request body is sent, but history is not pushed by default
 
 That matches how the router demos use search forms and login/create forms.
+
+Use `g-router-link` with `g-router-method` for `PUT`, `PATCH`, or `DELETE`. Put `g-no-boost` on cross-origin forms; otherwise global boost converts the submission to a hard location change and cannot preserve POST data.
 
 ### Custom router triggers
 
@@ -139,7 +143,6 @@ Any element can trigger navigation with `g-router-link`.
     g-router-params="{ page, filter }"
     g-target="#items"
     g-swap="prepend"
-    g-current-head
 >
     Load more
 </button>
@@ -209,7 +212,7 @@ Or place it narrowly:
 </form>
 ```
 
-Use global boost when most same-origin navigation should be upgraded. Use element-level boost when only a specific flow should be enhanced.
+Use `body[g-boost]` when most same-origin navigation should be upgraded. Use element-level boost when only a specific link or form should be enhanced. Placing `g-boost` on an arbitrary container starts the router but does not make all descendants boostable.
 
 ### `g-no-boost`
 
@@ -305,7 +308,6 @@ Append the incoming source fragment’s child nodes to the target.
     g-router-method="GET"
     g-target="#items"
     g-swap="append"
-    g-current-head
 >
     Append items
 </button>
@@ -323,7 +325,6 @@ Prepend the incoming source fragment’s child nodes to the target.
     g-router-method="GET"
     g-target="#items"
     g-swap="prepend"
-    g-current-head
 >
     Prepend items
 </button>
@@ -409,21 +410,17 @@ This is ideal for:
 
 ### `g-current-head`
 
-Keeps the current `<head>` unchanged for this navigation.
+Keeps the current `<head>` unchanged when the selected target is the first global `[g-outlet]`.
 
 ```html
-<button
-    g-router-link="/sidebar.html"
-    g-router-method="GET"
-    g-target="#sidebar"
-    g-swap="morph"
-    g-current-head
->
-    Load sidebar
-</button>
+<div id="app" g-outlet>
+    <a href="/embedded-preview.html" g-current-head>
+        Open preview without adopting its head
+    </a>
+</div>
 ```
 
-Use this when you want to state explicitly that the current page head must stay unchanged. Targeted partial updates already leave the document head and global body scripts alone; the attribute is still useful as documentation on triggers that may later become full-outlet navigations.
+Use this when the global outlet should change but page-level metadata, stylesheets, and head scripts should remain owned by the current shell. A target other than the first global outlet does not update the head, so ordinary sidebar and list fragment swaps do not need this attribute.
 
 ### `g-change-state`
 
@@ -451,7 +448,6 @@ Treats the current history state as the state to keep.
     g-router-link="/sidebar.html"
     g-target="#sidebar"
     g-current-state
-    g-current-head
 >
     Update sidebar without pushing state
 </button>
@@ -504,7 +500,6 @@ Turns any element into a router trigger.
     g-router-params="{ page, searchQuery, items, info }"
     g-target="#items"
     g-swap="prepend"
-    g-current-head
     g-router-spin
 >
     Load more posts
@@ -594,7 +589,8 @@ Only the latest active navigation may enter the commit. For destructive modes (`
 
 1. parks persisted islands inside the target
 2. disposes effects and unmounts scopes in the outgoing target
-3. applies the incoming DOM
+3. updates history when appropriate so incoming scripts observe the destination URL
+4. applies the incoming DOM
 
 For additive modes (`append` and `prepend`), existing target nodes, scopes, and effects stay mounted.
 
@@ -612,7 +608,7 @@ For destructive swaps, scripts in the new result follow normal execution rules. 
 
 ### 9. Head and non-target scripts are updated for full-outlet navigation
 
-When the target is the global outlet, and the trigger does not have `g-current-head`, GyosJS updates:
+When the target is the first global outlet, and the trigger does not have `g-current-head`, GyosJS updates:
 
 - `document.title`
 - `meta`
@@ -624,11 +620,10 @@ Separately, GyosJS diffs scripts outside the global outlet, which matters for pa
 
 When `g-target` resolves to a smaller partial region, the document head and global body scripts are not diffed. Scripts inside the incoming partial still execute according to the selected swap mode.
 
-### 10. History, persist, mount, and scroll are finalized
+### 10. Persist, mount, and scroll are finalized
 
 Finally, GyosJS:
 
-- updates browser history when this navigation should change state
 - merges persisted islands back into the live DOM
 - mounts scopes in the new HTML
 - handles scroll
@@ -694,7 +689,6 @@ Current page:
     g-router-method="GET"
     g-target="#sidebar"
     g-swap="morph"
-    g-current-head
 >
     Load sidebar
 </button>
@@ -723,7 +717,6 @@ Current page:
     g-router-method="GET"
     g-target="#items"
     g-swap="prepend"
-    g-current-head
 >
     Load more
 </button>
@@ -859,7 +852,6 @@ History behavior for non-`GET` forms is intentional:
             g-router-method="GET"
             g-target="#sidebar"
             g-swap="morph"
-            g-current-head
         >
             Reload sidebar from partial response
         </button>
@@ -883,11 +875,10 @@ This example demonstrates two valid strategies:
     <button
         g-router-link="/posts-item.html"
         g-router-method="GET"
-        g-router-params="{ page, searchQuery }"
+        g-router-params="{ page: page + 1, searchQuery }"
         @click="page++"
         g-target="#items"
         g-swap="prepend"
-        g-current-head
         g-noscroll
         g-router-spin
     >
@@ -895,6 +886,8 @@ This example demonstrates two valid strategies:
     </button>
 </div>
 ```
+
+Router clicks are captured before the scope's bubbling `@click` handler. The request therefore evaluates `page + 1`, while `@click="page++"` advances local state for the next request.
 
 This is a good example of where `g-router-link` is more expressive than a normal anchor.
 
@@ -1014,7 +1007,6 @@ This creates a good default for MPA-style page transitions.
     g-router-method="GET"
     g-target="#items"
     g-swap="append"
-    g-current-head
     g-noscroll
 >
     Append more without jumping
@@ -1113,9 +1105,9 @@ Even though GyosJS is flexible, partial flows are easiest when the server return
 - a stable target wrapper
 - predictable nesting
 
-### 6. `g-current-head` prevents head updates, not all script work
+### 6. `g-current-head` only controls global-outlet head updates
 
-It skips title/head replacement during a full-outlet navigation. Targeted partial updates preserve the head automatically. In both cases, scripts inside swapped content still follow normal execution rules.
+It skips title/head replacement when the selected target is the first global outlet. Local fragment targets already preserve the head. In both cases, scripts inside swapped content still follow normal execution rules.
 
 ### 7. A missing persist placeholder does not destroy the island
 
@@ -1147,7 +1139,6 @@ Use this for the main app surface.
     g-router-method="GET"
     g-target="#sidebar"
     g-swap="morph"
-    g-current-head
 >
     Load panel
 </button>
@@ -1163,7 +1154,6 @@ Use this for local region updates.
     g-router-method="GET"
     g-target="#feed"
     g-swap="append"
-    g-current-head
     g-noscroll
 >
     More

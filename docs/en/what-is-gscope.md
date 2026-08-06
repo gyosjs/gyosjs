@@ -29,6 +29,7 @@ Inside this scope, you can:
 * write logic (methods, computed)
 * use other GyosJS directives
 
+```html
 <div g-scope="{ count: 0 }" class="card">
   <div class="card-header">Simple Counter</div>
   <div class="card-body">
@@ -36,6 +37,7 @@ Inside this scope, you can:
     <button class="btn btn-primary" @click="count++">Increase</button>
   </div>
 </div>
+```
 
 The simplest example:
 
@@ -64,6 +66,7 @@ Each `g-scope`:
 * does not affect other scopes
 * is only reactive to the DOM inside it
 
+```html
 <div class="card">
   <div class="card-header">Independent Scopes</div>
   <div class="card-body">
@@ -76,6 +79,7 @@ Each `g-scope`:
     </div>
   </div>
 </div>
+```
 
 Example:
 
@@ -639,7 +643,7 @@ Allows you to share data or logic between parent and child scopes without manual
 **In which:**
 * `g-provide='{"theme": "g-dark-in-scope"}'` provides the value `theme` to child scopes
 * `Gyos.provide('themeGlobal', 'g-dark-in-global')` provides the global value `themeGlobal`
-* `this.$inject('...')`, `Gyos.inject('...')` retrieve the provided value from the parent or global scope
+* `this.$inject('...')` resolves the element injector chain, while `Gyos.inject('...')` reads only globally provided values
 
 `$inject` / `$provide` are very useful when you need to share data or logic between scopes without manually passing props, especially in large applications with many nested scopes.
 

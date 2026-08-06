@@ -134,19 +134,21 @@ The signal + effect model is simple but very powerful.
 
 ```javascript
 const count = Gyos.signal(0);
-const double = Gyos.effect(() => {
+const stopLoggingDouble = Gyos.effect(() => {
     console.log('Double is', count() * 2);
 });
 count(1); // Console: Double is 2
 count(2); // Console: Double is 4
 
-double(); // Dispose effect to stop tracking
+stopLoggingDouble(); // Dispose the effect when it is no longer needed
+count(3); // No log: the effect is no longer tracking
 ```
 
 In which:
 * `count` is a signal that can be read/written
-* `double` is an effect that depends on `count`
-* each time `count` changes → `double` re-runs (logs the new value)
+* the effect callback depends on `count`
+* `stopLoggingDouble` is the disposer returned by `Gyos.effect()`
+* each time `count` changes, the callback re-runs and logs the new value
 
 > Effect will re-run **only when the signals it depends on change**. This helps optimize performance and avoid unnecessary re-renders.
 
@@ -231,6 +233,7 @@ In which:
 
 Objects and arrays in GyosJS are also reactive. Nested deep inside are also signals.
 
+```html
 <div g-scope="{user: { name: 'Alice', age: 20 }}" class="card">
     <div class="card-header">Demo Reactive Object</div>
     <div class="card-body">
@@ -238,6 +241,7 @@ Objects and arrays in GyosJS are also reactive. Nested deep inside are also sign
         <input class="input" g-model="user.name" placeholder="Enter name" />
     </div>
 </div>
+```
 
 When `user.name` changes → the signal tracking it triggers the effect to update the DOM.
 
@@ -263,6 +267,7 @@ Example code:
 
 With arrays, it's similar; array-modifying methods like `push`, `splice`, `pop` are also tracked.
 
+```html
 <div class="card">
 <div class="card-header">Demo Reactive Array</div>
 <div class="card-body">
@@ -284,6 +289,7 @@ With arrays, it's similar; array-modifying methods like `push`, `splice`, `pop` 
 </div>
 </div>
 </div>
+```
 
 **Example code:**
 
@@ -384,6 +390,7 @@ With arrays, it's similar; array-modifying methods like `push`, `splice`, `pop` 
 
 **Demo result:**
 
+```html
 <div g-scope="{
     largeArray: Array.from({ length: 1000 }, (_, i) => 'Item ' + (i + 1)),
     largeArrayNested: Array.from({ length: 100 }, (_, i) => {
@@ -441,6 +448,7 @@ With arrays, it's similar; array-modifying methods like `push`, `splice`, `pop` 
     <input class="input" g-model="largeArray[9]" />
   </p>
 </div>
+```
 
 **In which:**
 * deep nested objects/arrays are reactive, each field inside is a signal
@@ -516,6 +524,7 @@ When to use a store?
 
 **Demo result:**
 
+```html
 <div class="card">
 <div class="card-header">Demo Store Reactivity</div>
 <div class="card-body">
@@ -551,6 +560,7 @@ When to use a store?
         }
     });
 </script>
+```
 
 **In which:**
 * both scopes share the same `CounterStore`

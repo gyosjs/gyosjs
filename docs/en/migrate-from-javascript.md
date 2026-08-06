@@ -75,6 +75,7 @@ You no longer tell the UI how to rewrite the DOM after every click. You describe
 
 ### Runnable example
 
+```html
 <div g-scope="{ online: false }" class="card card-body">
     <h3 style="margin-top:0;">Status card</h3>
     <button class="btn btn-primary" @click="online = !online">
@@ -84,6 +85,7 @@ You no longer tell the UI how to rewrite the DOM after every click. You describe
         {online ? 'Online' : 'Offline'}
     </p>
 </div>
+```
 
 ## Pattern 2. Manual form sync vs `g-model`
 
@@ -141,6 +143,7 @@ The state and the UI summary stay in one place.
 
 ### Runnable example
 
+```html
 <form g-scope class="card card-body" g-no-boost style="display:grid;gap:12px;">
     <h3 style="margin:0;">Signup preview</h3>
     <input class="input" g-model.trim="name" placeholder="Name" />
@@ -153,6 +156,7 @@ The state and the UI summary stay in one place.
         Waiting for both fields...
     </p>
 </form>
+```
 
 ## Pattern 3. Manual list rendering vs `*for`
 
@@ -220,6 +224,7 @@ The state stays as an array. The template declares how to render it. You do not 
 
 ### Runnable example
 
+```html
 <div g-scope="{ items: ['Draft proposal', 'Review copy'] }" class="card card-body">
     <h3 style="margin-top:0;">Task list</h3>
     <button class="btn btn-primary" @click="items.push('Task ' + (items.length + 1))">
@@ -237,6 +242,7 @@ The state stays as an array. The template declares how to render it. You do not 
 
     <p *if="items.length === 0" style="color:#666;">No tasks left.</p>
 </div>
+```
 
 ## Pattern 4. Scattered widget logic vs one scope
 
@@ -311,6 +317,7 @@ GyosJS lets you pull that interaction back into one place.
 
 ### GyosJS approach
 
+```html
 <div g-scope="UserFilterMigrationDemo" class="card card-body">
     <h3 style="margin-top:0;">User filter panel</h3>
 
@@ -371,6 +378,7 @@ GyosJS lets you pull that interaction back into one place.
         }
     });
 </script>
+```
 
 The benefit here is not that GyosJS uses fewer characters. The benefit is that the ownership is clearer:
 
@@ -428,7 +436,7 @@ GyosJS gives you a higher-level contract:
 Then add more specific patterns only when you need them:
 
 - `g-target` for partial swaps
-- `g-current-head` for fragment updates
+- `g-current-head` only when the first global outlet changes but should retain the current head
 - `g-router-link` for button-driven router requests
 - `g-persist` for narrow long-lived islands
 

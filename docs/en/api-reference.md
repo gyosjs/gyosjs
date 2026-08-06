@@ -107,9 +107,9 @@ Useful after custom DOM insertion or partial updates outside the router.
 
 ### `Gyos.cleanup(target?)`
 
-Dispose tracked effects for a subtree.
+Run registered cleanup callbacks and scope unmount lifecycle for the document or one target subtree.
 
-This is an advanced escape hatch and is less common than normal mounting and unmounting.
+This is an advanced escape hatch and is less common than normal mounting and unmounting. GyosJS cannot infer application timers or external subscriptions; release those explicitly from `onUnmount()` or an effect disposer.
 
 ---
 
@@ -162,12 +162,14 @@ Rules:
 - kebab-case names are converted to camelCase
 - `gm-method:arg1:arg2="..."` creates a method with arguments
 
-### Live example
+### Example
 
+```html
 <div gd-count="0" gm-increment="count++" class="card card-body">
   <p>Count: <strong>{count}</strong></p>
   <button class="btn btn-primary" @click="increment">Increase</button>
 </div>
+```
 
 ---
 
@@ -192,11 +194,13 @@ Expressions are evaluated in the current scope context.
 
 ### Example
 
+```html
 <div g-scope="{ name: 'GyosJS', count: 2, get double() { return this.count * 2; } }" class="card card-body">
   <p>Hello {name}</p>
   <p>Count: {count}</p>
   <p>Double: {double}</p>
 </div>
+```
 
 ---
 
@@ -255,12 +259,14 @@ Object form:
 
 ### Example
 
+```html
 <div g-scope="{ active: true, danger: false, size: 18 }" class="card card-body">
   <p :class="{ 'text-success': active, 'text-danger': danger }" :style="{ fontSize: size + 'px' }">
     Styled by GyosJS bindings
   </p>
   <button class="btn btn-info" @click="active = !active; danger = !danger">Toggle</button>
 </div>
+```
 
 ---
 
@@ -508,8 +514,11 @@ Run a scope method after `g-form` validates successfully.
 
 The method receives the scope as `this`. Invalid forms do not call it. Without `g-submit`, a valid form continues through native `form.submit()`.
 
-### Live form example
+When MPA Boost is active, place `g-no-boost` on a validated form. Router submit capture runs before the `g-form` listener, so a boosted form may be dispatched before validation or submitted twice.
 
+### Form example
+
+```html
 <form g-scope="{ email: '', password: '' }" g-form="signupForm" class="card card-body" g-no-boost>
   <label>Email</label>
   <input class="input" g-model="email" g-validate="required|email" placeholder="you@example.com">
@@ -521,6 +530,7 @@ The method receives the scope as `this`. Invalid forms do not call it. Without `
 
   <button class="btn btn-primary" :disabled="signupForm.$invalid">Submit</button>
 </form>
+```
 
 ---
 
@@ -612,7 +622,7 @@ Expression:
 - `capture`
 - `passive`
 - `debounce`
-- numeric debounce value such as `.300`
+- debounce delay after the modifier, such as `.debounce.300`
 - `outside`
 - `global`
 - keyboard modifiers such as `enter`, `esc`, `space`, `up`, `down`, `left`, `right`, `delete`, `tab`
@@ -626,8 +636,9 @@ Expression:
 <div @keydown.escape.global="open = false"></div>
 ```
 
-### Live event example
+### Event example
 
+```html
 <div gd-open="false" class="card card-body" style="position:relative">
   <button class="btn btn-primary" @click="open = !open" g-ignore-outside-click>Toggle Menu</button>
   <div *if="open" tabindex="0" style="position:absolute;top:55px;left:0;background:#fff;color:#111;padding:12px;border:1px solid #ccc;border-radius:8px"
@@ -636,6 +647,7 @@ Expression:
     Click outside or press Escape
   </div>
 </div>
+```
 
 ---
 
@@ -791,12 +803,14 @@ Provide a global value.
 
 ### `Gyos.inject(key, defaultValue?)`
 
-Read a value from the injector chain.
+Read a globally provided value. `Gyos.inject()` does not read element-scoped `g-provide` values.
 
 You can also use scope-local forms:
 
 - `this.$provide(key, value)`
 - `this.$inject(key)`
+
+Those scope helpers, and the directive context `inject()` helper, resolve values from the element injector chain.
 
 ---
 
@@ -1037,6 +1051,7 @@ Current router notes that matter for users:
 - calling it more than once does not register duplicate listeners
 - it works on same-origin links and forms
 - it resolves targets from `g-target`, nearest outlet ancestor, or the global outlet
+- an `inner` swap on the first global outlet also synchronizes that outlet node's attributes, including `g-scope` and classes
 - it supports snapshots, persist islands, partial swaps, and script handling
 - failed requests fall back to hard browser navigation without first unmounting the current target
 - when navigations overlap, only the latest navigation may update the DOM
@@ -1099,7 +1114,7 @@ The package root exports `Signal`, `SignalOptions`, `Computed`, `Scope`, `Compon
 - `g-snapshot`: allow response HTML for this target to be restored during history navigation
 - `g-persist`: keep the same live DOM island across destructive swaps by matching a stable key
 - `g-preload`: fetch a same-origin anchor response on mouseover and consume it on navigation
-- `g-current-head`: keep the current title and head during a full-outlet navigation
+- `g-current-head`: keep the current title and head when navigating the first global outlet
 - `g-change-state`: force a router action that normally stays on the current URL to push or replace history
 - `g-current-state`: suppress history changes, including redirected non-`GET` history updates
 - `g-noscroll`: skip hash, saved-position, and scroll-to-top handling for that trigger

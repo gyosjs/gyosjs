@@ -81,7 +81,6 @@ This is how the main router demo pages are structured.
                 g-router-method="GET"
                 g-target="#sidebar"
                 g-swap="morph"
-                g-current-head
             >
                 Refresh sidebar
             </button>
@@ -195,6 +194,7 @@ Current behavior:
 
 - target element stays
 - target children are fully replaced
+- when the target is the first global outlet, its attributes are also synchronized from the incoming outlet
 
 Choose `inner` when:
 
@@ -225,7 +225,6 @@ Choose `replace` when:
     g-router-method="GET"
     g-target="#items"
     g-swap="append"
-    g-current-head
 >
     Append items
 </button>
@@ -254,7 +253,6 @@ This is a good fit for:
     g-router-method="GET"
     g-target="#items"
     g-swap="prepend"
-    g-current-head
     g-noscroll
 >
     Prepend results
@@ -369,7 +367,7 @@ A major difference between full-page swaps and partial swaps is whether the curr
 
 ### What GyosJS updates in `<head>`
 
-For a full navigation whose target is the global outlet, GyosJS updates the following unless the trigger has `g-current-head`:
+For a navigation whose target is the first global outlet, GyosJS updates the following unless the trigger has `g-current-head`:
 
 - `document.title`
 - `meta`
@@ -396,18 +394,14 @@ If `/posts.html` has a different title, description, stylesheet, or page-level s
 
 ### `g-current-head`
 
-For targeted partial updates, GyosJS automatically keeps the current head. You can still add `g-current-head` to make that intent visible in markup or to protect the trigger if its target later changes.
+Use `g-current-head` when you are swapping the first global outlet but intentionally want to retain the current document head. For example, an embedded preview can change the outlet without adopting the preview document's metadata:
 
 ```html
-<button
-    g-router-link="/sidebar.html"
-    g-router-method="GET"
-    g-target="#sidebar"
-    g-swap="morph"
-    g-current-head
->
-    Load sidebar only
-</button>
+<div id="app" g-outlet>
+    <a href="/embedded-preview.html" g-current-head>
+        Open preview and keep this document head
+    </a>
+</div>
 ```
 
 This keeps:
@@ -417,17 +411,15 @@ This keeps:
 - current links and styles
 - current head scripts
 
-That is usually the right choice for:
+This is useful for global-outlet flows such as:
 
-- drawers
-- sidebars
-- search results panes
-- widgets
-- “load more” flows
+- embedded previews
+- shell-owned metadata that must not follow the destination response
+- outlet refreshes whose head resources are managed separately
 
 ### Important nuance
 
-`g-current-head` skips title and head updating, but scripts inside the swapped target still follow normal swap-time execution rules.
+Targets other than the first global outlet do not update the head, so a normal `g-target="#sidebar"` refresh does not need `g-current-head`. The attribute only changes head behavior for the global outlet. In either case, scripts inside swapped content still follow normal swap-time execution rules.
 
 So think of it as:
 
@@ -853,7 +845,6 @@ This is a very strong pattern for a marketing site, docs site, dashboard, or sma
             g-router-method="GET"
             g-target="#sidebar"
             g-swap="morph"
-            g-current-head
             g-router-spin
         >
             Refresh sidebar
@@ -862,7 +853,7 @@ This is a very strong pattern for a marketing site, docs site, dashboard, or sma
 </div>
 ```
 
-This avoids accidental page-level head churn during a narrow update.
+The narrow target automatically leaves the document head and layout scripts unchanged.
 
 ### Recipe 3: Search page with proper history
 
@@ -892,11 +883,10 @@ Because it is a `GET` form:
     <button
         g-router-link="/feed-page-2.html"
         g-router-method="GET"
-        g-router-params="{ page }"
+        g-router-params="{ page: page + 1 }"
         @click="page++"
         g-target="#feed"
         g-swap="append"
-        g-current-head
         g-noscroll
     >
         More posts
@@ -962,7 +952,7 @@ For layout and lifecycle work, GyosJS is easiest to reason about if you think in
 - the trigger decides which live surface is updated
 - the response provides the next fragment for that surface
 - swap mode decides how much DOM identity is preserved
-- `g-current-head` decides whether the page head follows the response
+- the head follows only first-global-outlet navigation, and `g-current-head` can suppress that update
 - scripts are opt-in to “once” behavior, not “once” by default
 - `g-persist` is for small, intentional long-lived islands
 

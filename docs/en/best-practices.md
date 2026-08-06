@@ -53,12 +53,14 @@ Better direction:
 
 Example:
 
+```html
 <div g-scope="{ query: '' }" class="card">
     <label>Search posts</label>
     <input g-model="query" placeholder="Type a keyword" />
     <p>Preview: {query || 'Nothing yet'}</p>
     <a :href="'/posts?query=' + encodeURIComponent(query || '')">Open full results page</a>
 </div>
+```
 
 Why this is a best practice:
 
@@ -89,6 +91,7 @@ Risky scope boundaries:
 
 ### Prefer focused scopes
 
+```html
 <section class="card" g-scope="{ open: false }">
     <button @click="open = !open">
         {open ? 'Hide filters' : 'Show filters'}
@@ -109,6 +112,7 @@ Risky scope boundaries:
         {copied ? 'Copied' : 'Copy link'}
     </button>
 </section>
+```
 
 Why this is a best practice:
 
@@ -121,6 +125,7 @@ Why this is a best practice:
 
 Inline objects are perfect when the behavior is short. Once the object becomes hard to scan, give it a name.
 
+```html
 <div g-scope="CheckoutSummary" class="card">
     <h3>Checkout summary</h3>
     <p>Subtotal: ${subtotal.toFixed(2)}</p>
@@ -147,6 +152,7 @@ Inline objects are perfect when the behavior is short. Once the object becomes h
         }
     });
 </script>
+```
 
 Why this is a best practice:
 
@@ -170,6 +176,7 @@ Prefer:
 
 ### Good
 
+```html
 <div g-scope="{
     items: [
         { id: 1, name: 'Monitor', stock: 12 },
@@ -183,9 +190,11 @@ Prefer:
         </li>
     </ul>
 </div>
+```
 
 ### Better than hiding too much logic inline
 
+```html
 <div g-scope="ProductRow" class="card">
     <p>{name}</p>
     <p>{stockLabel}</p>
@@ -208,6 +217,7 @@ Prefer:
         }
     });
 </script>
+```
 
 Why this is a best practice:
 
@@ -225,6 +235,7 @@ Not every reactive value should live in the same place.
 
 Use `g-scope` when state belongs to one widget or one page section.
 
+```html
 <div g-scope="{ tab: 'details' }" class="card">
     <nav>
         <button @click="tab = 'details'">Details</button>
@@ -234,9 +245,11 @@ Use `g-scope` when state belongs to one widget or one page section.
     <div *if="tab === 'details'">Product details here.</div>
     <div *if="tab === 'reviews'">Product reviews here.</div>
 </div>
+```
 
 ### Use stores only when multiple scopes truly share state
 
+```html
 <div class="card" g-scope="{ cart: Gyos.store('CartStore') }">
     <p>Header cart count: {cart.count}</p>
 </div>
@@ -251,6 +264,7 @@ Use `g-scope` when state belongs to one widget or one page section.
         count: 0
     });
 </script>
+```
 
 Why this is a best practice:
 
@@ -318,8 +332,7 @@ Full page structure:
                     action="/catalog-filters.html"
                     method="get"
                     g-target="#filters"
-                    g-swap="morph"
-                    g-current-head>
+                    g-swap="morph">
                     <label>Category</label>
                     <select name="category">
                         <option value="">All</option>
@@ -345,7 +358,6 @@ Full page structure:
                         method="get"
                         g-target="#results"
                         g-swap="inner"
-                        g-current-head
                         g-scope="{ q: '' }">
                         <label>Search products</label>
                         <input
@@ -370,10 +382,9 @@ Full page structure:
                     <button
                         g-router-link="/catalog-more.html"
                         g-router-method="GET"
-                        g-router-params="%7Bpage%7D"
+                        g-router-params="{ page: page + 1 }"
                         g-target="#results"
                         g-swap="append"
-                        g-current-head
                         g-router-spin
                         @click="page++">
                         Load more
@@ -443,6 +454,7 @@ Do not use partial swaps just because they feel more advanced. If the whole page
 
 ### Good partial swap example
 
+```html
 <div class="layout">
     <aside id="sidebar" class="card">
         <h3>Profile sidebar</h3>
@@ -456,22 +468,22 @@ Do not use partial swaps just because they feel more advanced. If the whole page
         <a
             href="/profile-sidebar.html"
             g-target="#sidebar"
-            g-swap="morph"
-            g-current-head>
+            g-swap="morph">
             Refresh sidebar details
         </a>
     </section>
 </div>
+```
 
 Why this is a best practice:
 
 - the target region is small and obvious
 - the partial target automatically leaves page-level head and layout scripts unchanged
-- `g-current-head` documents that intent explicitly
 - `morph` is used on similar markup where preserving state can help
 
 ### A realistic "load more" pattern
 
+```html
 <div class="card" g-scope="{ page: 1 }">
     <h3>Recent posts</h3>
     <div id="post-items">
@@ -482,15 +494,15 @@ Why this is a best practice:
     <button
         g-router-link="/posts-item.html"
         g-router-method="GET"
-        g-router-params="%7Bpage%7D"
+        g-router-params="{ page: page + 1 }"
         g-target="#post-items"
         g-swap="prepend"
-        g-current-head
         g-router-spin
         @click="page++">
         Load more posts
     </button>
 </div>
+```
 
 Why this is a best practice:
 
@@ -499,6 +511,7 @@ Why this is a best practice:
 - `prepend` matches the user experience being requested
 - existing list scopes remain mounted and only the incoming items mount
 - the page avoids a custom fetch-and-template layer
+- router capture evaluates `page + 1` before the bubbling `@click="page++"` advances local state
 
 ### Choosing the swap mode
 
@@ -548,6 +561,7 @@ Poor candidates:
 
 ### Good `g-persist` example
 
+```html
 <div g-persist="player" class="card">
     <div g-scope="{ playing: false, title: 'Ambient Focus Mix' }">
         <h3>{title}</h3>
@@ -557,6 +571,7 @@ Poor candidates:
         <p>{playing ? 'Playing across navigation...' : 'Ready'}</p>
     </div>
 </div>
+```
 
 Why this is a best practice:
 
@@ -595,6 +610,7 @@ That means:
 
 ### GET form for search or filters
 
+```html
 <div class="card" g-scope="{ q: '', category: 'all' }">
     <form action="/search.html" method="get">
         <label>Keyword</label>
@@ -611,6 +627,7 @@ That means:
         <button type="submit">Search</button>
     </form>
 </div>
+```
 
 Why this is a best practice:
 
@@ -620,6 +637,7 @@ Why this is a best practice:
 
 ### POST form for actions
 
+```html
 <div class="card" g-scope="{ saving: false }">
     <form
         action="/profile/save.html"
@@ -637,6 +655,7 @@ Why this is a best practice:
         </button>
     </form>
 </div>
+```
 
 Why this is a best practice:
 
@@ -648,6 +667,7 @@ Why this is a best practice:
 
 For simple forms, GyosJS can infer fields through `g-model`. For larger forms, predeclaring the state is easier to maintain.
 
+```html
 <div g-scope="{
     form: {
         fullName: '',
@@ -664,6 +684,7 @@ For simple forms, GyosJS can infer fields through `g-model`. For larger forms, p
 
     <p>{JSON.stringify(form)}</p>
 </div>
+```
 
 Why this is a best practice:
 
@@ -689,6 +710,7 @@ In boosted MPA navigation, script behavior matters. A page can look correct and 
 
 ### Use `g-script-once` for setup that must not run twice
 
+```html
 <script g-script-once>
     window.analyticsBooted = window.analyticsBooted || false;
 
@@ -697,6 +719,7 @@ In boosted MPA navigation, script behavior matters. A page can look correct and 
         window.analyticsBooted = true;
     }
 </script>
+```
 
 Best for:
 
@@ -713,6 +736,7 @@ Why this is a best practice:
 
 ### Keep page-specific behavior close to the page
 
+```html
 <div g-scope="{
     seconds: 0,
     timerId: null,
@@ -725,6 +749,7 @@ Why this is a best practice:
 }" class="card">
     <p>Time on this page: {seconds}s</p>
 </div>
+```
 
 Why this is a best practice:
 
@@ -765,7 +790,9 @@ GyosJS router features are most maintainable when the markup explains the intent
 
 ### Prefer normal links first
 
+```html
 <a href="/posts.html">Posts</a>
+```
 
 With `g-boost` on the body, this already becomes a boosted navigation candidate. You do not need a custom click handler for ordinary page navigation.
 
@@ -777,14 +804,15 @@ Why this is a best practice:
 
 ### Use `g-router-link` when there is no natural anchor or form
 
+```html
 <button
     g-router-link="/notifications-panel.html"
     g-router-method="GET"
     g-target="#notifications-panel"
-    g-swap="inner"
-    g-current-head>
+    g-swap="inner">
     Refresh notifications
 </button>
+```
 
 Why this is a best practice:
 
@@ -792,15 +820,15 @@ Why this is a best practice:
 - it is clearer than wiring a manual fetch flow
 - the button clearly communicates that it updates one fragment
 
-### Use `g-current-head` for fragment updates
+### Use `g-current-head` only for global-outlet head control
 
-If you only swap a sidebar or result list, GyosJS keeps the current page head automatically. Keeping `g-current-head` on the trigger can still be a useful project convention because it makes the intended navigation boundary obvious during review.
+Local `g-target` swaps already skip title, head-resource, and outside-script updates. Use `g-current-head` only when the selected target is the first global outlet and that outlet should change without adopting the incoming document head.
 
 Why this is a best practice:
 
-- the title and head metadata remain stable during fragment-level refreshes by router contract
-- fragment endpoints can still return full HTML safely
-- future target changes are easier to review because the trigger states its head policy
+- local fragment behavior does not depend on a redundant marker
+- global-outlet head ownership is explicit where it actually matters
+- scripts inside swapped content still execute according to normal script rules
 
 ---
 
@@ -852,9 +880,9 @@ This section combines many of the practices above into one longer example. It is
             <aside id="guide-sidebar" class="card">
                 <h3>Guide navigation</h3>
                 <ul>
-                    <li><a href="/docs/guides/intro.html" g-target="#guide-content" g-current-head>Introduction</a></li>
-                    <li><a href="/docs/guides/forms.html" g-target="#guide-content" g-current-head>Forms</a></li>
-                    <li><a href="/docs/guides/router.html" g-target="#guide-content" g-current-head>Router</a></li>
+                    <li><a href="/docs/guides/intro.html" g-target="#guide-content">Introduction</a></li>
+                    <li><a href="/docs/guides/forms.html" g-target="#guide-content">Forms</a></li>
+                    <li><a href="/docs/guides/router.html" g-target="#guide-content">Router</a></li>
                 </ul>
             </aside>
 
@@ -868,7 +896,6 @@ This section combines many of the practices above into one longer example. It is
                         method="get"
                         g-target="#search-results"
                         g-swap="inner"
-                        g-current-head
                         g-scope="{ q: '' }">
                         <input
                             name="q"
@@ -889,10 +916,9 @@ This section combines many of the practices above into one longer example. It is
                 <button
                     g-router-link="/docs/more-guides.html"
                     g-router-method="GET"
-                    g-router-params="%7Bpage%7D"
+                    g-router-params="{ page: page + 1 }"
                     g-target="#search-results"
                     g-swap="append"
-                    g-current-head
                     g-router-spin
                     @click="page++">
                     Load more guides

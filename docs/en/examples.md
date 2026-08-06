@@ -16,6 +16,7 @@ We'll build a simple counter that can:
 * reset to 0
 * automatically display dependent values (`double`, `is even`)
 
+```html
 <div gd-count="0" class="card">
     <div class="card-header">Simple Counter Example</div>
     <div class="card-body">
@@ -28,6 +29,7 @@ We'll build a simple counter that can:
         <button class="btn btn-primary" @click="count++">+1</button>
     </div>
 </div>
+```
 
 See the example below:
 
@@ -120,6 +122,7 @@ The to-do list is a classic example to understand GyosJS in practice because it 
 
 ---
 
+```html
 <div g-scope="TodoApp" class="card" g-no-boost>
     <div class="card-header">To-Do List Example</div>
     <div class="card-body">
@@ -162,6 +165,7 @@ The to-do list is a classic example to understand GyosJS in practice because it 
         });
     </script>
 </div>
+```
 
 Complete code for the To-Do List app:
 
@@ -308,6 +312,7 @@ Instead of rendering the modal exactly where it’s declared in HTML, we will:
 
 ---
 
+```html
 <div class="card">
     <div class="card-header">Modal with Portal Example</div>
     <div class="card-body" g-scope="{ showModal: false,closeModal() {this.showModal = false;} }">
@@ -334,6 +339,7 @@ Instead of rendering the modal exactly where it’s declared in HTML, we will:
 }
 </style>
 <div id="modal-root"></div>
+```
 
 **HTML & Scope**
 
@@ -511,6 +517,7 @@ This is a very common real-world case:
 
 ---
 
+```html
 <div class="card " g-scope="SearchApp">
 <div class="card-header">Direct Search Example</div>
 <div class="card-body">
@@ -538,6 +545,7 @@ Gyos.scope('SearchApp', {
     }
 });
 </script>
+```
 
 **Example code**
 
@@ -660,6 +668,7 @@ Instead of letting the browser reload the entire page on every link click, GyosJ
 
 All happens with **plain HTML**, no build step, no virtual DOM.
 
+```html
 <div class="card flex-xy-center">
 <div class="text-center">
 <a class="btn btn-outline mb-4" href="/mpa-boost/home.html" target="_blank">Click to try MPA Boost Example</a>
@@ -669,6 +678,7 @@ All happens with **plain HTML**, no build step, no virtual DOM.
 </ul>
 </div>
 </div>
+```
 
 > Follow along with the code snippets below to build your own MPA Boost setup.
 

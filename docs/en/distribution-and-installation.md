@@ -39,6 +39,8 @@ Auto runtime:
 import 'gyosjs/auto';
 ```
 
+Both npm entrypoints are browser-only. Import them from browser bundles or client-only modules; direct Node.js or SSR evaluation currently accesses `window` during router initialization.
+
 ## Core vs Auto Build
 
 ### `gyosjs`
@@ -64,6 +66,8 @@ It:
 - mounts scopes on DOM ready
 
 This is the entrypoint most similar to the CDN build.
+
+Any `g-boost` element starts the router, but only `body[g-boost]` enables inherited site-wide interception. Otherwise, put `g-boost` directly on each link or form that should be boosted.
 
 ## CDN Notes
 
