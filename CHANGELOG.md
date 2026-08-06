@@ -1,0 +1,33 @@
+# Changelog
+
+All notable changes to GyosJS are documented in this file.
+
+The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+
+## [0.1.0] - 2026-08-04
+
+### Added
+
+- Fine-grained signals, computed values, effects, batching, stores, dependency injection, events, pipes, composables, and form validation.
+- HTML-first scopes, text interpolation, attribute bindings, event directives, models, structural directives, transitions, portals, and lifecycle hooks.
+- MPA Boost navigation with outlets, target swaps, snapshots, preload, history and scroll handling, persisted islands, script policies, and View Transitions.
+- Core ESM/UMD bundles, browser auto-init bundles, TypeScript declarations, npm exports, and CDN entry metadata.
+- Unit, integration, browser E2E, package-consumer, and release verification suites.
+
+### Fixed
+
+- Keyed `*for` insertion order no longer depends on whitespace around the template node.
+- `*await` ignores stale Promise results after its expression starts a newer request.
+- Form validation recognizes modified `g-model` attributes and cleans up DOM listeners and timers on unmount.
+- Documented `:alt`, `:title`, and `:selected` bindings are processed reactively.
+- Effects ignore non-function return values instead of attempting to execute them as cleanup callbacks.
+- Transition configs can be read by registered name or from duration-modified elements.
+
+### Stability
+
+- This is an experimental `0.x` release. Router, morphing, expression evaluation, and browser edge cases should be evaluated against an application's requirements before production adoption.
+
+[Unreleased]: https://github.com/gyosjs/gyosjs/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/gyosjs/gyosjs/releases/tag/v0.1.0

@@ -1,0 +1,258 @@
+<!doctype html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>GyosJs Router Demo - Home</title>
+    <link rel="icon" type="image/png" href="/p5-2-no-bg.png">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="The home page for GyosJs Router demo, showcasing various features.">
+    <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
+    <link rel="preload" href="https://rsms.me/inter/font-files/Inter-Regular.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+    <style>
+        :root {
+            --muted: #94a3b8;
+            --card: #fff;
+            --stroke: #1f293728;
+            --text: #123456;
+        }
+
+        * {
+            box-sizing: border-box;
+            font-size: 16px;
+            font-weight: 500;
+        }
+
+        *::-webkit-scrollbar {
+            width: 4px;
+            height: 4px;
+        }
+
+        *::-webkit-scrollbar-thumb {
+            background-color: #a6c989;
+            border-radius: 50px;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+            background: #123456;
+            color: var(--text);
+        }
+
+        #app {
+            background: linear-gradient(180deg, rgba(255, 255, 255, .03), rgba(255, 255, 255, 0)) border-box;
+            border: 1px solid rgba(255, 255, 255, .08);
+            border-radius: 9px;
+            box-shadow: 0 20px 70px rgba(0, 0, 0, .09);
+            margin: 26px auto;
+            max-width: 1080px;
+            overflow: hidden;
+        }
+
+        header,
+        footer {
+            background: linear-gradient(120deg, rgba(97, 81, 122, 0.25), rgba(6, 59, 67, 0.25));
+            padding: 16px 22px;
+            border-bottom: 1px solid rgba(255, 255, 255, .06);
+            color: #fff;
+        }
+
+        .brand {
+            font-weight: 500;
+            letter-spacing: .01em;
+        }
+
+        .nav {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .nav a {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 12px;
+            border-radius: 9px;
+            color: #e5e7eb;
+            text-decoration: none;
+            background: rgba(255, 253, 253, 0.06);
+            transition: transform 120ms ease, box-shadow 120ms ease, border-color 120ms ease;
+        }
+
+        .nav a:hover {
+            transform: translateY(-1px);
+            border-color: rgba(255, 255, 255, 0.242);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.05);
+        }
+
+        .nav a.active {
+            background: linear-gradient(120deg, #745e9a, #789da2);
+            color: #fff;
+            font-weight: 500;
+        }
+
+        main {
+            padding: 20px 22px 24px;
+            background: #f7f7f7;
+            backdrop-filter: blur(6px);
+        }
+
+        .card {
+            background: var(--card);
+            border: 1px solid var(--stroke);
+            border-radius: 16px;
+            padding: 18px;
+            margin-bottom: 16px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.073);
+        }
+
+        label {
+            display: block;
+            margin: 10px 0 6px;
+            color: var(--muted);
+        }
+
+        input,
+        textarea,
+        select,
+        button {
+            width: 100%;
+            margin-bottom: 9px;
+            flex: 1;
+            padding: 6px 16px;
+            font-size: 0.875rem;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        input:focus,
+        textarea:focus,
+        select:focus,
+        button:focus {
+            border-color: #667eea;
+        }
+
+        button {
+            padding: 10px 14px;
+            border-radius: 12px;
+            border: none;
+            cursor: pointer;
+            background: linear-gradient(120deg, #745e9a, #789da2);
+            color: #fff;
+            font-weight: 500;
+            box-shadow: 0 8px 30px rgba(124, 58, 237, .35);
+        }
+
+        a {
+            color: #465ed6;
+        }
+
+		.layout {
+			grid-template-columns: 335px 1fr;
+			display: grid;
+			gap: 12px;
+		}
+
+		@media (max-width: 768px) {
+			.layout {
+				grid-template-columns: 1fr;
+			}
+			
+		}
+
+        .tag {
+            display: inline-block;
+            background: #e0e7ff;
+            color: #3730a3;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 0.8125rem;
+            margin-right: 6px;
+        }
+    </style>
+    <style>
+        .brand {
+            color: #56de6f;
+            font-weight: 700;
+            font-size: 20px;
+        }
+    </style>
+    <script id="home-script">
+        console.log('Welcome to home page');
+    </script>
+</head>
+
+<body g-boost>
+    <div id="app" g-outlet g-snapshot>
+        <script g-script-once>
+            const countHome = 1;
+            alert("I'm Home.html, I'll show only once!");
+        </script>
+        <a href="#123">123</a>
+        <a href="#456">456</a>
+        <header>
+            <div style="display:flex;align-items:center;justify-content:space-between;">
+                <div class="brand">GyosJs Router Demo</div>
+                <nav class="nav">
+                    <a class="active" href="/router/home.html">Home</a>
+                    <a g-preload href="/router/posts.html" g-swap="replace">Posts</a>
+                    <a href="/router/post-create.html">New Post</a>
+                    <a href="/router/login.html">Login</a>
+                    <a href="/router/persist-player.html">Player</a>
+                    <a href="/router/profile-with-sidebar.html">Profile + Sidebar</a>
+                    <a href="/router/morph-a.html">Morph Demo</a>
+                </nav>
+            </div>
+        </header>
+
+        <main>
+            <div g-persist="player" class="card" gm-ts="return +(new Date)" gd-title="Mini Player"
+                gd-note="This block has `g-persist` and should not be unmounted.">
+                <strong>{title} <small>{ts}</small></strong>
+                <p>{note}</p>
+                <audio controls
+                    src="https://cdn.notegpt.io/notegpt/web3in1/voiceClone/5c39fa19-b058-4226-dbc6-c770bfbc095f.mp3"></audio>
+            </div>
+
+            <div class="card"
+                g-scope="{ greeting: 'Welcome to GyosJs Router Demo!', hints: ['Boosted links', 'Outlet swapping', 'Snapshots', 'Persist islands'] }">
+                <h2 g-text="greeting"></h2>
+                <p style="color:var(--muted)">Each link below is a normal anchor; body <code>g-boost</code> makes them
+                    fast.</p>
+                <ul>
+                    <li><a g-preload href="/router/posts.html">Posts list</a></li>
+                    <li><a g-preload href="/router/posts-search.html">Search posts (GET form)</a></li>
+                    <li><a g-preload href="/router/post-create.html">Create post (POST)</a></li>
+                    <li><a g-preload href="/router/login.html">Login</a></li>
+                    <li><a g-preload href="/router/profile-with-sidebar.html">Profile with sidebar target</a></li>
+                    <li><a g-preload href="/router/persist-player.html">Persisted mini player</a></li>
+                </ul>
+                <p><strong>Hints:</strong> <span class="tag" *for="tag in hints" g-key="tag">{tag}</span></p>
+            </div>
+        </main>
+
+        <footer id="footer">
+            GyosJs © Demo
+        </footer>
+
+        <script type="module">
+            import Gyos from '../../dist/gyos.auto.esm.js';
+            Gyos.onBeforeNavigate((url) => {
+                console.log('Navigating to:', url);
+            });
+            Gyos.onAfterNavigate((url) => {
+                console.log('Navigated to:', url);
+            });
+        </script>
+    </div>
+    <script g-script-wrap>
+        console.log('Home page script at the end of body');
+    </script>
+</body>
+
+</html>

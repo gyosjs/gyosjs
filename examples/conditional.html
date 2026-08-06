@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GyosJS - Conditional Rendering (*if/*elseif/*else, *switch/case)</title>
+    <link rel="icon" type="image/png" href="/p5-2-no-bg.png">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #40424e 0%, #4c3c5b 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            padding: 16px 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 1.5rem;
+        }
+
+        h2 {
+            color: #123456;
+            margin: 30px 0 15px;
+            font-size: 1.2rem;
+            border-bottom: 2px solid #123456;
+            padding-bottom: 5px;
+        }
+
+        .demo-section {
+            margin: 20px 0;
+            padding: 8px 18px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border: 2px solid #e0e0e0;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        button {
+            padding: 6px 16px;
+            font-size: 0.8725rem;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: bold;
+            background: #92c8ff;
+            border: 1px solid #303a4453;
+            color: white;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.095);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .result {
+            padding: 15px 20px;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: 500;
+            margin: 10px 0;
+        }
+
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 2px solid #c3e6cb;
+        }
+
+        .warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 2px solid #ffeeba;
+        }
+
+        .danger {
+            background: #f8d7da;
+            color: #721c24;
+            border: 2px solid #f5c6cb;
+        }
+
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 2px solid #bee5eb;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 8px;
+            border-radius: 5px;
+            background: #ddd;
+            outline: none;
+            margin: 10px 0;
+        }
+
+        .score-display {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #123456;
+            text-align: center;
+            margin: 10px 0;
+        }
+
+        select, input {
+            padding: 8px 15px;
+            font-size: 1rem;
+            border: 2px solid #5f9cda53;
+            border-radius: 6px;
+            background: white;
+            cursor: pointer;
+            outline: none;
+            width: 100%;
+        }
+
+        input {
+            cursor: text;
+        }
+
+        .di-text {
+            background-color: #fff305;
+            text-align: center;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <div class="demo-section" g-scope="{count: 0, title: Gyos.inject('appTitle') }" g-provide='{"sharedValue": {
+            "message": "Hello from DI!", "date_of_birth": "2002-09-16"
+        }}'>
+            <h3>{title}</h3>
+            <p><strong>Parent scope</strong></p><br>
+            <p>
+                Parent count: {count}
+                <button @click="count++">Increment</button>
+            </p><br>
+            <p class="di-text">{$inject('sharedValue').message} 
+                - {$inject('sharedValue').date_of_birth | date('DD/MM/YYYY')}</p><br>
+            <hr><br>
+            <p><strong>Child scope</strong></p>
+            <div style="margin: 9px 6px;" class="c" g-scope="{count: 0, name: 'GyosJS'}">
+                <p>
+                    <input type="text" g-model="name"><br>
+                    Name: {name}
+                </p><br>
+                <p>
+                    Child count: {count}
+                    <button @click="count++">Increment Child</button>
+                </p><br><br>
+                <p class="di-text">{$inject('sharedValue').message}</p>
+            </div>
+        </div>
+        <br><hr><br>
+        <h1>Conditional Rendering</h1>
+        <p style="color: #666; margin-bottom: 30px;">Demonstrating *if/*elseif/*else and *switch/case directives</p>
+
+        <div g-scope="ConditionalDemo">
+            <!-- *if / *elseif / *else Demo -->
+            <h2>1. *if / *elseif / *else Chain</h2>
+            <div class="demo-section">
+                <div class="controls">
+                    <button @click="score = 0">Set 0</button>
+                    <button @click="score = 50">Set 50</button>
+                    <button @click="score = 75">Set 75</button>
+                    <button @click="score = 90">Set 90</button>
+                    <button @click="score = 100">Set 100</button>
+                </div>
+
+                <div class="score-display">Score: {score}</div>
+                <input type="range" min="0" max="100" g-model="score">
+
+                <!-- Conditional chain with transitions -->
+                <div *if="score >= 90" class="result success" g-transition="fade">
+                    Excellent! Grade A
+                </div>
+                <div *elseif="score >= 75" class="result info" g-transition="fade">
+                    Good job! Grade B
+                </div>
+                <div *elseif="score >= 50" class="result warning" g-transition="fade">
+                    Keep studying! Grade C
+                </div>
+                <div *else class="result danger" g-transition="fade">
+                    Need improvement! Grade F
+                </div>
+            </div>
+
+            <!-- *switch / *case / *default Demo -->
+            <h2>2. *switch / *case / *default</h2>
+            <div class="demo-section">
+                <div class="controls">
+                    <select g-model="status">
+                        <option value="idle">Idle</option>
+                        <option value="loading">Loading</option>
+                        <option value="success">Success</option>
+                        <option value="error">Error</option>
+                    </select>
+                </div>
+
+                <div *switch="status">
+                    <div *case="'idle'" class="result info" g-transition="slide-down">
+                        System is idle. Ready to start.
+                    </div>
+                    <div *case="'loading'" class="result warning" g-transition="slide-down">
+                        Loading... Please wait.
+                    </div>
+                    <div *case="'success'" class="result success" g-transition="slide-down">
+                        Operation completed successfully!
+                    </div>
+                    <div *case="'error'" class="result danger" g-transition="slide-down">
+                        An error occurred. Please try again.
+                    </div>
+                    <div *default class="result" g-transition="slide-down">
+                        Unknown status: {status}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Nested Conditionals -->
+            <h2>3. Nested Conditionals</h2>
+            <div class="demo-section">
+                <div class="controls">
+                    <button @click="isLoggedIn = !isLoggedIn">
+                        {isLoggedIn ? 'Logout' : 'Login'}
+                    </button>
+                    <button @click="userRole = 'admin'" *if="isLoggedIn">Set Admin</button>
+                    <button @click="userRole = 'user'" *if="isLoggedIn">Set User</button>
+                </div>
+
+                <div *if="isLoggedIn" class="result success" g-transition="scale">
+                    <strong>✓ Logged in as: {userName}</strong>
+
+                    <div *switch="userRole" style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #c3e6cb;">
+                        <div *case="'admin'">
+                            Admin Dashboard Access
+                        </div>
+                        <div *case="'user'">
+                            User Dashboard Access
+                        </div>
+                        <div *default>
+                            Unknown role: {userRole}
+                        </div>
+                    </div>
+                </div>
+
+                <div *else class="result warning" g-transition="scale">
+                    Please login to continue
+                </div>
+            </div>
+
+            <!-- Multiple Independent Conditions -->
+            <h2>4. Multiple Independent Conditions</h2>
+            <div class="demo-section">
+                <div class="controls">
+                    <button @click="showA = !showA">Toggle A ({showA ? 'ON' : 'OFF'})</button>
+                    <button @click="showB = !showB">Toggle B ({showB ? 'ON' : 'OFF'})</button>
+                    <button @click="showC = !showC">Toggle C ({showC ? 'ON' : 'OFF'})</button>
+                </div>
+
+                <div *if="showA" class="result info" g-transition="fade">
+                    Box A is visible
+                </div>
+
+                <div *if="showB" class="result success" g-transition="fade">
+                    Box B is visible
+                </div>
+
+                <div *if="showC" class="result warning" g-transition="fade">
+                    Box C is visible
+                </div>
+
+                <div *if="!showA && !showB && !showC" class="result danger" g-transition="fade">
+                    All boxes are hidden
+                </div>
+            </div>
+
+            <!-- Complex Nested: *for + *if/elseif/else -->
+            <h2>5. Loop with Nested Conditionals</h2>
+            <div class="demo-section">
+                <div class="controls">
+                    <button @click="users.push(newUser())">Add User</button>
+                    <button @click="users.pop()" 
+                        *if="users.length > 0">Remove Last</button>
+                </div>
+
+                <div style="display: grid; gap: 10px;">
+                    <div *for="user in users" g-key="user.id"
+                        style="padding: 15px; border-radius: 8px; background: white;border: 2px solid #ddd;" g-transition="scale">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <strong>{user.name} (ID: {user.id})</strong>
+                            <div style="display: flex; gap: 5px;">
+                                <button @click="user.status = 'active'"
+                                    style="padding: 4px 10px; font-size: 0.8rem;">Active</button>
+                                <button @click="user.status = 'pending'"
+                                    style="padding: 4px 10px; font-size: 0.8rem; background: #ffc107;">Pending</button>
+                                <button @click="user.status = 'banned'"
+                                    style="padding: 4px 10px; font-size: 0.8rem; background: #dc3545;">Ban</button>
+                                <button @click="user.premium = !user.premium"
+                                    style="padding: 4px 10px; font-size: 0.8rem; background: #6f42c1;">
+                                    {user.premium ? '⭐' : '☆'}
+                                <button @click="removeUser(user.id)"
+                                    style="padding: 4px 6px; font-size: 0.8rem; background: transparent;">❌</button>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Nested *if/elseif/else inside *for -->
+                        <div style="margin-top: 10px; padding: 8px; border-radius: 5px;" g-transition="fade">
+                            <div *if="user.status === 'active'" style="color: #28a745;">
+                                Active {user.premium ? '(Premium Member 👑)' : ''}
+                            </div>
+                            <div *elseif="user.status === 'pending'" style="color: #ffc107;">
+                                Pending approval...
+                            </div>
+                            <div *elseif="user.status === 'banned'" style="color: #dc3545;">
+                                Banned from system
+                            </div>
+                            <div *else style="color: #6c757d;">
+                                Unknown status: {user.status}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div *if="users.length === 0" class="result info" g-transition="fade">
+                    No users yet. Click "Add User" to get started!
+                </div>
+            </div>
+
+            <!-- Deep Nesting: *switch inside *if inside *for -->
+            <h2>6. Deep Nested Conditionals</h2>
+            <div class="demo-section">
+                <div class="controls">
+                    <button
+                        @click="tasks.push({id: tasks.length + 1, title: 'Task ' + (tasks.length + 1), priority: 'medium', status: 'todo', assignee: null})">
+                        Add Task
+                    </button>
+                    <button @click="tasks.pop()" *if="tasks.length > 0">Remove Last</button>
+                </div>
+
+                <div style="display: grid; gap: 15px; margin-top: 15px;">
+                    <div *for="task in tasks" g-key="task.id"
+                        style="padding: 15px; background: white; border-radius: 8px; border: 2px solid #ddd; border-left: 4px solid #667eea;"
+                        g-transition.100="slide-down">
+
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                            <strong style="font-size: 1.1rem;">{task.title}</strong>
+                            <button @click="task.assignee = task.assignee ? null : 'John Doe'"
+                                style="padding: 4px 12px; font-size: 0.85rem;">
+                                {task.assignee ? 'Unassign' : 'Assign'}
+                            </button>
+                        </div>
+
+                        <!-- Level 1: *if checking if assigned -->
+                        <div *if="task.assignee" g-transition="fade">
+                            <div style="padding: 10px; background: #e7f3ff; border-radius: 6px; margin-bottom: 10px;">
+                                <div style="color: #0066cc; margin-bottom: 8px;">
+                                    Assigned to: <strong>{task.assignee}</strong>
+                                </div>
+
+                                <!-- Level 2: *switch for priority -->
+                                <div *switch="task.priority" style="margin-bottom: 8px;">
+                                    <div *case="'low'"
+                                        style="padding: 5px 10px; background: #d4edda; border-radius: 4px; display: inline-block;">
+                                        Low Priority
+                                    </div>
+                                    <div *case="'medium'"
+                                        style="padding: 5px 10px; background: #fff3cd; border-radius: 4px; display: inline-block;">
+                                        Medium Priority
+                                    </div>
+                                    <div *case="'high'"
+                                        style="padding: 5px 10px; background: #f8d7da; border-radius: 4px; display: inline-block;">
+                                        High Priority
+                                    </div>
+                                </div>
+
+                                <!-- Level 3: *if/elseif/else for status -->
+                                <div style="margin-top: 8px;">
+                                    <div style="display: flex; gap: 5px; margin-bottom: 8px;">
+                                        <button @click="task.status = 'todo'"
+                                            style="padding: 3px 8px; font-size: 0.8rem;">Todo</button>
+                                        <button @click="task.status = 'progress'"
+                                            style="padding: 3px 8px; font-size: 0.8rem; background: #17a2b8;">Progress</button>
+                                        <button @click="task.status = 'review'"
+                                            style="padding: 3px 8px; font-size: 0.8rem; background: #ffc107;">Review</button>
+                                        <button @click="task.status = 'done'"
+                                            style="padding: 3px 8px; font-size: 0.8rem; background: #28a745;">Done</button>
+                                    </div>
+
+                                    <div style="padding: 8px; border-radius: 5px; font-weight: 500;"
+                                        g-transition="fade">
+                                        <div *if="task.status === 'todo'" style="color: #6c757d;">
+                                            To Do - Not started yet
+                                        </div>
+                                        <div *elseif="task.status === 'progress'" style="color: #17a2b8;">
+                                            In Progress - Working on it
+                                        </div>
+                                        <div *elseif="task.status === 'review'" style="color: #ffc107;">
+                                            In Review - Awaiting approval
+                                        </div>
+                                        <div *elseif="task.status === 'done'" style="color: #28a745;">
+                                            Completed - All done!
+                                        </div>
+                                        <div *else style="color: #dc3545;">
+                                            Unknown status
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Show message if unassigned -->
+                        <div *else class="result warning" g-transition="fade">
+                            Task is unassigned. Click "Assign" to assign it.
+                        </div>
+
+                        <!-- Priority controls -->
+                        <div style="display: flex; gap: 5px; margin-top: 10px;">
+                            <button @click="task.priority = 'low'"
+                                style="padding: 4px 10px; font-size: 0.8rem; background: #28a745;">Low</button>
+                            <button @click="task.priority = 'medium'"
+                                style="padding: 4px 10px; font-size: 0.8rem; background: #ffc107;">Med</button>
+                            <button @click="task.priority = 'high'"
+                                style="padding: 4px 10px; font-size: 0.8rem; background: #dc3545;">High</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div *if="tasks.length === 0" class="result info" g-transition="fade" style="margin-top: 10px;">
+                    No tasks yet. Click "Add Task" to create one!
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import Gyos from '../dist/gyos.auto.esm.js';
+
+        // Register global dependencies synchronously before the auto entry mounts scopes.
+        Gyos.provide('appTitle', 'GyosJS Scope & DI Demo App');
+
+        Gyos.scope('ConditionalDemo', {
+            // *if/*elseif/*else demo
+            score: 75,
+
+            // *switch/case demo
+            status: 'idle',
+
+            // Nested demo
+            isLoggedIn: false,
+            userName: 'John Doe',
+            userRole: 'user',
+
+            // Multiple conditions demo
+            showA: true,
+            showB: false,
+            showC: true,
+
+            // Demo 5: Users list with nested conditionals
+            users: [
+                { id: 1, name: 'Alice', status: 'active', premium: true },
+                { id: 2, name: 'Bob', status: 'pending', premium: false },
+                { id: 3, name: 'Charlie', status: 'banned', premium: false },
+            ],
+            removeUser(id) {
+                this.users = this.users.filter(u => u.id !== id);
+            },
+            newUser() {
+                const users = this.users;
+                const id = users[users.length - 1]?.id || 0;
+                return { id: id + 1, name: 'User ' + (id + 1), status: 'active', premium: false };
+            },
+
+            // Demo 6: Tasks with deep nesting
+            tasks: [
+                { id: 1, title: 'Fix login bug', priority: 'high', status: 'progress', assignee: 'John Doe' },
+                { id: 2, title: 'Update documentation', priority: 'low', status: 'todo', assignee: null },
+                { id: 3, title: 'Deploy to staging', priority: 'medium', status: 'review', assignee: 'John Doe' }
+            ],
+
+            onMount() {
+                console.log('Conditional Demo mounted!', this.users, Gyos.isSignal(this.users), Gyos.isSignal(Gyos.signal(5)) );
+            },
+
+            onUpdate() {
+                console.log(this.users);
+            }
+        });
+    </script>
+
+</body>
+
+</html>

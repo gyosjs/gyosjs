@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GyosJS Perf Bench</title>
+  <link rel="icon" type="image/png" href="/p5-2-no-bg.png">
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #123456;
+      color: #e2e8f0;
+      margin: 0;
+      padding: 20px;
+    }
+    .wrap { max-width: 960px; margin: 0 auto; }
+    h1 { margin-bottom: 8px; }
+    p { color: #94a3b8; }
+    .controls { display: flex; gap: 10px; flex-wrap: wrap; margin: 16px 0; }
+    button {
+      font-weight: 500;
+      transition: all 0.2s linear;
+      padding: 10px 14px;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      background: #1e293b;
+      color: #e2e8f0;
+      cursor: pointer;
+    }
+    button:hover { border-color: #6366f1; }
+    .results { background: #262e3e; border: 1px solid #6286b94f; border-radius: 10px; padding: 12px; }
+    .row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #768ba948; }
+    .row:last-child { border-bottom: none; }
+    ul { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 6px; }
+    li { background: #2c3a59; border: 1px solid #cccccc45; border-radius: 8px; padding: 8px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>GyosJS Perf Bench</h1>
+    <p>Quick sanity checks: render/poke lists and hot-loop signals. Numbers are milliseconds per run on this device.</p>
+
+    <div g-scope="PerfScope">
+    <div class="controls">
+      <button @click="benchRender(500)">Render 500 items</button>
+      <button @click="benchRender(1000)">Render 1,000 items</button>
+      <button @click="benchPatch()">Patch keyed list (toggle flags)</button>
+      <button @click="benchSignal(100000)">Signal hot loop (100k)</button>
+      <button @click="benchMount()">Mount 1k nodes</button>
+      <button @click="benchNested()">Toggle nested tree</button>
+      <button @click="benchEvents()">Burst events</button>
+      <button @click="benchText()">Text interpolate</button>
+      <button @click="benchPushPop()">Push/Pop 1k (non-keyed)</button>
+      <button @click="reset()">Reset</button>
+    </div>
+
+    <div class="results">
+      <div class="row"><span>Last render</span><span>{lastRender} ms</span></div>
+      <div class="row"><span>Last patch</span><span>{lastPatch} ms</span></div>
+      <div class="row"><span>Last signal loop</span><span>{lastSignal} ms</span></div>
+      <div class="row"><span>Mount 1k</span><span>{lastMount} ms</span></div>
+      <div class="row"><span>Toggle nested</span><span>{lastNested} ms</span></div>
+      <div class="row"><span>Burst events</span><span>{lastEvents} ms</span></div>
+      <div class="row"><span>Text interpolate</span><span>{lastText} ms</span></div>
+      <div class="row"><span>Push/Pop 1k</span><span>{lastPushPop} ms</span></div>
+    </div>
+
+      <p style="margin: 16px 0 8px;">Rendered list (keyed): {items.length} items</p>
+      <ul>
+        <li *for="item in items" g-key="item.id">
+          <div><strong>ID:</strong> {item.id}</div>
+          <div><strong>Flag:</strong> {item.flag ? 'ON' : 'off'}</div>
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <script type="module">
+    import Gyos from '../dist/gyos.auto.esm.js';
+
+    Gyos.scope('PerfScope', {
+      items: [],
+      lastRender: 0,
+      lastPatch: 0,
+      lastSignal: 0,
+      lastMount: 0,
+      lastNested: 0,
+      lastEvents: 0,
+      lastText: 0,
+      lastPushPop: 0,
+
+      benchRender(count) {
+        const start = performance.now();
+        // new array to exercise non-keyed/ keyed rendering
+        this.items = Array.from({ length: count }, (_, i) => ({
+          id: i + 1,
+          flag: (i & 1) === 0
+        }));
+        this.lastRender = (performance.now() - start).toFixed(2);
+      },
+
+      benchPatch() {
+        if (!this.items.length) return;
+        const start = performance.now();
+        // toggle flags to force minimal updates on keyed list
+        this.items = this.items.map((item, idx) => ({
+          ...item,
+          flag: (idx + item.flag) % 2 === 0
+        }));
+        this.lastPatch = (performance.now() - start).toFixed(2);
+      },
+
+      benchSignal(iterations) {
+        const start = performance.now();
+        const sig = Gyos.signal(0);
+        Gyos.effect(() => sig.value); // subscribe once
+        for (let i = 0; i < iterations; i++) {
+          sig.value = i;
+        }
+        this.lastSignal = (performance.now() - start).toFixed(2);
+      },
+
+      benchMount() {
+        const host = document.createElement('div');
+        host.innerHTML = Array.from({ length: 1000 }, (_, i) => `<span>{val${i}}</span>`).join('');
+        host.setAttribute('g-scope', 'BenchMount');
+        document.body.appendChild(host);
+        const start = performance.now();
+        Gyos.scope('BenchMount', { val0: 0 }); // minimal scope to mount
+        Gyos.mount(host);
+        this.lastMount = (performance.now() - start).toFixed(2);
+        host.remove();
+      },
+
+      benchNested() {
+        const start = performance.now();
+        const tree = [];
+        const makeNode = (depth, breadth, prefix) => {
+          const children = depth > 0 ? Array.from({ length: breadth }, (_, i) => makeNode(depth - 1, breadth, `${prefix}.${i}`)) : [];
+          return { id: prefix, flag: true, children };
+        };
+        for (let i = 0; i < 5; i++) tree.push(makeNode(3, 3, `n${i}`));
+        this.items = tree;
+        // toggle all flags to force nested *if checks
+        const toggle = nodes => nodes.map(n => ({ ...n, flag: !n.flag, children: n.children ? toggle(n.children) : [] }));
+        this.items = toggle(this.items);
+        this.lastNested = (performance.now() - start).toFixed(2);
+      },
+
+      benchEvents() {
+        const start = performance.now();
+        const sigA = Gyos.signal(0);
+        const sigB = Gyos.signal(0);
+        const handler = () => {
+          Gyos.batch(() => {
+            sigA.value++;
+            sigB.value++;
+          });
+        };
+        for (let i = 0; i < 100; i++) handler();
+        this.lastEvents = (performance.now() - start).toFixed(2);
+      },
+
+      benchText() {
+        const host = document.createElement('div');
+        const count = 1000;
+        host.innerHTML = Array.from({ length: count }, () => `<p>{foo} {bar} {baz}</p>`).join('');
+        host.setAttribute('g-scope', 'BenchText');
+        document.body.appendChild(host);
+        Gyos.scope('BenchText', { foo: 'A', bar: 'B', baz: 'C' });
+        const start = performance.now();
+        Gyos.mount(host);
+        this.lastText = (performance.now() - start).toFixed(2);
+        host.remove();
+      },
+
+      benchPushPop() {
+        const start = performance.now();
+        const arr = [];
+        for (let i = 0; i < 1000; i++) arr.push({ id: i, flag: i % 2 === 0 });
+        this.items = arr;
+        for (let i = 0; i < 1000; i++) this.items.pop();
+        this.lastPushPop = (performance.now() - start).toFixed(2);
+      },
+
+      reset() {
+        this.items = [];
+        this.lastRender = 0;
+        this.lastPatch = 0;
+        this.lastSignal = 0;
+        this.lastMount = 0;
+        this.lastNested = 0;
+        this.lastEvents = 0;
+        this.lastText = 0;
+        this.lastPushPop = 0;
+      }
+    });
+  </script>
+</body>
+</html>

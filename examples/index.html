@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GyosJS - Examples</title>
+  <link rel="icon" type="image/png" href="/p5-2-no-bg.png">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: linear-gradient(135deg, #40424e 0%, #4c3c5b 100%);
+      min-height: 100vh;
+      padding: 60px 20px;
+    }
+    
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    
+    header {
+      text-align: center;
+      color: white;
+      margin-bottom: 60px;
+    }
+    
+    h1 {
+      font-size: 1.5rem;
+      margin-bottom: 10px;
+      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    }
+    
+    .tagline {
+      font-size: 1.2rem;
+      opacity: 0.9;
+    }
+    
+    .examples-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 15px;
+    }
+    
+    .example-card {
+      background: white;
+      border-radius: 20px;
+      padding: 16px 24px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+      transition: all 0.3s;
+      text-decoration: none;
+      color: inherit;
+      display: block;
+      border: 1px solid #e0e0e0;
+    }
+    
+    .example-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.05);
+    }
+    
+    .example-icon {
+      font-size: 1.5rem;
+      margin-bottom: 10px;
+    }
+    
+    .example-title {
+      font-size: 1.2rem;
+      color: #333;
+      margin-bottom: 10px;
+    }
+    
+    .example-description {
+      color: #666;
+      line-height: 1.6;
+      font-size: 0.875rem;
+    }
+    
+    .features {
+      background: white;
+      border-radius: 20px;
+      padding: 16px 24px;
+      margin-top: 40px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    }
+    
+    .features h2 {
+      color: #333;
+      margin-bottom: 20px;
+      font-size: 1.2rem;
+    }
+    
+    .features ul {
+      list-style: none;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+    }
+    
+    .features li {
+      padding: 15px;
+      background: #f8f9fa;
+      border-radius: 10px;
+      border: 1px solid #e0e0e0;
+      color: #666;
+      font-size: 0.925rem;
+      font-weight: bold;
+    }
+    
+    .features li::before {
+      content: '✨ ';
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <header>
+    <h1>🔥 GyosJS</h1>
+    <p class="tagline">A lightweight reactive JavaScript library</p>
+  </header>
+  
+  <div class="examples-grid">
+    <a href="counter.html" class="example-card">
+      <div class="example-icon">🔢</div>
+      <h2 class="example-title">Counter</h2>
+      <p class="example-description">
+        Simple counter demonstrating reactive state and computed values
+      </p>
+    </a>
+    
+    <a href="todo.html" class="example-card">
+      <div class="example-icon">✅</div>
+      <h2 class="example-title">Todo App</h2>
+      <p class="example-description">
+        Full-featured todo list with localStorage persistence
+      </p>
+    </a>
+    
+    <a href="pipes.html" class="example-card">
+      <div class="example-icon">🎨</div>
+      <h2 class="example-title">Pipes Demo</h2>
+      <p class="example-description">
+        Transform values with built-in and custom pipes
+      </p>
+    </a>
+    
+    <a href="composables.html" class="example-card">
+      <div class="example-icon">🎯</div>
+      <h2 class="example-title">Composables</h2>
+      <p class="example-description">
+        Reusable logic with composables: useFetch, useCounter, etc.
+      </p>
+    </a>
+    
+    <a href="advanced.html" class="example-card">
+      <div class="example-icon">🚀</div>
+      <h2 class="example-title">Advanced Features</h2>
+      <p class="example-description">
+        Portal, Transitions, Hydration strategies, and more
+      </p>
+    </a>
+  </div>
+  
+  <div class="features">
+    <h2>🎯 Features</h2>
+    <ul>
+      <li>Signal-based Reactivity</li>
+      <li>Dependency Injection</li>
+      <li>Template Pipes</li>
+      <li>Smart Hydration (NEW)</li>
+      <li>Form Validation</li>
+      <li>Composables (NEW)</li>
+      <li>Context API</li>
+      <li>Event Bus</li>
+      <li>Portal/Teleport (NEW)</li>
+      <li>Transitions (NEW)</li>
+      <li>Only ~11KB</li>
+      <li>No Build Required</li>
+    </ul>
+  </div>
+</div>
+
+</body>
+</html>

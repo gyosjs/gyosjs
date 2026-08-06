@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GyosJS Benchmarks</title>
+    <link rel="icon" type="image/png" href="/p5-2-no-bg.png">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 40px;
+        }
+        
+        .container {
+            background: white;
+            padding: 60px;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 800px;
+            width: 100%;
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 42px;
+            text-align: center;
+        }
+        
+        .subtitle {
+            color: #666;
+            text-align: center;
+            margin-bottom: 40px;
+            font-size: 18px;
+        }
+        
+        .benchmark-card {
+            background: #f9fafb;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 20px;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+        
+        .benchmark-card:hover {
+            border-color: #667eea;
+            transform: translateY(-4px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.2);
+        }
+        
+        .benchmark-card h2 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 24px;
+        }
+        
+        .benchmark-card p {
+            color: #666;
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+        
+        .benchmark-card .tags {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        
+        .tag {
+            background: #667eea;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 16px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .tag.comparison {
+            background: #f093fb;
+        }
+        
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            color: #999;
+            font-size: 14px;
+        }
+        
+        a {
+            color: inherit;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>⚡ GyosJS Benchmarks</h1>
+        <p class="subtitle">Performance testing suite for GyosJS reactive system</p>
+        
+        <a href="reactivity-bench.html">
+            <div class="benchmark-card">
+                <h2>🔬 Reactivity Benchmark</h2>
+                <p>
+                    Comprehensive performance testing of GyosJS's reactive system including property access, 
+                    updates, nested objects, array operations, effect triggering, and memory usage.
+                </p>
+                <div class="tags">
+                    <span class="tag">Signals</span>
+                    <span class="tag">Effects</span>
+                    <span class="tag">Proxies</span>
+                    <span class="tag">Memory</span>
+                </div>
+            </div>
+        </a>
+        
+        <a href="comparison-bench.html">
+            <div class="benchmark-card">
+                <h2>🏁 Comparison Benchmark</h2>
+                <p>
+                    Head-to-head comparison between GyosJS reactive objects and plain JavaScript objects. 
+                    Measures the overhead of reactivity and identifies performance bottlenecks.
+                </p>
+                <div class="tags">
+                    <span class="tag comparison">VS Plain Objects</span>
+                    <span class="tag comparison">Overhead Analysis</span>
+                    <span class="tag comparison">Performance</span>
+                </div>
+            </div>
+        </a>
+        
+        <div class="footer">
+            <p>GyosJS v1.0 - Built from scratch with ❤️</p>
+            <p style="margin-top: 10px; font-size: 12px;">
+                Run benchmarks in Chrome with --enable-precise-memory-info flag for better memory measurements
+            </p>
+        </div>
+    </div>
+</body>
+</html>

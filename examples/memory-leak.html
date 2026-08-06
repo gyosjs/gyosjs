@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GyosJS Memory Leak Harness</title>
+  <link rel="icon" type="image/png" href="/p5-2-no-bg.png">
+  <style>
+    :root { color-scheme: dark; }
+    body {
+      margin: 0;
+      padding: 20px;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #123456;
+      color: #fff;
+    }
+    .wrap { max-width: 1080px; margin: 0 auto; }
+    h1 { margin: 0 0 8px; font-size: 28px; }
+    p { margin: 6px 0 14px; color: #f7f7f7; }
+    .grid {
+      display: grid;
+      gap: 14px;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      margin-top: 14px;
+    }
+    .card {
+      background: #2c3a59;
+      border: 1px solid #cccccc45;
+      border-radius: 12px;
+      padding: 14px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.065);
+    }
+    .controls { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; }
+    button {
+      background: #1e293b;
+      border: 1px solid #334155;
+      color: #fff;
+      padding: 9px 12px;
+      border-radius: 10px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.15s ease, border-color 0.2s ease;
+    }
+    button:hover { border-color: #60a5fa; transform: translateY(-1px); }
+    .stat { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #1f2a44; }
+    .stat:last-child { border-bottom: none; }
+    .list {
+      display: grid;
+      gap: 8px;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      margin-top: 8px;
+    }
+    .item {
+      background: #0f172a;
+      border: 1px solid #1f2a44;
+      border-radius: 10px;
+      padding: 10px;
+    }
+    small { color: #9198a1; }
+    code { background: #0b1020; padding: 2px 5px; border-radius: 6px; color: #fff; }
+  </style>
+</head>
+<body>
+  <div class="wrap" g-scope="LeakHarness">
+    <h1>Memory Leak Harness</h1>
+    <p>Use this page with Chrome DevTools → Performance/Memory to watch for retained nodes after churn. Start/stop loops, then take heap snapshots.</p>
+
+    <div class="controls">
+      <button @click="startListChurn">Start list churn</button>
+      <button @click="stopListChurn">Stop list churn</button>
+      <button @click="startMountChurn">Start mount churn</button>
+      <button @click="stopMountChurn">Stop mount churn</button>
+      <button @click="spawnWatchers(200)">Spawn 200 listeners/timers</button>
+      <button @click="cleanupWatchers">Cleanup watchers</button>
+      <button @click="reset">Reset</button>
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <strong>DevTools quick steps</strong>
+        <ul>
+          <li>1) Open DevTools → Memory → Allocation sampling.</li>
+          <li>2) Start a churn (list or mount), record 5–10s, stop.</li>
+          <li>3) Stop churn, hit garbage collect, record again.</li>
+          <li>4) Watch detached nodes/listeners; they should not grow.</li>
+        </ul>
+        <small>List churn toggles *for lists; mount churn mounts/unmounts scopes and runs cleanup before removal.</small>
+      </div>
+
+      <div class="card">
+        <div class="stat"><span>List churn</span><span>{listRunning ? 'running' : 'stopped'}</span></div>
+        <div class="stat"><span>Mount churn</span><span>{mountRunning ? 'running' : 'stopped'}</span></div>
+        <div class="stat"><span>Churn iterations</span><span>{iterations}</span></div>
+        <div class="stat"><span>Active items</span><span>{items.length}</span></div>
+        <div class="stat"><span>Watchers</span><span>{watcherCount}</span></div>
+        <div class="stat"><span>Timers</span><span>{timerCount}</span></div>
+        <div class="stat"><span>Listeners</span><span>{listenerCount}</span></div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top: 14px;">
+      <strong>List churn area</strong>
+      <p><small>Toggles between 0 and 300 items; click some to create event handlers.</small></p>
+      <div class="list">
+        <div *for="item in items" g-key="item.id" class="item">
+          <div><strong>Item {item.id}</strong></div>
+          <p>{item.text}</p>
+          <button @click="item.count++">Clicks: {item.count}</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="mount-host" class="card" style="margin-top: 14px;">
+      <strong>Mount churn host</strong>
+      <p><small>Repeatedly mounts/unmounts a scoped subtree with cleanup() before removal.</small></p>
+    </div>
+  </div>
+
+  <script type="module">
+    import Gyos from '../dist/gyos.auto.esm.js';
+
+    const makeItems = (size = 300) =>
+      Array.from({ length: size }, (_, i) => ({
+        id: i + 1,
+        text: `Row ${i + 1}`,
+        count: 0
+      }));
+
+    Gyos.scope('LeakHarness', {
+      items: [],
+      iterations: 0,
+      listRunning: false,
+      mountRunning: false,
+      watcherCount: 0,
+      timerCount: 0,
+      listenerCount: 0,
+      _listHandle: null,
+      _mountHandle: null,
+      _watcherCleanups: [],
+
+      startListChurn() {
+        if (this.listRunning) return;
+        this.listRunning = true;
+        const tick = () => {
+          this.items = this.items.length ? [] : makeItems();
+          this.iterations++;
+          if (this.listRunning) {
+            this._listHandle = requestAnimationFrame(tick);
+          }
+        };
+        this._listHandle = requestAnimationFrame(tick);
+      },
+
+      stopListChurn() {
+        this.listRunning = false;
+        if (this._listHandle) cancelAnimationFrame(this._listHandle);
+        this._listHandle = null;
+        this.items = [];
+      },
+
+      startMountChurn() {
+        if (this.mountRunning) return;
+        this.mountRunning = true;
+        const host = document.getElementById('mount-host');
+
+        const run = () => {
+          if (!this.mountRunning) return;
+          const container = document.createElement('div');
+          container.setAttribute('g-scope', 'ChurnScope');
+          container.innerHTML = `<div *for="n in nodes" g-key="n.id">{n.label}</div>`;
+          host.appendChild(container);
+
+          const nodes = Array.from({ length: 50 }, (_, i) => ({ id: i + 1, label: 'node ' + i }));
+          Gyos.scope('ChurnScope', { nodes });
+          Gyos.mount(container);
+
+          // Cleanup effects/listeners before removing
+          Gyos.cleanup(container);
+          container.remove();
+          this.iterations++;
+          this._mountHandle = requestAnimationFrame(run);
+        };
+
+        this._mountHandle = requestAnimationFrame(run);
+      },
+
+      stopMountChurn() {
+        this.mountRunning = false;
+        if (this._mountHandle) cancelAnimationFrame(this._mountHandle);
+        this._mountHandle = null;
+      },
+
+      spawnWatchers(count = 100) {
+        for (let i = 0; i < count; i++) {
+          const controller = new AbortController();
+          const listener = () => {};
+          window.addEventListener('resize', listener, { signal: controller.signal });
+          const timer = setInterval(() => {}, 5000);
+          this._watcherCleanups.push(() => {
+            controller.abort();
+            clearInterval(timer);
+          });
+          this.listenerCount++;
+          this.timerCount++;
+        }
+        this.watcherCount = this._watcherCleanups.length;
+      },
+
+      cleanupWatchers() {
+        this._watcherCleanups.forEach(fn => fn());
+        this._watcherCleanups.length = 0;
+        this.watcherCount = 0;
+        this.listenerCount = 0;
+        this.timerCount = 0;
+      },
+
+      reset() {
+        this.stopListChurn();
+        this.stopMountChurn();
+        this.cleanupWatchers();
+        this.items = [];
+        this.iterations = 0;
+      }
+    });
+  </script>
+</body>
+</html>

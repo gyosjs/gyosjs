@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Form Validation - GyosJS</title>
+    <link rel="icon" type="image/png" href="/p5-2-no-bg.png">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            width: 100%;
+            max-width: 500px;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            color: #333;
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        input,
+        textarea {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: inherit;
+            transition: all 0.3s;
+        }
+
+        input:focus,
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        input.error,
+        textarea.error {
+            border-color: #ef4444;
+        }
+
+        .error-message {
+            color: #ef4444;
+            font-size: 12px;
+            margin-top: 6px;
+            display: block;
+        }
+
+        .error-summary {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            border-radius: 8px;
+            padding: 16px;
+            margin: 20px 0;
+        }
+
+        .error-summary:empty {
+            display: none;
+        }
+
+        .error-summary strong {
+            color: #991b1b;
+            text-transform: capitalize;
+        }
+
+        .error-summary div {
+            color: #dc2626;
+            font-size: 13px;
+            margin-bottom: 4px;
+        }
+
+        .error-summary div:last-child {
+            margin-bottom: 0;
+        }
+
+        button {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 10px;
+        }
+
+        button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        button:active:not(:disabled) {
+            transform: translateY(0);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .success-message {
+            background: #f0fdf4;
+            border: 1px solid #86efac;
+            border-radius: 8px;
+            padding: 16px;
+            margin-top: 20px;
+            color: #166534;
+            text-align: center;
+            font-weight: 600;
+        }
+
+        .form-state {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-top: 20px;
+            padding: 16px;
+            background: #f9fafb;
+            border-radius: 8px;
+            font-size: 12px;
+        }
+
+        .form-state-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-weight: 600;
+            font-size: 11px;
+        }
+
+        .badge.valid {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .badge.invalid {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .badge.dirty {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .badge.pristine {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Form Validation</h1>
+        <p class="subtitle">Try filling out the form to see real-time validation</p>
+
+        <form g-scope="ContactForm" g-form="Contact" g-submit="submitContact">
+            <!-- Email Field -->
+            <div class="form-group">
+                <label for="email">Email Address</label>
+                <input id="email" type="email" g-model.debounce.300="email" g-validate="required|email" placeholder="you@example.com"
+                    :class="{ error: Contact.errors().email }">
+                <span g-errors="email" class="error-message"></span>
+            </div>
+
+            <!-- Password Field -->
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input id="password" type="password" g-model.debounce.300="password" g-validate="required|minLength(8)|password"
+                    placeholder="Enter strong password"
+                    :class="{ error: Contact.errors().password }">
+                <span g-errors="password" class="error-message"></span>
+            </div>
+
+            <!-- Confirm Password Field -->
+            <div class="form-group">
+                <label for="confirmPassword">Confirm Password</label>
+                <input id="confirmPassword" type="password" g-model.debounce.300="confirmPassword"
+                    g-validate="required|same(password)" placeholder="Re-enter password"
+                    :class="{ error: Contact.errors().confirmPassword }">
+                <span g-errors="confirmPassword" class="error-message"></span>
+            </div>
+
+            <!-- Age Field -->
+            <div class="form-group">
+                <label for="age">Age</label>
+                <input id="age" type="number" g-model.debounce.300="age" g-validate="required|number|between(18,100)"
+                    placeholder="Must be 18-100" :class="{ error: Contact.errors().age }">
+                <span g-errors="age" class="error-message"></span>
+            </div>
+
+            <!-- Phone Field -->
+            <div class="form-group">
+                <label for="phone">Phone Number</label>
+                <input id="phone" type="tel" g-model.debounce.300="phone" g-validate="required|phone" placeholder="0xxxxxxxxx"
+                    :class="{ error: Contact.errors().phone }">
+                <span g-errors="phone" class="error-message"></span>
+            </div>
+
+            <!-- Message Field -->
+            <div class="form-group">
+                <label for="message">Message</label>
+                <textarea id="message" g-model.debounce.300="message" g-validate="required|minLength(10)|maxLength(500)"
+                    placeholder="Type your message (10-500 characters)" rows="4"
+                    :class="{ error: Contact.errors().message }"></textarea>
+                <span g-errors="message" class="error-message">{Contact.errors().message}</span>
+            </div>
+
+            <!-- Error Summary -->
+            <div g-errors class="error-summary"></div>
+
+            <!-- Form State Debug -->
+            <div class="form-state">
+                <div class="form-state-item">
+                    <span>Valid:</span>
+                    <span class="badge" :class="{ valid: Contact.$valid(), invalid: !Contact.$valid() }">
+                        {Contact.$valid() ? 'YES' : 'NO'}
+                    </span>
+                </div>
+                <div class="form-state-item">
+                    <span>Invalid:</span>
+                    <span class="badge" :class="{ invalid: Contact.$invalid(), valid: !Contact.$invalid() }">
+                        {Contact.$invalid() ? 'YES' : 'NO'}
+                    </span>
+                </div>
+                <div class="form-state-item">
+                    <span>Dirty:</span>
+                    <span class="badge" :class="{ dirty: Contact.$dirty(), pristine: Contact.$pristine() }">
+                        {Contact.$dirty() ? 'YES' : 'NO'}
+                    </span>
+                </div>
+                <div class="form-state-item">
+                    <span>Pristine:</span>
+                    <span class="badge" :class="{ pristine: Contact.$pristine(), dirty: !Contact.$pristine() }">
+                        {Contact.$pristine() ? 'YES' : 'NO'}
+                    </span>
+                </div>
+            </div>
+
+            <!-- Submit Button -->
+            <button type="submit" :disabled="Contact.$invalid()">
+                {Contact.$invalid() ? 'Please Fix Errors' : 'Submit Form'}
+            </button>
+
+            <!-- Success Message -->
+            <div *if="submitted" class="success-message">
+                ✓ Form submitted successfully!
+            </div>
+        </form>
+    </div>
+
+    <script type="module">
+        import Gyos from '../dist/gyos.auto.esm.js';
+
+        // Define the form scope
+        Gyos.scope('ContactForm', {
+            submitted: false,
+            submitContact() {
+                console.log('Form data:', {
+                    email: this.email,
+                    password: this.password,
+                    confirmPassword: this.confirmPassword,
+                    age: this.age,
+                    phone: this.phone,
+                    message: this.message
+                });
+
+                this.submitted = true;
+
+                // Reset after 5 seconds
+                setTimeout(() => {
+                    this.submitted = false;
+                }, 5000);
+            }
+        });
+    </script>
+</body>
+
+</html>

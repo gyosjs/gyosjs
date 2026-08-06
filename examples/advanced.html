@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GyosJS - Advanced Features Demo</title>
+  <link rel="icon" type="image/png" href="/p5-2-no-bg.png">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: linear-gradient(135deg, #40424e 0%, #4c3c5b 100%);
+      min-height: 100vh;
+      padding: 40px 20px;
+    }
+    
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    
+    h1 {
+      color: white;
+      text-align: center;
+      margin-bottom: 40px;
+      font-size: 1.5rem;
+    }
+    
+    .section {
+      background: white;
+      border-radius: 15px;
+      padding: 12px 28px;
+      margin-bottom: 20px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+      border: 1px solid #e0e0e0;
+      min-height: 245px;
+    }
+    
+    .section h2 {
+      color: #667eea;
+      margin-bottom: 20px;
+    }
+    
+    button {
+      padding: 8px 20px;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      background: #667eea;
+      color: white;
+      cursor: pointer;
+      font-weight: bold;
+      transition: all 0.3s;
+      margin: 10px auto;
+    }
+    
+    button:hover {
+      background: #5568d3;
+      transform: translateY(-2px);
+    }
+    
+    .box {
+      padding: 10px 20px;
+      background: #f8f9fa;
+      border-radius: 10px;
+      margin: 20px 0;
+    }
+    
+    /* Modal styles */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+    
+    .modal-content {
+      background: white;
+      border-radius: 9px;
+      padding: 12px 28px;
+      max-width: 500px;
+      border: 1px solid #e0e0e0;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    }
+    
+    .modal-content h3 {
+      margin-bottom: 20px;
+      color: #333;
+    }
+    
+    /* Hydration demo */
+    .lazy-content {
+      min-height: 200px;
+      padding: 20px;
+      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+      color: white;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+      font-weight: bold;
+    }
+    .lazy-content.waiting {
+      background: #dadada;
+      color: #ffffff;
+      font-size: 1rem;
+      border: 1px solid #ccc;
+    }
+    
+    /* Transition demo */
+    .transition-box {
+      padding: 12px 24px;
+      background: linear-gradient(135deg, #40424e 0%, #4c3c5b 100%);
+      color: white;
+      border-radius: 9px;
+      margin: 20px 0;
+      text-align: center;
+      font-size: 1.2rem;
+    }
+    
+    /* Static demo */
+    .static-content {
+      padding: 10px 20px;
+      background: #e8f5e9;
+      border-radius: 9px;
+      margin: 10px 0;
+    }
+    
+    .spacer {
+      height: 150vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 1.5rem;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h1>GyosJS Advanced Features</h1>
+
+  <div gd-is-open="false" style="position: relative;">
+    <button @click="isOpen = !isOpen" g-ignore-outside-click>Toggle Dropdown</button>
+    <div *if="isOpen" tabindex="0"
+        style="position: absolute; top: 100%; left: 0; 
+            background: #f0f0f0; padding: 10px; 
+            border: 1px solid #ccc;"
+        @click.outside="isOpen = false"
+        @keydown.escape.global="isOpen = false">
+        This is a dropdown menu. Click outside or press Escape to close.
+    </div>
+  </div>
+  
+  <!-- Portal/Teleport Demo -->
+  <div class="section" g-scope="PortalDemo">
+    <h2>1. Portal / Teleport</h2>
+    <p>Click button to open modal (teleported to body)</p>
+    <button @click="showModal = showModal ?  false : true">Open Modal</button>
+    
+    <!-- Portal content (will be teleported to #modal-root) -->
+    <div *if="showModal"
+      class="modal-overlay" g-portal="#modal-root" @keydown.escape.global="closeModal">
+      <div g-transition.150="transition" class="modal-content" @click.outside="closeModal">
+        <h3>✨ Teleported Modal</h3>
+        <p>This content is rendered in <code>#modal-root</code>, not in the section!</p>
+        <p>Inspect the DOM to see it moved outside the container.</p>
+        <ul>
+          <li *for="item in list" :class="{active: item.id === 1}" g-key="item.id">
+            {$index} {item.name}
+            <strong *if="item.id === 1">Active</strong></li>
+        </ul>
+        <button @click="closeModal">Close</button>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Transitions Demo -->
+  <div class="section" g-scope="TransitionDemo">
+    <h2>2. Transitions</h2>
+    <p g-html="`<strong>${transition}</strong>`"></p>
+    <button @click="showBox = !showBox">Toggle Box</button>
+    <button @click="transition = 'fade'">Fade</button>
+    <button @click="transition = 'slide-down'">Slide Down</button>
+    <button @click="transition = 'scale'">Scale</button>
+    
+    <div 
+      *if="showBox" 
+      g-transition.100="{transition}"
+      class="transition-box">
+      Animated Content with `{transition}` transition
+    </div>
+  </div>
+  
+  <!-- Static Content Demo -->
+  <div class="section" g-scope="StaticDemo">
+    <h2>3. Static Content (No Reactivity)</h2>
+    <p>Counter: {count}</p>
+    <button @click="increment()">Increment</button>
+    
+    <div *if="count">
+      <div class="static-content" g-static>
+        <p>This content is marked as g-static</p>
+        <p>It won't re-render even when count changes: {count}</p>
+        <p>Initial count was: 1</p>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Hydration Demo -->
+  <div class="section">
+    <h2>4. Smart Hydration</h2>
+    
+    <h3 style="margin-top: 20px;">Idle Hydration</h3>
+    <p>Loads when browser is idle</p>
+    <div g-scope="IdleDemo" g-hydrate="idle" class="IdleDemo lazy-content waiting">
+      Hydrated when idle! Time: {time}
+    </div>
+    
+    <h3 style="margin-top: 30px;">Visible Hydration</h3>
+    <p>Scroll down to see it load...</p>
+    <div class="spacer">⬇️ Scroll Down ⬇️</div>
+    
+    <div g-scope="VisibleDemo" g-hydrate="visible" class="VisibleDemo lazy-content waiting">
+      Hydrated when visible! Loaded at: {loadTime}
+    </div>
+    
+    <h3 style="margin-top: 30px;">Interaction Hydration</h3>
+    <p>Hover or click to hydrate</p>
+    <div g-scope="InteractionDemo" g-hydrate="interaction" class="InteractionDemo lazy-content waiting">
+      Hydrated on interaction! Message: {message}
+    </div>
+    
+    <h3 style="margin-top: 30px;">Media Query Hydration</h3>
+    <p>Only loads on mobile (max-width: 768px)</p>
+    <div g-scope="MediaDemo" g-hydrate="media(max-width: 768px)" class="MediaDemo lazy-content waiting">
+      Hydrated on mobile! Device: {device}
+    </div>
+  </div>
+  
+</div>
+
+<!-- Portal target -->
+<div id="modal-root"></div>
+
+<script type="module">
+  import Gyos from '../dist/gyos.auto.esm.js';
+
+  Gyos.store('AdvancedStore', {
+    message: 'Hello from Advanced Store!',
+    count: 0,
+    increment() {
+      this.count++;
+    }
+  });
+  
+  // Portal demo
+  Gyos.scope('PortalDemo', {
+    showModal: false,
+    transition: 'scale',
+    list: [
+      {'id': 1, 'name': 'Item 1'},
+      {'id': 2, 'name': 'Item 2'},
+      {'id': 3, 'name': 'Item 3'}
+    ],
+    closeModal() {
+      this.showModal = !this.showModal ? true : false;
+    },
+  });
+  
+  // Transition demo
+  Gyos.scope('TransitionDemo', {
+    showBox: true,
+    transition: 'fade',
+  });
+  
+  // Static demo
+  Gyos.scope('StaticDemo', {
+    count: 0,
+    increment() {
+      this.count++;
+    },
+  });
+  
+  // Hydration demos
+  Gyos.scope('IdleDemo', {
+    time: new Date().toLocaleTimeString(),
+    onMount() {
+      console.log('IdleDemo hydrated!');
+      document.querySelector('.IdleDemo').classList.remove('waiting');
+    }
+  });
+  
+  Gyos.scope('VisibleDemo', {
+    loadTime: null,
+    onMount() {
+      console.log('VisibleDemo hydrated when scrolled into view!');
+      this.loadTime = new Date().toLocaleTimeString();
+      setTimeout(() => {
+        document.querySelector('.VisibleDemo').classList.remove('waiting');
+      }, 200);
+    }
+  });
+  
+  Gyos.scope('InteractionDemo', {
+    message: 'I loaded when you interacted!',
+    onMount() {
+      console.log('InteractionDemo hydrated on interaction!');
+      document.querySelector('.InteractionDemo').classList.remove('waiting');
+    }
+  });
+  
+  Gyos.scope('MediaDemo', {
+    device: null,
+    onMount() {
+      console.log('MediaDemo hydrated on mobile!');
+      this.device = window.innerWidth <= 768 ? 'Mobile' : 'Desktop';
+      document.querySelector('.MediaDemo').classList.remove('waiting');
+    }
+  });
+</script>
+
+</body>
+</html>

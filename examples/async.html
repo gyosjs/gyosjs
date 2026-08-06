@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Async Data - GyosJS</title>
+    <link rel="icon" type="image/png" href="/p5-2-no-bg.png">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #40424e 0%, #4c3c5b 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            color: white;
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .demo-section {
+            background: white;
+            border-radius: 12px;
+            padding: 9px 20px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        h2 {
+            color: #0b1854;
+            margin-bottom: 20px;
+            font-size: 1.2rem;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 8px 16px;
+            background: #3f5b94;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.8725rem;
+            transition: all 0.3s;
+            font-weight: bold;
+        }
+
+        button:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #0b1854;
+            font-size: 1.2rem;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #0b1854;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error {
+            background: #fee;
+            border: 2px solid #fcc;
+            color: #c33;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+
+        .error-title {
+            font-weight: bold;
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+        }
+
+        .user-card {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .user-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: #238d89;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+
+        .user-info {
+            flex: 1;
+        }
+
+        .user-name {
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .user-email {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .post-card {
+            background: #fff;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 15px;
+        }
+
+        .post-title {
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+        }
+
+        .post-body {
+            color: #666;
+            line-height: 1.6;
+        }
+
+        .success {
+            background: #d4edda;
+            border: 2px solid #c3e6cb;
+            color: #155724;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Async Data Handling</h1>
+
+        <div g-scope="AsyncDemo">
+            <!-- Demo 1: Fetch Users -->
+            <div class="demo-section">
+                <h2>1. Fetch Users from API</h2>
+                <div class="controls">
+                    <button @click="loadUsers()">Load Users</button>
+                    <button @click="usersPromise = null">Clear</button>
+                </div>
+
+                <div *await="usersPromise">
+                    <div *pending class="loading" g-transition="fade">
+                        <div class="spinner"></div>
+                        <div>Loading users...</div>
+                    </div>
+
+                    <div *then="users">
+                        <div *if="users && users.length > 0">
+                            <div *for="user in users" g-key="user.id" class="user-card" g-transition="fade">
+                                <div class="user-avatar">{user.name.charAt(0)}</div>
+                                <div class="user-info">
+                                    <div class="user-name">{user.name}</div>
+                                    <div class="user-email">{user.email}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div *catch="error" class="error">
+                        <div class="error-title">Failed to load users</div>
+                        <div>{error.message}</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Demo 2: Fetch Posts -->
+            <div class="demo-section">
+                <h2>2. Fetch Posts with Delay</h2>
+                <div class="controls">
+                    <button @click="loadPosts()">Load Posts</button>
+                    <button @click="simulateError()">Simulate Error</button>
+                </div>
+
+                <div *await="postsPromise">
+                    <div *pending class="loading" g-transition="scale">
+                        <div class="spinner"></div>
+                        <div>Fetching posts...</div>
+                    </div>
+
+                    <div *then="posts">
+                        <div *if="posts && posts.length > 0">
+                            <div *for="post in posts" g-key="post.id" class="post-card" g-transition="slide-down">
+                                <div class="post-title">{post.title}</div>
+                                <div class="post-body">{post.body}</div>
+                                <strong *if="post.title === 'qui est esse'">PREMIUM</strong>
+                                <strong *else>NORMAL</strong>
+                            </div>
+                        </div>
+                        <div *else class="success">
+                            No posts available
+                        </div>
+                    </div>
+
+                    <div *catch="err" class="error" g-transition="scale">
+                        <div class="error-title">Error occurred</div>
+                        <div>{err.message}</div>
+                        <div style="margin-top: 10px; font-size: 0.9rem;">Try clicking "Load Posts" again</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Demo 3: Sequential Fetches -->
+            <div class="demo-section">
+                <h2>3. Sequential Data Loading</h2>
+                <div class="controls">
+                    <button @click="loadSequential()">Load Sequential</button>
+                    <button @click="dataPromise = null">Reset</button>
+                </div>
+
+                <div *await="dataPromise">
+                    <div *pending class="loading">
+                        <div class="spinner"></div>
+                        <div>Loading data step by step...</div>
+                    </div>
+
+                    <div *then="data" class="success">
+                        ✅ Successfully loaded {data.count} items in {data.time}ms
+                    </div>
+
+                    <div *catch="error" class="error">
+                        <div class="error-title">Error in sequential load</div>
+                        <div>{error.message}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import Gyos from '../dist/gyos.auto.esm.js';
+
+        Gyos.scope('AsyncDemo', {
+            usersPromise: null,
+            postsPromise: null,
+            dataPromise: null,
+
+            // Fetch users from JSONPlaceholder API
+            loadUsers() {
+                this.usersPromise = fetch('https://jsonplaceholder.typicode.com/users')
+                    .then(res => res.json())
+                    .then(data => data.slice(0, 5)); // Only first 5 users
+            },
+
+            // Fetch posts with artificial delay
+            loadPosts() {
+                this.postsPromise = new Promise((resolve) => {
+                    setTimeout(() => {
+                        fetch('https://jsonplaceholder.typicode.com/posts')
+                            .then(res => res.json())
+                            .then(data => resolve(data.slice(0, 3))); // Only 3 posts
+                    }, 1500); // 1.5s delay
+                });
+            },
+
+            // Simulate error
+            simulateError() {
+                this.postsPromise = new Promise((_, reject) => {
+                    setTimeout(() => {
+                        reject(new Error('Network timeout - please try again'));
+                    }, 1000);
+                });
+            },
+
+            // Sequential loading simulation
+            loadSequential() {
+                this.dataPromise = new Promise((resolve) => {
+                    const start = Date.now();
+                    
+                    // Simulate multi-step loading
+                    setTimeout(() => {
+                        const time = Date.now() - start;
+                        resolve({
+                            count: Math.floor(Math.random() * 100) + 1,
+                            time: time
+                        });
+                    }, Math.random() * 2000 + 1000); // 1-3s delay
+                });
+            },
+
+            onMount() {
+                console.log('Async Demo mounted!');
+            }
+        });
+    </script>
+</body>
+</html>

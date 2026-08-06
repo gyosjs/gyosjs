@@ -1,0 +1,94 @@
+{
+  "name": "gyosjs",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Reactive HTML for server-rendered websites, with signals, template directives, and MPA boost navigation",
+  "engines": {
+    "node": ">=18"
+  },
+  "main": "./dist/gyos.esm.js",
+  "module": "./dist/gyos.esm.js",
+  "unpkg": "./dist/gyos.auto.min.js",
+  "jsdelivr": "./dist/gyos.auto.min.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/gyos.esm.js",
+      "default": "./dist/gyos.esm.js"
+    },
+    "./auto": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/gyos.auto.esm.js",
+      "default": "./dist/gyos.auto.esm.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist"
+  ],
+  "sideEffects": [
+    "./dist/gyos.auto.js",
+    "./dist/gyos.auto.min.js",
+    "./dist/gyos.auto.esm.js"
+  ],
+  "overrides": {
+    "form-data": "4.0.6",
+    "postcss": "8.5.25",
+    "ws": "8.21.2"
+  },
+  "scripts": {
+    "dev": "vite",
+    "dev:e2e": "vite --host 127.0.0.1 --port 4173",
+    "build": "rollup -c",
+    "build:watch": "rollup -c -w",
+    "test": "vitest run",
+    "test:unit": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "playwright test",
+    "test:e2e:headed": "playwright test --headed",
+    "test:ui": "vitest --ui",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "pack:check": "node scripts/verify-package.mjs",
+    "check": "npm run typecheck && npm run test:unit && npm run pack:check",
+    "release:check": "npm run check && npm run test:e2e",
+    "export:public": "node scripts/export-public-source.mjs",
+    "sync:public": "node scripts/export-public-source.mjs --sync",
+    "sync:public:check": "node scripts/export-public-source.mjs --sync --dry-run",
+    "prepack": "npm run build"
+  },
+  "keywords": [
+    "reactive-html",
+    "signals",
+    "mpa",
+    "progressive-enhancement",
+    "server-rendered",
+    "alpinejs",
+    "html-first",
+    "router",
+    "hydration"
+  ],
+  "author": "Ho Hoang Phu",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/gyosjs/gyosjs.git"
+  },
+  "homepage": "https://github.com/gyosjs/gyosjs#readme",
+  "bugs": {
+    "url": "https://github.com/gyosjs/gyosjs/issues"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "@playwright/test": "1.55.1",
+    "@rollup/plugin-node-resolve": "^15.2.3",
+    "@rollup/plugin-typescript": "^11.1.6",
+    "jsdom": "^24.0.0",
+    "rollup": "^4.62.4",
+    "terser": "^5.49.0",
+    "tslib": "^2.8.1",
+    "typescript": "^5.3.3",
+    "vite": "^6.4.3",
+    "vitest": "^3.2.4"
+  }
+}

@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GyosJS - Counter Example</title>
+  <link rel="icon" type="image/png" href="/p5-2-no-bg.png">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: linear-gradient(135deg, #40424e 0%, #4c3c5b 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    
+    .container {
+      background: white;
+      border-radius: 20px;
+      padding: 16px 24px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      max-width: 500px;
+      width: 100%;
+    }
+    
+    h1 {
+      color: #333;
+      margin-bottom: 20px;
+      text-align: center;
+      font-size: 1.5rem;
+    }
+
+    li {
+      margin: 6px 0;
+      padding: 3px 9px;
+      border: 1px solid #e0e0e0;
+      border-radius: 6px;
+      list-style: none;
+    }
+
+    input {
+      width: 100%;
+    }
+    
+    .counter {
+      text-align: center;
+    }
+    
+    .count {
+      font-size: 3rem;
+      font-weight: bold;
+      color: #667eea;
+      margin: 20px 0;
+    }
+    
+    .buttons {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      margin-top: 20px;
+    }
+    
+    button {
+      padding: 6px 20px;
+      font-size: 1rem;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.3s;
+      font-weight: bold;
+    }
+    
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    }
+    
+    button:active {
+      transform: translateY(0);
+    }
+    
+    .btn-primary {
+      background: #667eea;
+      color: white;
+    }
+    
+    .btn-secondary {
+      background: #f093fb;
+      color: white;
+    }
+    
+    .btn-danger {
+      background: #fa709a;
+      color: white;
+    }
+    
+    .info {
+      margin-top: 30px;
+      padding: 9px 20px;
+      background: #f8f9fa;
+      border-radius: 10px;
+      border: 1px solid #e0e0e0;
+    }
+    
+    .info p {
+      margin: 10px 0;
+      color: #666;
+    }
+    
+    .info strong {
+      color: #333;
+    }
+    
+    input[type="text"] {
+      flex: 1;
+      padding: 6px 16px;
+      font-size: 0.875rem;
+      border: 2px solid #e0e0e0;
+      border-radius: 6px;
+      outline: none;
+      transition: border-color 0.3s;
+    }
+    
+    input[type="text"]:focus {
+      border-color: #667eea;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h1>GyosJS Counter</h1>
+  <div g-scope="Counter" class="counter" g-on:user-login="(user) => alert('Event catch by channel `user-login`.\n' + JSON.stringify(user))">
+    <div g-ref="s" class="a" g-scope="{ show: false }">
+      <button @click="show = !show">{show ? 'Hide' : 'Show'} Items</button>
+      <div *if="show">
+        <div g-scope="{ items: ['Item 1', 'Item 2', 'Item 3'], count: 0, double() { return this.count * 2 } }" class="b" g-scope-persist="scope-b">
+          <div>
+            <p *for="item in items" g-key="item" g-transition="scale">
+              {item}
+              <!-- trường hợp này không khuyến khích, vì nó tạo rất nhiều effects -->
+              <span g-scope="{ x: +new Date() }" g-scope-persist="{'scope-item-' + $index}">
+                (Mounted at: {new Date(x).toLocaleTimeString()})
+              </span>
+            </p>
+          </div>
+          Count: {count}
+          <p>Double: {double()}</p>
+          <button @click="count++" class="btn-primary">Increment</button>
+          <button @click="items.push(+new Date())" class="btn-primary">Add item</button>
+          <br><br>
+          <p>Name: {name}</p>
+          <input type="text" g-model="name" placeholder="Enter name"/>
+        </div>
+      </div>
+    </div>
+    <br><hr><br>
+    <div class="childScope" g-scope="{ numbers: [1,2,3,4,5,6],
+        get total() {
+          return this.numbers.reduce((a, b) => a + b, 0);
+        },
+        get name() {
+          return 'GyosJS User';
+        },
+        set name(value) {
+          console.log('Name set to:', value);
+        },
+        totalFn() {
+          return this.numbers.reduce((a, b) => a + b, 0);
+        },
+        onUpdate() {
+          console.log('Numbers updated:', this.numbers);
+        }
+    }">
+      Total using expression: { numbers.reduce((a, b) => a + b, 0) }
+      <p>Total using getter: { total }</p>
+      <p>Total using function: { totalFn }</p>
+      <button @click="numbers = [1,2,3,4]" class="btn-primary">Change Numbers</button>
+    </div>
+    <div class="info">
+      <button @click="login" class="btn-primary">Emit login</button>
+      <p *if="xxx.count" g-transition="transition">XXX.Count: {xxx.count}</p>
+      <button class="btn-secondary" @click="xxx.count++">Increment</button><br><br>
+      <input type="text" g-model="xxx.search.query" placeholder="Search items..." 
+        @input.debounce.200="xxx.search.results = !xxx.search.query ? [] : xxx.items.filter(item => item.includes(xxx.search.query))"/>
+      <ul>
+        <li g-transition.100="transition" *for="item, index in xxx.search.results" g-key="item">
+          <span>{index + 1} {item | capitalize}</span></li>
+      </ul>
+    </div>
+
+    <br>
+    <div class="count">{count}</div>
+    
+    <div class="buttons">
+      <button class="btn-danger" @click="count--">-</button>
+      <button class="btn-secondary" @click="count = 0">Reset</button>
+      <button class="btn-primary" @click="count++">+</button>
+    </div>
+    
+    <div class="info">
+      <p><strong>Count:</strong> {count}</p>
+      <p><strong>Double:</strong> {double}</p>
+      <p><strong>Is Even:</strong> {isEven() ? 'Yes' : 'No'}</p>
+    </div>
+    
+    <div class="info" style="margin-top: 20px;">
+      <h3 style="margin-bottom: 10px;">Debounce Test</h3>
+      <p style="margin-bottom: 10px;"><strong>Search Query:</strong> {searchQuery}</p>
+      <input 
+        type="text" 
+        g-model.debounce.500="searchQuery" 
+        placeholder="Type to search (500ms debounce)..."
+        style="width: 100%; padding: 10px; border-radius: 5px; font-size: 1rem;"
+      />
+      <p style="margin-top: 10px; font-size: 0.9rem; color: #999;">
+        ⏱️ Updates 500ms after you stop typing
+      </p>
+      
+      <div style="margin-top: 20px;">
+        <input 
+          type="text" 
+          @input.debounce.1000="handleSearch" 
+          placeholder="Event debounce (1000ms)..."
+          style="width: 100%; padding: 10px; border-radius: 5px; font-size: 1rem;"
+        />
+        <p style="margin-top: 5px; font-size: 0.9rem; color: #999;">
+          🔥 Search count: {searchCount}
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <div class="info" g-scope="{
+    count: 0,
+    items: ['apple', 'banana', 'orange', 'grape', 'mango', 'kiwi', 'strawberry'],
+    nestedObj: {
+      items: [
+        { name: 'nested1', show: true, child: [1, 2, 3] },
+        { name: 'nested2', show: false, child: [4, 5, 6] },
+        { name: 'nested3', show: true, child: [7, 8, 9] },
+        { name: 'nested4', show: true, child: [10, 11, 12] }
+      ]
+    },
+    clickDes() {
+      const descriptionRef = this.$refs.description;
+      descriptionRef.style.color = '#000';
+      descriptionRef.style.backgroundColor = '#fff305';
+      console.log(descriptionRef);
+    }
+  }">
+    <div g-scope="CartWidget" class="info">
+      <div class="info" style="margin-top: 20px;" g-scope="Demo" g-provide='{"theme": "light"}'>
+        <h3 style="margin-bottom: 10px;">Watch Demo</h3>
+        <p>Theme: {theme} | Theme Global: {themeGlobal}</p>
+        <p>Total: {299 | currency} ({91 | pluralize('item')})</p>
+        <pre>{['javascript', 'react', 'vue', 'phu', 'dep', 'trai'] | join(' | ')}</pre><br>
+        <button g-tooltip="tooltip" g-text="name" @click="changeTooltip"></button>
+        <p>Open the console to see watch logs when <code>count</code> changes.</p>
+
+        <button class="btn-primary" @click="increment()">Increment Demo Count ({xxx.timer.count})</button>
+        <p>Store message: {storeCartMessage() | uppercase}</p>
+      </div>
+      <h3 style="margin-bottom: 10px;">Store Demo</h3>
+      <!-- Access store in template -->
+      <p>Items: {storeCart.items.length}</p>
+      <p>Total: {storeCart.total | currency}</p>
+      <p>Store Count: {storeCart.objectOk.count}</p>
+      <button class="btn-primary" @click="addToCartDemo">Add All to Cart</button>
+      <button class="btn-primary" @click="increment">Increment Count</button>
+      <p>{storeCart.objectOk.message.length ? storeCart.objectOk.message : 'No message'}</p>
+      <input type="text" g-model="storeCart.objectOk.message">
+    </div>
+    <h3 style="margin-bottom: 10px;">Scope Inline demo</h3>
+    <strong>Count: {count}</strong>
+    <p g-ref="description">
+      This scope is defined inline in the template using <code>g-scope</code>.
+    </p>
+    <button class="btn-secondary" @click="clickDes">Log Description Ref</button>
+    <ul>
+      <li *for="item in items" g-key="item">{item | capitalize}</li>
+    </ul>
+    <button class="btn-danger" @click="count++">Increment</button>
+    <div style="display: flex;align-items: center; width: 100%;justify-content: center;gap: 20px;margin-top: 10px;">
+      <div *for="item in nestedObj.items" g-transition="scale">
+        <div class="" *if="item.show">
+          <h3><strong>{item.name}</strong></h3>
+          <div>
+            <p *for="child in item.child">- Child: {child}
+              <span *if="child % 2 === 0">(even)</span>
+              <span *if="child % 2 !== 0">(odd)</span>
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+  // Import GyosJS (in production, use CDN or build)
+  import Gyos from '../dist/gyos.auto.esm.js';
+
+  // Create global cart store
+  const cartStore = Gyos.store('cart', {
+    // State
+    items: [],
+    total: 0,
+    discount: 20,
+    objectOk: {
+      message: 'Hello GyosJS Store!',
+      count: 0,
+    },
+    
+    // Actions/methods
+    addItem(item) {
+      this.items.push(item);
+      this.calculateTotal();
+    },
+    
+    removeItem(itemId) {
+      this.items = this.items.filter(i => i.id !== itemId);
+      this.calculateTotal();
+    },
+    
+    calculateTotal() {
+      const sum = this.items.reduce((acc, item) => acc + item.price, 0);
+      this.total = sum - this.discount;
+    },
+    
+    applyDiscount(amount) {
+      this.discount = amount;
+      this.calculateTotal();
+    }
+  });
+
+  // Component A - Cart display
+  Gyos.scope('CartWidget', {
+    storeCart: cartStore,
+    increment() {
+      this.storeCart.objectOk.count++;
+    },
+    addToCartDemo() {
+      const products = [
+        { id: 1, name: 'Laptop', price: 999 },
+        { id: 2, name: 'Smartphone', price: 499 },
+        { id: 3, name: 'Headphones', price: 199 },
+        { id: 4, name: 'Smartwatch', price: 299 }
+      ];
+      products.forEach(product => this.storeCart.addItem(product));
+    },
+
+    onMount() {
+      console.log('Items:', this.storeCart.items.length);
+      console.log('Total:', this.storeCart.total);
+    }
+  });
+
+  Gyos.provide('themeGlobal', 'g-dark');
+
+  Gyos.scope('Demo', {
+    count: 0,
+    name: 'GyosJS User',
+    theme: '',
+    tooltip: 'Click me!',
+    themeGlobal: Gyos.inject('themeGlobal'),
+    xxx: {
+      timer: {
+        count: 0
+      }
+    },
+
+    storeCartMessage() {
+      return cartStore.objectOk.message;
+    },
+
+    changeTooltip() {
+      this.tooltip = 'Tooltip changed!';
+      this.name = 'Name cleared!';
+    },
+    
+    onMount() {
+      Gyos.on('user-login', (user) => { //once
+        console.log('User logged in:', user);
+      });
+      this.theme = this.$inject('theme');
+      // Watch count changes và tự động trigger callback
+      this.$watch('xxx.timer.count', (newVal, oldVal) => {
+        console.log(`Count changed: ${oldVal} → ${newVal}`);
+        
+        if (newVal > 10) {
+          alert('Count exceeded 10!');
+        }
+      });
+      
+      // Watch với immediate option (chạy ngay lập tức)
+      this.$watch('name', (newVal, oldVal) => {
+        console.log('Name:', newVal);
+      }, { immediate: true, debounce: 1000 });
+    },
+    
+    increment() {
+      this.xxx.timer.count++; // $watch tự động trigger
+    }
+  });
+  
+  // Define Counter scope
+  Gyos.scope('Counter', {
+    transition: 'scale',
+    xxx: {
+      items: ['apple', 'banana', 'cherry', 'date', 'elderberry', 'fig', 'grape', 'honeydew', 'kiwi', 'lemon', 'mango', 'nectarine', 'orange', 'papaya', 'quince'],
+      search: {
+        query: '',
+        results: []
+      },
+      count: 0
+    },
+    count: 0,
+    searchQuery: '',
+    searchCount: 0,
+    
+    isEven() {
+      return this.count % 2 === 0;
+    },
+
+    double(step = 2) {
+      return this.count * step;
+    },
+    
+    handleSearch(e) {
+      this.searchCount++;
+      console.log('🔍 Search triggered!', e.target.value, 'Count:', this.searchCount);
+    },
+
+    async login() {
+      const user = await fetch('https://jsonplaceholder.typicode.com/users/1');
+      const userData = await user.json();
+      this.$emit('user-login', userData);
+      Gyos.emit('user-login', userData);
+      //Gyos.emit('user-login', userData);
+    },
+    
+    onMount() {
+      this.$on('user-login', (user) => console.log('User logged in:', user));
+      console.log('Counter mounted!');
+    },
+    
+    onUpdate() {
+      console.log('🔥 Counter updated! searchQuery:', this.searchQuery);
+    }
+  });
+</script>
+
+</body>
+</html>

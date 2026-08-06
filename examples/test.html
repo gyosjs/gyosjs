@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GyosJS - Test Example</title>
+  <link rel="icon" type="image/png" href="/p5-2-no-bg.png">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: linear-gradient(135deg, #40424e 0%, #4c3c5b 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .container {
+      background: white;
+      border-radius: 20px;
+      padding: 16px 24px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      max-width: 500px;
+      width: 100%;
+    }
+
+    h1 {
+      color: #333;
+      margin-bottom: 20px;
+      text-align: center;
+      font-size: 1.5rem;
+    }
+
+    li {
+      margin: 6px 0;
+      padding: 3px 9px;
+      border: 1px solid #e0e0e0;
+      border-radius: 6px;
+      list-style: none;
+    }
+
+    input {
+      width: 100%;
+    }
+
+    .counter {
+      text-align: center;
+    }
+
+    .count {
+      font-size: 3rem;
+      font-weight: bold;
+      color: #667eea;
+      margin: 20px 0;
+    }
+
+    .buttons {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      margin-top: 20px;
+    }
+
+    button {
+      padding: 6px 20px;
+      font-size: 1rem;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.3s;
+      font-weight: bold;
+    }
+
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    }
+
+    button:active {
+      transform: translateY(0);
+    }
+
+    .btn-primary {
+      background: #667eea;
+      color: white;
+    }
+
+    .btn-secondary {
+      background: #f093fb;
+      color: white;
+    }
+
+    .btn-danger {
+      background: #fa709a;
+      color: white;
+    }
+
+    .info {
+      margin-top: 30px;
+      padding: 9px 20px;
+      background: #f8f9fa;
+      border-radius: 10px;
+      border: 1px solid #e0e0e0;
+    }
+
+    .info p {
+      margin: 10px 0;
+      color: #666;
+    }
+
+    .info strong {
+      color: #333;
+    }
+
+    input[type="text"],
+    textarea {
+      flex: 1;
+      padding: 6px 16px;
+      font-size: 0.875rem;
+      border: 2px solid #e0e0e0;
+      border-radius: 6px;
+      outline: none;
+      transition: border-color 0.3s;
+    }
+
+    input:focus,
+    textarea:focus {
+      border-color: #667eea;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: #0b1854;
+      font-size: 1.2rem;
+    }
+
+    .spinner {
+      display: inline-block;
+      width: 40px;
+      height: 40px;
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #0b1854;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: 10px;
+    }
+
+    @keyframes spin {
+      0% {
+        transform: rotate(0deg);
+      }
+
+      100% {
+        transform: rotate(360deg);
+      }
+    }
+
+    .error {
+      background: #fee;
+      border: 2px solid #fcc;
+      color: #c33;
+      padding: 20px;
+      border-radius: 8px;
+      margin: 20px 0;
+    }
+
+    .error-title {
+      font-weight: bold;
+      margin-bottom: 10px;
+      font-size: 1.1rem;
+    }
+
+    .user-card {
+      background: #f8f9fa;
+      border-radius: 8px;
+      padding: 15px;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+
+    .user-avatar {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      background: #238d89;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: bold;
+      font-size: 1.2rem;
+    }
+
+    .user-info {
+      flex: 1;
+    }
+
+    .user-name {
+      font-weight: bold;
+      color: #333;
+      margin-bottom: 5px;
+    }
+
+    .user-email {
+      color: #666;
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+
+<body g-boost g-outlet>
+
+  <div class="container">
+    <a href="counter.html">To counter.html</a>
+    <h1>GyosJS Test</h1>
+
+    <div g-scope="Test">
+      <div class="counter">
+        <div class="count">{count}</div>
+        <p><strong>Double:</strong> {double}</p>
+        <div class="buttons">
+          <button class="btn-secondary" @click="decrement">Decrement</button>
+          <button class="btn-danger" @click="reset">Reset</button>
+          <button class="btn-primary" @click="increment">Increment</button>
+        </div><br>
+        <button @click="addItem">Add Item</button>
+        <button @click="items.pop()">Remove Last</button>
+        <ul>
+          <li *for="item in items" g-key="item" g-transition="scale">{item}
+            <input type="text" g-model="item" />
+          </li>
+        </ul><br>
+        <li>
+          {largeArrayObjectNestedDeep[16].nestedKey9.deeper.info}
+          <input type="text" g-model="largeArrayObjectNestedDeep[16].nestedKey9.deeper.info" />
+          {largeObjectNested.key16.nestedKey9}
+          <input type="text" g-model="largeObjectNested.key16.nestedKey9" />
+          {largeArrayNested[16][9]}
+          <input type="text" g-model="largeArrayNested[16][9]" />
+          {largeObject.key9}
+          <input type="text" g-model="largeObject.key9" />
+          {largeArray[9]}
+          <input type="text" g-model="largeArray[9]" />
+        </li>
+      </div>
+    </div>
+    <br>
+    <hr><br>
+    <h2 style="text-align: center;">Auto Scope</h2><br>
+    <div gd-count="0" gm-double="return count * 2" gd-message="Hello GyosJs, from gd-message!"
+      gm-alert-test:str-msg:time-stamp="alert(`${strMsg} ${timeStamp}`)" gd-items='["Item 1", "Item 2", "Item 3"]'
+      gd-user='{ "name": "John Doe", "age": 30 }' g-on:add-item="(item) => alert(`Added item: ${item}`)"
+      g-on:remove-last-item="() => alert('Removed last item')"
+      gm-remove-last-item="items.pop(); $emit('remove-last-item')" gm-add-item="if(items.length < 5) {
+        const item = 'Item ' + (items.length + 1);
+        items.push(item);
+        $emit('add-item', item);
+      }" gd-markdown="# Markdown Title
+## Subtitle
+**Bold text**
+*Italic text*"
+      >
+      <div class="counter">
+        <div style="display: flex; gap: 10px; margin-bottom: 20px; align-items: center;">
+          <input type="text" g-model="message" placeholder="Type a message to alert" />
+          <button class="btn-primary" @click="alertTest(message, +(new Date))">Alert Test</button>
+        </div>
+        <p><strong>User:</strong> {user.name}, Age: {user.age}</p>
+        <div class="count">{count}</div>
+        <p><strong>Double:</strong> {double}</p>
+        <div class="buttons">
+          <button class="btn-secondary" @click="count--">Decrement</button>
+          <button class="btn-danger" @click="count = 0">Reset</button>
+          <button class="btn-primary" @click="count++">Increment</button>
+        </div><br>
+        <ul>
+          <div class="buttons">
+            <button class="btn-primary" @click="addItem" *if="items.length < 5">Add new item</button>
+            <button class="btn-danger" @click="removeLastItem" *if="items.length">Remove last</button>
+          </div>
+          <li *for="item in items" g-key="item" g-transition="scale">{item}</li>
+          <p *if="items.length === 0">
+            No items found.
+          </p>
+          <p *if="items.length >= 5">
+            Can not add item, because items is max (5 items).
+          </p>
+        </ul>
+      </div>
+      <br>
+      <div g-markdown="markdown" style="border: 1px solid #ccc;padding: 10px;border-radius: 10px;"></div>
+      <br>
+      <label for="markdown">Markdown:</label>
+      <textarea style="width: 100%;margin-top: 5px;" id="markdown" rows="5" g-model="markdown"></textarea>
+    </div>
+  </div>
+
+  <script type="module">
+    // Import GyosJS (in production, use CDN or build)
+    import Gyos from '../dist/gyos.auto.esm.js';
+
+    const testProxy = {
+      count: 0,
+      double() {
+        return this.count * 2;
+      },
+      items: ['Item 1', 'Item 2', 'Item 3'],
+      largeArray: Array.from({ length: 1000 }, (_, i) => 'Item ' + (i + 1)),
+      largeArrayNested: Array.from({ length: 100 }, (_, i) => {
+        const nested = [];
+        for (let j = 0; j < 10; j++) {
+          nested.push('Item ' + (i * 10 + j + 1));
+        }
+        return nested;
+      }),
+      largeObject: (() => {
+        const obj = {};
+        for (let i = 0; i < 1000; i++) {
+          obj['key' + i] = 'Value ' + (i + 1);
+        }
+        return obj;
+      })(),
+      largeObjectNested: (() => {
+        const obj = {};
+        for (let i = 0; i < 100; i++) {
+          const nested = {};
+          for (let j = 0; j < 10; j++) {
+            nested['nestedKey' + j] = 'Value ' + (i * 10 + j + 1);
+          }
+          obj['key' + i] = nested;
+        }
+        return obj;
+      })(),
+      largeArrayObjectNestedDeep: (() => {
+        const arr = [];
+        for (let i = 0; i < 100; i++) {
+          const obj = {};
+          for (let j = 0; j < 10; j++) {
+            obj['nestedKey' + j] = {
+              value: 'Value ' + (i * 10 + j + 1),
+              deeper: {
+                info: 'Deeper Info ' + (i * 10 + j + 1)
+              }
+            };
+          }
+          arr.push(obj);
+        }
+        return arr;
+      })(),
+      reset() {
+        this.count = 0;
+      },
+      increment() {
+        this.count++;
+      },
+      decrement() {
+        this.count--;
+      },
+      addItem() {
+        this.items.push('Item ' + (this.items.length + 1));
+      },
+      onMount() {
+        Gyos.on('add-item', (item) => this.items.push(item));
+        Gyos.on('remove-last-item', () => this.items.pop());
+      },
+      onUpdate() {
+        console.log('⭐ This scope updated', this.items, this.count);
+      }
+    }
+
+    Gyos.scope('Test', testProxy);
+
+    window.testProxy = testProxy;
+  </script>
+
+</body>
+
+</html>

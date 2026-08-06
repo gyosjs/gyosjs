@@ -1,0 +1,228 @@
+<!doctype html>
+<html>
+
+<head>
+	<meta charset="utf-8">
+	<title>GyosJs Router Demo - Morph A</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<style>
+		:root {
+			--muted: #94a3b8;
+			--card: #fff;
+			--stroke: #1f293728;
+			--text: #123456;
+		}
+
+		* {
+			box-sizing: border-box;
+			font-size: 16px;
+			font-weight: 500;
+		}
+
+		*::-webkit-scrollbar {
+			width: 4px;
+			height: 4px;
+		}
+
+		*::-webkit-scrollbar-thumb {
+			background-color: #a6c989;
+			border-radius: 50px;
+		}
+
+		body {
+			margin: 0;
+			min-height: 100vh;
+			font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+			background: #123456;
+			color: var(--text);
+		}
+
+		#app {
+			background: linear-gradient(180deg, rgba(255, 255, 255, .03), rgba(255, 255, 255, 0)) border-box;
+			border: 1px solid rgba(255, 255, 255, .08);
+			border-radius: 9px;
+			box-shadow: 0 20px 70px rgba(0, 0, 0, .09);
+			margin: 26px auto;
+			max-width: 1080px;
+			overflow: hidden;
+		}
+
+		header,
+		footer {
+			background: linear-gradient(120deg, rgba(97, 81, 122, 0.25), rgba(6, 59, 67, 0.25));
+			padding: 16px 22px;
+			border-bottom: 1px solid rgba(255, 255, 255, .06);
+			color: #fff;
+		}
+
+		.brand {
+			font-weight: 500;
+			letter-spacing: .01em;
+		}
+
+		.nav {
+			display: flex;
+			gap: 8px;
+			flex-wrap: wrap;
+		}
+
+		.nav a {
+			display: inline-flex;
+			align-items: center;
+			gap: 6px;
+			padding: 8px 12px;
+			border-radius: 9px;
+			color: #e5e7eb;
+			text-decoration: none;
+			background: rgba(255, 253, 253, 0.06);
+			transition: transform 120ms ease, box-shadow 120ms ease, border-color 120ms ease;
+		}
+
+		.nav a:hover {
+			transform: translateY(-1px);
+			border-color: rgba(255, 255, 255, 0.242);
+			box-shadow: 0 8px 30px rgba(0, 0, 0, 0.05);
+		}
+
+		.nav a.active {
+			background: linear-gradient(120deg, #745e9a, #789da2);
+			color: #fff;
+			font-weight: 500;
+		}
+
+		main {
+			padding: 20px 22px 24px;
+			background: #f7f7f7;
+			backdrop-filter: blur(6px);
+		}
+
+		.card {
+			background: var(--card);
+			border: 1px solid var(--stroke);
+			border-radius: 16px;
+			padding: 18px;
+			margin-bottom: 16px;
+			box-shadow: 0 10px 40px rgba(0, 0, 0, 0.073);
+		}
+
+		label {
+			display: block;
+			margin: 10px 0 6px;
+			color: var(--muted);
+		}
+
+		input,
+		textarea,
+		select,
+		button {
+			width: 100%;
+			margin-bottom: 9px;
+			flex: 1;
+			padding: 6px 16px;
+			font-size: 0.875rem;
+			border: 2px solid #e0e0e0;
+			border-radius: 6px;
+			outline: none;
+			transition: border-color 0.3s;
+		}
+
+		input:focus,
+		textarea:focus,
+		select:focus,
+		button:focus {
+			border-color: #667eea;
+		}
+
+		button {
+			padding: 10px 14px;
+			border-radius: 12px;
+			border: none;
+			cursor: pointer;
+			background: linear-gradient(120deg, #745e9a, #789da2);
+			color: #fff;
+			font-weight: 500;
+			box-shadow: 0 8px 30px rgba(124, 58, 237, .35);
+		}
+
+		a {
+			color: #465ed6;
+		}
+
+		.layout {
+			grid-template-columns: 335px 1fr;
+			display: grid;
+			gap: 12px;
+		}
+
+		@media (max-width: 768px) {
+			.layout {
+				grid-template-columns: 1fr;
+			}
+
+		}
+	</style>
+</head>
+
+<body g-boost>
+	<div id="app" g-outlet g-snapshot class="morph-a">
+		<script id="morph-script" class="script-a">
+			console.log('Welcome to morph-a page');
+		</script>
+		<header>
+			<div style="display:flex;align-items:center;justify-content:space-between;">
+				<div class="brand">GyosJs Router Demo</div>
+				<nav class="nav">
+					<a href="/router/home.html">Home</a>
+					<a href="/router/posts.html">Posts</a>
+					<a href="/router/post-create.html">New Post</a>
+					<a href="/router/login.html">Login</a>
+					<a href="/router/persist-player.html">Player</a>
+                    <a href="/router/profile-with-sidebar.html">Profile + Sidebar</a>
+					<a class="active" href="/router/morph-a.html" g-swap="morph">Morph Demo</a>
+				</nav>
+			</div>
+		</header>
+
+		<main>
+            <div g-persist="player" class="card" gm-ts="return +(new Date)" gd-title="Mini Player"
+                gd-note="This block has `g-persist` and should not be unmounted.">
+                <strong>{title} <small>{ts}</small></strong>
+                <p>{note}</p>
+                <audio controls
+                    src="https://cdn.notegpt.io/notegpt/web3in1/voiceClone/5c39fa19-b058-4226-dbc6-c770bfbc095f.mp3"></audio>
+            </div>
+			<p>
+				This is Morph. Select this text and it should stay selected when navigating between Morph A and B using the links below.
+			</p>
+			<audio id="tao-thao" controls class="class-audio-a"
+				src="https://cdn.notegpt.io/notegpt/web3in1/voiceClone/abb855de-7e91-ec31-8374-15e53d2280f7.mp3"></audio>
+			<div class="pill">g-swap="morph" keeps focus/state and avoids flicker</div>
+			<div class="grid" style="margin-top:14px;" g-scope="%7B%0A%09%09%09%09text%3A%20%27%27%2C%0A%09%09%09%09timeoutId%3A%20null%2C%0A%09%09%09%09onMount%28%29%20%7B%0A%09%09%09%09%09this.text%20%3D%20new%20URLSearchParams%28window.location.search%29.get%28%27v%27%29%20%7C%7C%20%27%27%3B%0A%09%09%09%09%09this.timeoutId%20%3D%20setTimeout%28%28%29%20%3D%3E%20document.querySelectorAll%28%27a%5Bg-swap%5D%27%29%5B1%5D.click%28%29%2C%205000%29%3B%0A%09%09%09%09%7D%2C%0A%09%09%09%09onUnmount%28%29%20%7B%0A%09%09%09%09%09console.log%28%27Morph%20A%20unmounted%27%29%3B%0A%09%09%09%09%09clearTimeout%28this.timeoutId%29%3B%0A%09%09%09%09%7D%0A%09%09%09%7D">
+				<div class="card" tabindex="0">
+					<h3>Card A1</h3>
+					<p>Type here and click Morph B; focus should stay on this card.</p>
+					Text: {text}
+					<input type="text" placeholder="Try typing..." g-model="text">
+				</div>
+				<div class="card">
+					<h3>Card A2</h3>
+					<p>Content will morph into a slightly different layout.</p>
+				</div>
+				<div class="card">
+					<h3>Card A3</h3>
+					<p>Extra card only on Morph A page.</p>
+				</div>
+				<p style="margin-top:16px;">Switch to <a :href="'/router/morph-b.html?v='+ text" g-swap="morph">Morph B</a> to see
+					in-place patching.</p>
+			</div>
+		</main>
+
+		<footer>GyosJs &copy; Demo</footer>
+	</div>
+
+	<script type="module">
+		import Gyos from '../../dist/gyos.auto.esm.js';
+	</script>
+</body>
+
+</html>

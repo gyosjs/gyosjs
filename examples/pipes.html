@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GyosJS - Pipes Demo</title>
+  <link rel="icon" type="image/png" href="/p5-2-no-bg.png">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: linear-gradient(135deg, #40424e 0%, #4c3c5b 100%);
+      min-height: 100vh;
+      padding: 40px 20px;
+    }
+    
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 20px;
+      padding: 16px 24px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    }
+    
+    h1 {
+      color: #333;
+      margin-bottom: 10px;
+      text-align: center;
+      font-size: 1.5rem;
+    }
+    
+    .subtitle {
+      text-align: center;
+      color: #666;
+      margin-bottom: 40px;
+    }
+    
+    .demo-section {
+      margin-bottom: 40px;
+      padding: 12px 28px;
+      background: #f8f9fa;
+      border-radius: 9px;
+      border: 1px solid #e0e0e0;
+    }
+    
+    .demo-section h2 {
+      color: #667eea;
+      margin-bottom: 20px;
+      font-size: 1.5rem;
+    }
+    
+    .demo-item {
+      margin-bottom: 15px;
+      padding: 4px 12px;
+      border: 1px solid #e0e0e0;
+      background: white;
+      border-radius: 9px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.8rem;
+    }
+    
+    .demo-label {
+      font-weight: bold;
+      color: #333;
+    }
+    
+    .demo-value {
+      color: #667eea;
+      font-size: 1.1rem;
+    }
+    
+    input {
+      width: 100%;
+      padding: 6px 15px;
+      font-size: 0.875rem;
+      border: 2px solid #e0e0e0;
+      border-radius: 9px;
+      margin-bottom: 20px;
+    }
+    
+    input:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h1>GyosJS Pipes</h1>
+  <p class="subtitle">Transform values with built-in pipes</p>
+  
+  <div g-scope="PipesDemo">
+    
+    <!-- Currency Pipe -->
+    <div class="demo-section">
+      <h2>Currency Pipe</h2>
+      <div class="demo-item">
+        <span class="demo-label">Price (USD):</span>
+        <span class="demo-value">{price | currency('USD')}</span>
+      </div>
+      <div class="demo-item">
+        <span class="demo-label">Price (VND):</span>
+        <span class="demo-value">{price | currency('VND', 'vi-VN')}</span>
+      </div>
+      <div class="demo-item">
+        <span class="demo-label">Price (EUR):</span>
+        <span class="demo-value">{price | currency('EUR', 'de-DE')}</span>
+      </div>
+    </div>
+    
+    <!-- Date Pipe -->
+    <div class="demo-section">
+      <h2>Date Pipe</h2>
+      <div class="demo-item">
+        <span class="demo-label">Today (MM/DD/YYYY):</span>
+        <span class="demo-value">{today | date('MM/DD/YYYY')}</span>
+      </div>
+      <div class="demo-item">
+        <span class="demo-label">Today (DD/MM/YYYY):</span>
+        <span class="demo-value">{today | date('DD/MM/YYYY')}</span>
+      </div>
+      <div class="demo-item">
+        <span class="demo-label">With time:</span>
+        <span class="demo-value">{today | date('DD/MM/YYYY HH:mm:ss')}</span>
+      </div>
+    </div>
+    
+    <!-- String Pipes -->
+    <div class="demo-section">
+      <h2>String Pipes</h2>
+      <input type="text" g-model="text" placeholder="Type something...">
+      
+      <div class="demo-item">
+        <span class="demo-label">Original:</span>
+        <span class="demo-value">{text}</span>
+      </div>
+      <div class="demo-item">
+        <span class="demo-label">Uppercase:</span>
+        <span class="demo-value">{text | uppercase}</span>
+      </div>
+      <div class="demo-item">
+        <span class="demo-label">Lowercase:</span>
+        <span class="demo-value">{text | lowercase}</span>
+      </div>
+      <div class="demo-item">
+        <span class="demo-label">Capitalize:</span>
+        <span class="demo-value">{text | capitalize}</span>
+      </div>
+      <div class="demo-item">
+        <span class="demo-label">Slug:</span>
+        <span class="demo-value">{text | slug}</span>
+      </div>
+      <div class="demo-item">
+        <span class="demo-label">Truncate (20):</span>
+        <span class="demo-value">{text | truncate(20)}</span>
+      </div>
+    </div>
+    
+    <!-- Chained Pipes -->
+    <div class="demo-section">
+      <h2>Chained Pipes</h2>
+      <div class="demo-item">
+        <span class="demo-label">Slug + Uppercase:</span>
+        <span class="demo-value">{text | slug | uppercase}</span>
+      </div>
+      <div class="demo-item">
+        <span class="demo-label">Truncate + Uppercase:</span>
+        <span class="demo-value">{text | truncate(15) | uppercase}</span>
+      </div>
+    </div>
+    
+    <!-- Number Pipe -->
+    <div class="demo-section">
+      <h2>Number Pipe</h2>
+      <div class="demo-item">
+        <span class="demo-label">PI (0 decimals):</span>
+        <span class="demo-value">{pi | number(0)}</span>
+      </div>
+      <div class="demo-item">
+        <span class="demo-label">PI (2 decimals):</span>
+        <span class="demo-value">{pi | number(2)}</span>
+      </div>
+      <div class="demo-item">
+        <span class="demo-label">PI (5 decimals):</span>
+        <span class="demo-value">{pi | number(5)}</span>
+      </div>
+    </div>
+    
+  </div>
+</div>
+
+<script type="module">
+  import Gyos from '../dist/gyos.auto.esm.js';
+  
+  Gyos.scope('PipesDemo', {
+    price: 123456.789,
+    today: new Date(),
+    text: 'Hello World from GyosJS!',
+    pi: Math.PI,
+    
+    onMount() {
+      console.log('PipesDemo mounted!');
+    }
+  });
+</script>
+
+</body>
+</html>

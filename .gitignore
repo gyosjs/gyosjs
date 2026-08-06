@@ -1,0 +1,14 @@
+node_modules/
+dist/
+.DS_Store
+*.log
+.vscode/
+.idea/
+*.swp
+*.swo
+coverage/
+.nyc_output/
+ignore/
+playwright-report/
+test-results/
+.release-tmp/

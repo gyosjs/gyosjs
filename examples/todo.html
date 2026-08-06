@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GyosJS - Todo App</title>
+  <link rel="icon" type="image/png" href="/p5-2-no-bg.png">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: linear-gradient(135deg, #40424e 0%, #4c3c5b 100%);
+      min-height: 100vh;
+      padding: 40px 20px;
+    }
+    
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 10px;
+      padding: 16px 24px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      border: 1px solid #e0e0e0;
+    }
+    
+    h1 {
+      color: #333;
+      margin-bottom: 30px;
+      text-align: center;
+      font-size: 1.5rem;
+    }
+    
+    .input-group {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    
+    input[type="text"] {
+      flex: 1;
+      padding: 6px 16px;
+      font-size: 0.875rem;
+      border: 2px solid #e0e0e0;
+      border-radius: 6px;
+      outline: none;
+      transition: border-color 0.3s;
+    }
+    
+    input[type="text"]:focus {
+      border-color: #667eea;
+    }
+    
+    .btn {
+      padding: 15px 30px;
+      font-size: 1rem;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.3s;
+      font-weight: bold;
+      background: #667eea;
+      color: white;
+    }
+    
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    }
+    
+    .todo-list {
+      list-style: none;
+    }
+    
+    .todo-item {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      padding: 15px;
+      border-bottom: 1px solid #e0e0e0;
+      transition: background 0.3s;
+    }
+    
+    .todo-item:hover {
+      background: #f8f9fa;
+    }
+    
+    .todo-item.done {
+      opacity: 0.6;
+      text-decoration: line-through;
+    }
+    
+    .todo-item.done .todo-text {
+      text-decoration: line-through;
+    }
+    
+    input[type="checkbox"] {
+      width: 20px;
+      height: 20px;
+      cursor: pointer;
+    }
+    
+    .todo-text {
+      flex: 1;
+      font-size: 1.1rem;
+      color: #333;
+    }
+    
+    .btn-delete {
+      background: #fa709a;
+      color: white;
+      border: none;
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 1.2rem;
+      transition: all 0.3s;
+    }
+    
+    .btn-delete:hover {
+      transform: scale(1.1);
+      background: #d85a81;
+    }
+    
+    .stats {
+      margin-top: 20px;
+      padding: 20px;
+      background: #f8f9fa;
+      border-radius: 10px;
+      display: flex;
+      justify-content: space-around;
+      text-align: center;
+      border: 1px solid #e0e0e0;
+    }
+    
+    .stat {
+      flex: 1;
+    }
+    
+    .stat-value {
+      font-size: 2rem;
+      font-weight: bold;
+      color: #667eea;
+    }
+    
+    .stat-label {
+      color: #666;
+      margin-top: 5px;
+    }
+    
+    .empty {
+      text-align: center;
+      padding: 16px 24px;
+      color: #999;
+      font-size: 1.2rem;
+    }
+
+    .highlight {
+      background-color: #fff305;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h1>GyosJS Todo</h1>
+  
+  <div g-scope="TodoApp">
+    <button class="btn" @click="show = !show">{show ? 'Hide' : 'Show'} Items</button><br>
+    <ul *if="show">
+      <br>
+      <li *for="item in items" g-transition="scale" g-key="item.id" 
+        style="margin-bottom: 8px;display: flex; align-items: center; gap: 8px;">
+        <input type="text" g-model="item.text">
+        <input type="checkbox" g-model="item.completed">
+        <span style="flex: 1;" :class="{highlight: item.completed}">
+          {item.text}
+          {item.completed ? '✅' : '❌'}
+        </span>
+      </li>
+    </ul><br>
+    <div class="input-group">
+      <input 
+        type="text" 
+        g-model.debounce.100="newTodo" 
+        placeholder="What needs to be done?"
+        @keyup.enter="addTodo">
+      <button class="btn" @click="addTodo">Add</button>
+    </div>
+    
+    <ul class="todo-list" *if="todos.length > 0">
+      <li *for="todo in todos" :class="{done: todo.completed}" class="todo-item" g-transition="scale" g-key="todo.id">
+        <input 
+          type="checkbox" 
+          g-model="todo.completed">
+        <span class="todo-text">{todo.text}</span>
+        <button class="btn-delete" @click="removeTodo(todo)">×</button>
+      </li>
+    </ul>
+    
+    <div class="empty" *if="todos.length === 0">
+      No todos yet. Add one above! 🚀
+    </div>
+    
+    <div class="stats">
+      <div class="stat">
+        <div class="stat-value">{totalCount}</div>
+        <div class="stat-label">Total</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value">{activeCount}</div>
+        <div class="stat-label">Active</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value">{completedCount}</div>
+        <div class="stat-label">Completed</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+  import Gyos from '../dist/gyos.auto.esm.js';
+  
+  Gyos.scope('TodoApp', {
+    show: false,
+    newTodo: '',
+    todos: [],
+    items: [
+      { id: 1, text: 'Learn GyosJS', completed: false },
+      { id: 2, text: 'Build a Todo App', completed: true },
+      { id: 3, text: 'Profit!', completed: false },
+      { id: 4, text: 'Share with friends', completed: false }
+    ],
+    
+    totalCount() {
+      return this.todos.length;
+    },
+    
+    activeCount() {
+      return this.todos.filter(t => !t.completed).length;
+    },
+    
+    completedCount() {
+      return this.todos.filter(t => t.completed).length;
+    },
+    
+    addTodo() {
+      if (this.newTodo.trim()) {
+        this.todos.push({
+          id: Date.now(),
+          text: this.newTodo,
+          completed: false
+        });
+        this.newTodo = '';
+      }
+    },
+    
+    removeTodo(todo) {
+      this.todos = this.todos.filter(t => t.id !== todo.id);
+    },
+    
+    onMount() {
+      const saved = localStorage.getItem('gyos-todos');
+      if (saved) this.todos = JSON.parse(saved) || [];
+      console.log('TodoApp mounted!');
+    },
+    
+    onUpdate() {
+      // Save to localStorage
+      console.log('onUpdate');
+      localStorage.setItem('gyos-todos', JSON.stringify(this.todos));
+    }
+  });
+</script>
+
+</body>
+</html>

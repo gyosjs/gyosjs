@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GyosJS - Transition Demo</title>
+  <link rel="icon" type="image/png" href="/p5-2-no-bg.png">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: linear-gradient(135deg, #40424e 0%, #4c3c5b 100%);
+      min-height: 100vh;
+      padding: 40px 20px;
+    }
+    
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+    
+    h1 {
+      color: white;
+      text-align: center;
+      margin-bottom: 40px;
+      font-size: 1.5rem;
+    }
+    
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 20px;
+    }
+    
+    .card {
+      background: white;
+      border-radius: 9px;
+      padding: 16px 24px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    }
+    
+    .card h2 {
+      color: #667eea;
+      margin-bottom: 20px;
+      font-size: 1.2rem;
+    }
+    
+    .stat {
+      font-size: 1.5rem;
+      font-weight: bold;
+      color: #333;
+      margin: 20px 0;
+    }
+    
+    .buttons {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    
+    button {
+      padding: 6px 20px;
+      min-width: 80px;
+      border: none;
+      border-radius: 8px;
+      background: #667eea;
+      color: white;
+      cursor: pointer;
+      font-weight: bold;
+      transition: all 0.3s;
+      margin: 4px auto;
+    }
+    
+    button:hover {
+      background: #5568d3;
+      transform: translateY(-2px);
+    }
+    
+    input {
+      width: 100%;
+      padding: 5px 12px;
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      font-size: .875rem;
+      margin-bottom: 10px;
+    }
+    
+    input[type="text"] {
+      flex: 1;
+      padding: 6px 16px;
+      font-size: 0.875rem;
+      border: 2px solid #e0e0e0;
+      border-radius: 6px;
+      outline: none;
+      transition: border-color 0.3s;
+    }
+    
+    input[type="text"]:focus {
+      border-color: #667eea;
+    }
+    
+    .position {
+      font-size: 1.2rem;
+      color: #666;
+    }
+    
+    .toggle-demo {
+      width: 60px;
+      height: 30px;
+      background: #ccc;
+      border-radius: 15px;
+      position: relative;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    
+    .toggle-demo.active {
+      background: #667eea;
+    }
+    
+    .toggle-demo::after {
+      content: '';
+      position: absolute;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: white;
+      top: 3px;
+      left: 3px;
+      transition: transform 0.3s;
+    }
+    
+    .toggle-demo.active::after {
+      transform: translateX(30px);
+    }
+    
+    .list-item {
+      padding: 10px;
+      background: #f8f9fa;
+      border-radius: 8px;
+      margin-bottom: 10px;
+    }
+    
+    .loading {
+      color: #666;
+      font-style: italic;
+    }
+    
+    .error {
+      color: #f44336;
+    }
+
+    .fit {
+      width: fit-content;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h1>GyosJS Transition</h1>
+  
+  <div class="grid">
+    
+    <!-- useFetch -->
+    <div class="card" g-scope="FetchDemo" style="min-height: 200px;display: flex; flex-direction: column;">
+      <h2>useFetch</h2>
+      <div g-transition="'slide-up'" *if="loading" class="fit loading">
+        Loading...
+      </div>
+      <div g-transition="'slide-up'" *if="error" class="fit error">
+        Error: {error.message}
+      </div>
+      <div g-transition="'slide-up'" *if="!loading && !error" class="fit">
+        <p><strong>User:</strong> {data.name}</p>
+        <p><strong>Email:</strong> {data.email}</p>
+        <p><strong>City:</strong> {data.address.city}</p>
+      </div>
+      <button @click="fetchData" style="margin-top: auto;">
+        Refetch
+      </button>
+    </div>
+    
+  </div>
+</div>
+
+<script type="module">
+  import Gyos from '../dist/gyos.auto.esm.js';
+  
+  // useFetch demo
+  Gyos.scope('FetchDemo', {
+    data: null,
+    loading: true,
+    error: null,
+    url: 'https://jsonplaceholder.typicode.com/users/1',
+    
+    async fetchData() {
+      this.loading = true;
+      this.data = null;
+      this.error = null;
+      
+      try {
+        const response = await fetch(this.url);
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        await new Promise((resolve) => setTimeout(() => resolve(), 350));
+        this.data = data;
+      } catch (e) {
+        this.error = e;
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    onMount() {
+      this.fetchData();
+    }
+  });
+  
+</script>
+
+</body>
+</html>

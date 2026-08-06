@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GyosJS Reactivity Benchmark</title>
+    <link rel="icon" type="image/png" href="/p5-2-no-bg.png">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 40px;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            color: #4ec9b0;
+            margin-bottom: 30px;
+            font-size: 32px;
+        }
+
+        .benchmark-section {
+            background: #252526;
+            border: 1px solid #3e3e42;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .benchmark-section h2 {
+            color: #569cd6;
+            margin-bottom: 15px;
+            font-size: 20px;
+        }
+
+        .benchmark-controls {
+            margin-bottom: 20px;
+        }
+
+        button {
+            background: #0e639c;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-family: inherit;
+            margin-right: 10px;
+            transition: background 0.2s;
+        }
+
+        button:hover {
+            background: #1177bb;
+        }
+
+        button:active {
+            background: #0d527a;
+        }
+
+        button:disabled {
+            background: #3e3e42;
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+
+        .results {
+            background: #1e1e1e;
+            border: 1px solid #3e3e42;
+            border-radius: 4px;
+            padding: 15px;
+            margin-top: 15px;
+            font-size: 13px;
+        }
+
+        .result-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #3e3e42;
+        }
+
+        .result-item:last-child {
+            border-bottom: none;
+        }
+
+        .result-label {
+            color: #9cdcfe;
+        }
+
+        .result-value {
+            color: #ce9178;
+            font-weight: bold;
+        }
+
+        .result-fast {
+            color: #4ec9b0;
+        }
+
+        .result-slow {
+            color: #f48771;
+        }
+
+        .progress {
+            color: #dcdcaa;
+            font-style: italic;
+        }
+
+        .warning {
+            background: #433419;
+            border: 1px solid #6d5d28;
+            color: #dcdcaa;
+            padding: 12px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+        }
+
+        .info {
+            background: #1e3a5f;
+            border: 1px solid #264f78;
+            color: #9cdcfe;
+            padding: 12px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+        }
+
+        pre {
+            background: #1e1e1e;
+            border: 1px solid #3e3e42;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+            margin: 10px 0;
+        }
+
+        code {
+            color: #ce9178;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>⚡ GyosJS Reactivity Benchmark</h1>
+
+        <!-- Benchmark 1: Property Access -->
+        <div class="benchmark-section">
+            <h2>1. Property Access Speed</h2>
+            <div class="info">
+                Measures getter performance - how fast can we read reactive properties
+            </div>
+            <div class="benchmark-controls">
+                <button onclick="runAccessBenchmark()">Run Benchmark</button>
+                <span id="access-progress" class="progress"></span>
+            </div>
+            <div id="access-results" class="results" style="display: none;"></div>
+        </div>
+
+        <!-- Benchmark 2: Property Updates -->
+        <div class="benchmark-section">
+            <h2>2. Property Update Speed</h2>
+            <div class="info">
+                Measures setter performance - how fast can we update reactive properties
+            </div>
+            <div class="benchmark-controls">
+                <button onclick="runUpdateBenchmark()">Run Benchmark</button>
+                <span id="update-progress" class="progress"></span>
+            </div>
+            <div id="update-results" class="results" style="display: none;"></div>
+        </div>
+
+        <!-- Benchmark 3: Nested Access -->
+        <div class="benchmark-section">
+            <h2>3. Nested Object Access</h2>
+            <div class="info">
+                Measures deep property access (xxx.timer.count) - tests lazy proxy creation
+            </div>
+            <div class="benchmark-controls">
+                <button onclick="runNestedBenchmark()">Run Benchmark</button>
+                <span id="nested-progress" class="progress"></span>
+            </div>
+            <div id="nested-results" class="results" style="display: none;"></div>
+        </div>
+
+        <!-- Benchmark 4: Array Operations -->
+        <div class="benchmark-section">
+            <h2>4. Array Operations</h2>
+            <div class="info">
+                Measures array mutations (push, splice, etc.) - tests reactive array proxy
+            </div>
+            <div class="benchmark-controls">
+                <button onclick="runArrayBenchmark()">Run Benchmark</button>
+                <span id="array-progress" class="progress"></span>
+            </div>
+            <div id="array-results" class="results" style="display: none;"></div>
+        </div>
+
+        <!-- Benchmark 5: Effect Triggering -->
+        <div class="benchmark-section">
+            <h2>5. Effect Triggering Speed</h2>
+            <div class="info">
+                Measures how fast effects are triggered when properties change
+            </div>
+            <div class="benchmark-controls">
+                <button onclick="runEffectBenchmark()">Run Benchmark</button>
+                <span id="effect-progress" class="progress"></span>
+            </div>
+            <div id="effect-results" class="results" style="display: none;"></div>
+        </div>
+
+        <!-- Benchmark 6: Memory Usage -->
+        <div class="benchmark-section">
+            <h2>6. Memory Profile</h2>
+            <div class="warning">
+                Note: Memory measurements are approximate and browser-dependent
+            </div>
+            <div class="benchmark-controls">
+                <button onclick="runMemoryBenchmark()">Run Benchmark</button>
+                <span id="memory-progress" class="progress"></span>
+            </div>
+            <div id="memory-results" class="results" style="display: none;"></div>
+        </div>
+
+        <!-- Overall Summary -->
+        <div class="benchmark-section">
+            <h2>📊 Overall Summary</h2>
+            <div id="summary-results" class="results">
+                <div class="result-item">
+                    <span class="result-label">Run benchmarks to see results...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import Gyos from '../../dist/gyos.auto.esm.js';
+
+        // Utility functions
+        function formatNumber(num) {
+            return num.toLocaleString();
+        }
+
+        function formatTime(ms) {
+            if (ms < 1) return `${(ms * 1000).toFixed(2)}μs`;
+            if (ms < 1000) return `${ms.toFixed(2)}ms`;
+            return `${(ms / 1000).toFixed(2)}s`;
+        }
+
+        function formatOpsPerSec(ops) {
+            if (ops >= 1000000) return `${(ops / 1000000).toFixed(2)}M ops/s`;
+            if (ops >= 1000) return `${(ops / 1000).toFixed(2)}K ops/s`;
+            return `${ops.toFixed(0)} ops/s`;
+        }
+
+        function benchmark(name, fn, iterations = 100000) {
+            // Warmup
+            for (let i = 0; i < 100; i++) fn();
+
+            // Actual benchmark
+            const start = performance.now();
+            for (let i = 0; i < iterations; i++) {
+                fn();
+            }
+            const end = performance.now();
+
+            const duration = end - start;
+            const opsPerSec = (iterations / duration) * 1000;
+
+            return {
+                name,
+                duration,
+                iterations,
+                opsPerSec,
+                avgTime: duration / iterations
+            };
+        }
+
+        // Global summary tracker
+        const summaryData = {
+            access: null,
+            update: null,
+            nested: null,
+            array: null,
+            effect: null,
+            memory: null
+        };
+
+        function displayResults(containerId, results, category) {
+            const container = document.getElementById(containerId);
+            container.style.display = 'block';
+
+            let html = '';
+            results.forEach(result => {
+                const speedClass = result.opsPerSec > 1000000 ? 'result-fast' :
+                    result.opsPerSec < 100000 ? 'result-slow' : '';
+
+                html += `
+                    <div class="result-item">
+                        <span class="result-label">${result.name}</span>
+                        <span class="result-value ${speedClass}">${formatOpsPerSec(result.opsPerSec)}</span>
+                    </div>
+                    <div class="result-item">
+                        <span class="result-label">  → Total Time</span>
+                        <span class="result-value">${formatTime(result.duration)}</span>
+                    </div>
+                    <div class="result-item">
+                        <span class="result-label">  → Avg Time/Op</span>
+                        <span class="result-value">${formatTime(result.avgTime)}</span>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+
+            // Store for summary
+            if (category) {
+                summaryData[category] = results;
+                updateSummary();
+            }
+        }
+
+        function updateSummary() {
+            const completed = Object.values(summaryData).filter(x => x !== null).length;
+            const total = 6;
+
+            if (completed === 0) return;
+
+            let html = `
+                <div class="result-item">
+                    <span class="result-label">Completed Benchmarks</span>
+                    <span class="result-value">${completed} / ${total}</span>
+                </div>
+            `;
+
+            // Calculate averages
+            let allResults = [];
+            Object.values(summaryData).forEach(category => {
+                if (category) allResults = allResults.concat(category);
+            });
+
+            if (allResults.length > 0) {
+                const validResults = allResults.filter(r => r.opsPerSec > 0);
+                if (validResults.length > 0) {
+                    const avgOps = validResults.reduce((sum, r) => sum + r.opsPerSec, 0) / validResults.length;
+                    const fastCount = validResults.filter(r => r.opsPerSec > 1000000).length;
+                    const slowCount = validResults.filter(r => r.opsPerSec < 100000).length;
+
+                    html += `
+                        <div class="result-item">
+                            <span class="result-label">Average Performance</span>
+                            <span class="result-value">${formatOpsPerSec(avgOps)}</span>
+                        </div>
+                        <div class="result-item">
+                            <span class="result-label">Fast Operations (&gt;1M ops/s)</span>
+                            <span class="result-value result-fast">${fastCount}</span>
+                        </div>
+                        <div class="result-item">
+                            <span class="result-label">Slow Operations (&lt;100K ops/s)</span>
+                            <span class="result-value result-slow">${slowCount}</span>
+                        </div>
+                    `;
+
+                    if (completed === total) {
+                        html += `
+                            <div class="result-item" style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #3e3e42;">
+                                <span class="result-label">Status</span>
+                                <span class="result-value result-fast">✓ All benchmarks complete!</span>
+                            </div>
+                        `;
+                    }
+                }
+            }
+
+            document.getElementById('summary-results').innerHTML = html;
+        }
+
+        // Benchmark 1: Property Access
+        window.runAccessBenchmark = function () {
+            document.getElementById('access-progress').textContent = 'Running...';
+
+            setTimeout(() => {
+                const mounted = document.createElement('div');
+                mounted.setAttribute('g-scope', 'AccessTest');
+
+                const results = [
+                    benchmark('Primitive access (count)', () => {
+                        Gyos.scope('AccessTest', {
+                            count: 0,
+                            name: 'Test',
+                            active: true,
+                            onMount() {
+                                const x = this.count;
+                            }
+                        });
+                    }, 1000000),
+
+                    benchmark('String access (name)', () => {
+                        Gyos.scope('AccessTest', {
+                            count: 0,
+                            name: 'Test',
+                            active: true,
+                            onMount() {
+                                const x = this.name;
+                            }
+                        });
+                    }, 1000000),
+
+                    benchmark('Boolean access (active)', () => {
+                        Gyos.scope('AccessTest', {
+                            count: 0,
+                            name: 'Test',
+                            active: true,
+                            onMount() {
+                                const x = this.active;
+                            }
+                        });
+                    }, 1000000)
+                ];
+
+                displayResults('access-results', results, 'access');
+                document.getElementById('access-progress').textContent = '✓ Complete';
+            }, 10);
+        };
+
+        // Benchmark 2: Property Updates
+        window.runUpdateBenchmark = function () {
+            document.getElementById('update-progress').textContent = 'Running...';
+
+            setTimeout(() => {
+                let counter = 0;
+
+                const results = [
+                    benchmark('Primitive update (count++)', () => {
+                        Gyos.scope('UpdateTest', {
+                            count: 0,
+                            name: 'Test',
+                            active: true,
+                            onMount() {
+                                this.count = counter++;
+                            }
+                        });
+                    }, 100000),
+
+                    benchmark('String update (name)', () => {
+                        Gyos.scope('UpdateTest', {
+                            count: 0,
+                            name: 'Test',
+                            active: true,
+                            onMount() {
+                                this.name = `Name${counter++}`;
+                            }
+                        });
+                    }, 100000),
+
+                    benchmark('Boolean toggle (active)', () => {
+                        Gyos.scope('UpdateTest', {
+                            count: 0,
+                            name: 'Test',
+                            active: true,
+                            onMount() {
+                                this.active = !this.active;
+                            }
+                        });
+                    }, 100000)
+                ];
+
+                displayResults('update-results', results, 'update');
+                document.getElementById('update-progress').textContent = '✓ Complete';
+            }, 10);
+        };
+
+        // Benchmark 3: Nested Access
+        window.runNestedBenchmark = function () {
+            document.getElementById('nested-progress').textContent = 'Running...';
+
+            setTimeout(() => {
+                const results = [
+                    benchmark('1-level nested (user.profile)', () => {
+                        Gyos.scope('NestedTest', {
+                            user: {
+                                profile: {
+                                    name: 'John',
+                                    age: 30
+                                },
+                                settings: {
+                                    theme: 'dark'
+                                }
+                            },
+                            onMount() {
+                                const x = this.user.profile;
+                            }
+                        });
+                    }, 500000),
+
+                    benchmark('2-level nested (user.profile.name)', () => {
+                        Gyos.scope('NestedTest', {
+                            user: {
+                                profile: {
+                                    name: 'John',
+                                    age: 30
+                                },
+                                settings: {
+                                    theme: 'dark'
+                                }
+                            },
+                            onMount() {
+                                const x = this.user.profile.name;
+                            }
+                        });
+                    }, 500000),
+
+                    benchmark('2-level update (user.profile.age++)', () => {
+                        Gyos.scope('NestedTest', {
+                            user: {
+                                profile: {
+                                    name: 'John',
+                                    age: 30
+                                },
+                                settings: {
+                                    theme: 'dark'
+                                }
+                            },
+                            onMount() {
+                                this.user.profile.age++;
+                            }
+                        });
+                    }, 100000),
+
+                    benchmark('Different path (user.settings.theme)', () => {
+                        Gyos.scope('NestedTest', {
+                            user: {
+                                profile: {
+                                    name: 'John',
+                                    age: 30
+                                },
+                                settings: {
+                                    theme: 'dark'
+                                }
+                            },
+                            onMount() {
+                                const x = this.user.settings.theme;
+                            }
+                        });
+                    }, 500000)
+                ];
+
+                displayResults('nested-results', results, 'nested');
+                document.getElementById('nested-progress').textContent = '✓ Complete';
+            }, 10);
+        };
+
+        // Benchmark 4: Array Operations
+        window.runArrayBenchmark = function () {
+            document.getElementById('array-progress').textContent = 'Running...';
+
+            setTimeout(() => {
+                const results = [
+                    benchmark('Array push (primitives)', () => {
+                        Gyos.scope('ArrayTest', {
+                            items: [],
+                            objects: [],
+                            onMount() {
+                                this.items.push(Math.random());
+                                if (this.items.length > 1000) this.items = [];
+                            }
+                        });
+                    }, 10000),
+
+                    benchmark('Array push (objects)', () => {
+                        Gyos.scope('ArrayTest', {
+                            items: [],
+                            objects: [],
+                            onMount() {
+                                this.objects.push({ id: Math.random(), name: 'Item' });
+                                if (this.objects.length > 1000) this.objects = [];
+                            }
+                        });
+                    }, 10000),
+
+                    benchmark('Array access [i]', () => {
+                        Gyos.scope('ArrayTest', {
+                            items: [],
+                            objects: [],
+                            onMount() {
+                                if (this.items.length > 0) {
+                                    const x = this.items[0];
+                                }
+                            }
+                        });
+                    }, 100000),
+
+                    benchmark('Array length', () => {
+                        Gyos.scope('ArrayTest', {
+                            items: [],
+                            objects: [],
+                            onMount() {
+                                const len = this.items.length;
+                            }
+                        });
+                    }, 100000)
+                ];
+
+                displayResults('array-results', results, 'array');
+                document.getElementById('array-progress').textContent = '✓ Complete';
+            }, 10);
+        };
+
+        // Benchmark 5: Effect Triggering
+        window.runEffectBenchmark = function () {
+            document.getElementById('effect-progress').textContent = 'Running...';
+
+            setTimeout(() => {
+                let effectRuns = 0;
+
+                Gyos.effect(() => {
+                    effectRuns++;
+                });
+
+                const results = [
+                    benchmark('Trigger 1 effect (primitive)', () => {
+                        Gyos.scope('EffectTest', {
+                            count: 0,
+                            nested: { value: 0 },
+                            onMount() {
+                                this.count++;
+                            }
+                        });
+                    }, 10000),
+
+                    benchmark('Trigger 1 effect (nested)', () => {
+                        Gyos.scope('EffectTest', {
+                            count: 0,
+                            nested: { value: 0 },
+                            onMount() {
+                                this.nested.value++;
+                            }
+                        });
+                    }, 10000)
+                ];
+
+                // Add effect run count
+                results.push({
+                    name: 'Total effect runs',
+                    duration: 0,
+                    iterations: effectRuns,
+                    opsPerSec: 0,
+                    avgTime: 0
+                });
+
+                displayResults('effect-results', results, 'effect');
+                document.getElementById('effect-progress').textContent = '✓ Complete';
+            }, 10);
+        };
+
+        // Benchmark 6: Memory Usage
+        window.runMemoryBenchmark = function () {
+            document.getElementById('memory-progress').textContent = 'Running...';
+
+            setTimeout(() => {
+                if (!performance.memory) {
+                    document.getElementById('memory-results').innerHTML =
+                        '<div class="result-item"><span class="result-label">Memory API not available in this browser</span></div>';
+                    document.getElementById('memory-results').style.display = 'block';
+                    document.getElementById('memory-progress').textContent = '⚠ Not available';
+                    return;
+                }
+
+                // Force GC if possible
+                if (window.gc) window.gc();
+
+                const before = performance.memory.usedJSHeapSize;
+
+                // Create 1000 reactive objects
+                const scopes = [];
+                for (let i = 0; i < 1000; i++) {
+                    scopes.push(Gyos.scope(`MemTest${i}`, {
+                        id: i,
+                        name: `Item ${i}`,
+                        nested: {
+                            value: i,
+                            deep: {
+                                count: i * 2
+                            }
+                        },
+                        items: [1, 2, 3, 4, 5]
+                    }));
+                }
+
+                const after = performance.memory.usedJSHeapSize;
+                const diff = after - before;
+                const perScope = diff / 1000;
+
+                const results = [
+                    {
+                        name: 'Memory before',
+                        duration: 0,
+                        iterations: before,
+                        opsPerSec: 0,
+                        avgTime: 0
+                    },
+                    {
+                        name: 'Memory after (1000 scopes)',
+                        duration: 0,
+                        iterations: after,
+                        opsPerSec: 0,
+                        avgTime: 0
+                    },
+                    {
+                        name: 'Memory increase',
+                        duration: 0,
+                        iterations: diff,
+                        opsPerSec: 0,
+                        avgTime: 0
+                    },
+                    {
+                        name: 'Per scope average',
+                        duration: 0,
+                        iterations: perScope,
+                        opsPerSec: 0,
+                        avgTime: 0
+                    }
+                ];
+
+                let html = '';
+                results.forEach(result => {
+                    const bytes = result.iterations;
+                    let size;
+                    if (bytes >= 1024 * 1024) {
+                        size = `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+                    } else if (bytes >= 1024) {
+                        size = `${(bytes / 1024).toFixed(2)} KB`;
+                    } else {
+                        size = `${bytes} bytes`;
+                    }
+
+                    html += `
+                        <div class="result-item">
+                            <span class="result-label">${result.name}</span>
+                            <span class="result-value">${size}</span>
+                        </div>
+                    `;
+                });
+
+                document.getElementById('memory-results').innerHTML = html;
+                document.getElementById('memory-results').style.display = 'block';
+                document.getElementById('memory-progress').textContent = '✓ Complete';
+                
+                summaryData.memory = results;
+                updateSummary();
+            }, 10);
+        };
+
+    </script>
+</body>
+
+</html>

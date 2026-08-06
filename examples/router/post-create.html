@@ -1,0 +1,219 @@
+<!doctype html>
+<html>
+
+<head>
+	<meta charset="utf-8">
+	<title>GyosJs Router Demo - New Post</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<style>
+		:root {
+			--muted: #627795;
+			--card: #fff;
+			--stroke: #1f293728;
+			--text: #123456;
+		}
+
+		* {
+			box-sizing: border-box;
+			font-size: 16px;
+			font-weight: 500;
+		}
+
+        *::-webkit-scrollbar {
+            width: 4px;
+            height: 4px;
+        }
+
+        *::-webkit-scrollbar-thumb {
+            background-color: #a6c989;
+            border-radius: 50px;
+        }
+
+		body {
+			margin: 0;
+			min-height: 100vh;
+			font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+			background: #123456;
+			color: var(--text);
+		}
+
+		#app {
+			background: linear-gradient(180deg, rgba(255, 255, 255, .03), rgba(255, 255, 255, 0)) border-box;
+			border: 1px solid rgba(255, 255, 255, .08);
+			border-radius: 9px;
+			box-shadow: 0 20px 70px rgba(0, 0, 0, .09);
+			margin: 26px auto;
+			max-width: 1080px;
+			overflow: hidden;
+		}
+
+		header,
+		footer {
+			background: linear-gradient(120deg, rgba(97, 81, 122, 0.25), rgba(6, 59, 67, 0.25));
+			padding: 16px 22px;
+			border-bottom: 1px solid rgba(255, 255, 255, .06);
+			color: #fff;
+		}
+
+		.brand {
+			font-weight: 500;
+			letter-spacing: .01em;
+		}
+
+		.nav {
+			display: flex;
+			gap: 8px;
+			flex-wrap: wrap;
+		}
+
+		.nav a {
+			display: inline-flex;
+			align-items: center;
+			gap: 6px;
+			padding: 8px 12px;
+			border-radius: 9px;
+			color: #e5e7eb;
+			text-decoration: none;
+			background: rgba(255, 253, 253, 0.06);
+			transition: transform 120ms ease, box-shadow 120ms ease, border-color 120ms ease;
+		}
+
+		.nav a:hover {
+			transform: translateY(-1px);
+			border-color: rgba(255, 255, 255, 0.242);
+			box-shadow: 0 8px 30px rgba(0, 0, 0, 0.05);
+		}
+
+		.nav a.active {
+			background: linear-gradient(120deg, #745e9a, #789da2);
+			color: #fff;
+			font-weight: 500;
+		}
+
+		main {
+			padding: 20px 22px 24px;
+			background: #f7f7f7;
+			backdrop-filter: blur(6px);
+		}
+
+		.card {
+			background: var(--card);
+			border: 1px solid var(--stroke);
+			border-radius: 16px;
+			padding: 18px;
+			margin-bottom: 16px;
+			box-shadow: 0 10px 40px rgba(0, 0, 0, 0.073);
+		}
+
+		label {
+			display: block;
+			margin: 10px 0 6px;
+			color: var(--muted);
+		}
+
+		input,
+		textarea,
+		select,
+		button {
+			width: 100%;
+			margin-bottom: 9px;
+			flex: 1;
+			padding: 6px 16px;
+			font-size: 0.875rem;
+			border: 2px solid #e0e0e0;
+			border-radius: 6px;
+			outline: none;
+			transition: border-color 0.3s;
+		}
+
+		input:focus,
+		textarea:focus,
+		select:focus,
+		button:focus {
+			border-color: #667eea;
+		}
+
+		button {
+			padding: 10px 14px;
+			border-radius: 12px;
+			border: none;
+			cursor: pointer;
+			background: linear-gradient(120deg, #745e9a, #789da2);
+			color: #fff;
+			font-weight: 500;
+			box-shadow: 0 8px 30px rgba(124, 58, 237, .35);
+		}
+
+		a {
+			color: #465ed6;
+		}
+
+		.layout {
+			grid-template-columns: 335px 1fr;
+			display: grid;
+			gap: 12px;
+		}
+
+		@media (max-width: 768px) {
+			.layout {
+				grid-template-columns: 1fr;
+			}
+			
+		}
+
+        .tag {
+            display: inline-block;
+            background: #e0e7ff;
+            color: #3730a3;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 0.8125rem;
+            margin-right: 6px;
+        }
+	</style>
+</head>
+
+<body g-boost>
+	<div id="app" g-outlet g-snapshot>
+		<header>
+			<div style="display:flex;align-items:center;justify-content:space-between;">
+				<div class="brand">GyosJs Router Demo</div>
+				<nav class="nav">
+					<a href="/router/home.html">Home</a>
+					<a href="/router/posts.html">Posts</a>
+					<a class="active" href="/router/post-create.html">New Post</a>
+					<a href="/router/login.html">Login</a>
+					<a href="/router/persist-player.html">Player</a>
+                    <a href="/router/profile-with-sidebar.html">Profile + Sidebar</a>
+                    <a href="/router/morph-a.html">Morph Demo</a>
+				</nav>
+			</div>
+		</header>
+
+		<main>
+			<div class="card">
+				<h2>New Post</h2>
+				<form action="/router/post-create-success.html" method="post">
+					<label>Title</label>
+					<input type="text" name="title" placeholder="Post title" g-model.debounce="title" value="New title">
+					<label>Content</label>
+					<textarea name="content" rows="4" placeholder="Write something..." g-model.debounce="body">New body content here</textarea>
+					<div>
+						<button>Create</button>
+						<span style="color:var(--muted);font-size:0.95rem;">POST will load success page; router keeps
+							the swap smooth.</span>
+					</div>
+				</form>
+				<p><a href="/router/home.html">Cancel</a></p>
+			</div>
+		</main>
+
+		<footer>GyosJs &copy; Demo</footer>
+	</div>
+
+	<script type="module">
+		import Gyos from '../../dist/gyos.auto.esm.js';
+	</script>
+</body>
+
+</html>

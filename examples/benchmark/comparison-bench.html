@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GyosJS vs Plain Objects - Performance Comparison</title>
+    <link rel="icon" type="image/png" href="/p5-2-no-bg.png">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 40px;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            color: #4ec9b0;
+            margin-bottom: 30px;
+            font-size: 32px;
+        }
+
+        .benchmark-section {
+            background: #252526;
+            border: 1px solid #3e3e42;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .benchmark-section h2 {
+            color: #569cd6;
+            margin-bottom: 15px;
+            font-size: 20px;
+        }
+
+        button {
+            background: #0e639c;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-family: inherit;
+            margin-right: 10px;
+            transition: background 0.2s;
+        }
+
+        button:hover {
+            background: #1177bb;
+        }
+
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            background: #1e1e1e;
+            border: 1px solid #3e3e42;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .comparison-table th,
+        .comparison-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #3e3e42;
+        }
+
+        .comparison-table th {
+            background: #2d2d30;
+            color: #4ec9b0;
+            font-weight: bold;
+        }
+
+        .comparison-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .winner {
+            color: #4ec9b0;
+            font-weight: bold;
+        }
+
+        .loser {
+            color: #ce9178;
+        }
+
+        .overhead {
+            color: #f48771;
+        }
+
+        .info {
+            background: #1e3a5f;
+            border: 1px solid #264f78;
+            color: #9cdcfe;
+            padding: 12px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+        }
+
+        .chart {
+            height: 300px;
+            margin: 20px 0;
+            background: #1e1e1e;
+            border: 1px solid #3e3e42;
+            border-radius: 4px;
+            padding: 20px;
+            position: relative;
+        }
+
+        .bar-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            align-items: center;
+        }
+
+        .bar-label {
+            width: 200px;
+            color: #9cdcfe;
+            font-size: 12px;
+        }
+
+        .bar-container {
+            flex: 1;
+            height: 25px;
+            background: #2d2d30;
+            border-radius: 4px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .bar {
+            height: 100%;
+            background: linear-gradient(90deg, #0e639c, #1177bb);
+            transition: width 0.3s;
+            display: flex;
+            align-items: center;
+            padding-left: 10px;
+            color: white;
+            font-size: 11px;
+            font-weight: bold;
+        }
+
+        .bar.gyos {
+            background: linear-gradient(90deg, #4ec9b0, #569cd6);
+        }
+
+        .bar.plain {
+            background: linear-gradient(90deg, #ce9178, #dcdcaa);
+        }
+
+        .progress {
+            color: #dcdcaa;
+            font-style: italic;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>🏁 GyosJS vs Plain Objects - Performance Comparison</h1>
+
+        <div class="info">
+            This benchmark compares GyosJS reactive system against plain JavaScript objects to measure the overhead of
+            reactivity.
+        </div>
+
+        <div class="benchmark-section">
+            <h2>Property Access Comparison</h2>
+            <button onclick="runComparison()">Run All Comparisons</button>
+            <span id="progress" class="progress"></span>
+
+            <div id="results-table" style="display: none;">
+                <table class="comparison-table">
+                    <thead>
+                        <tr>
+                            <th>Operation</th>
+                            <th>Plain Objects</th>
+                            <th>GyosJS Reactive</th>
+                            <th>Overhead</th>
+                            <th>Winner</th>
+                        </tr>
+                    </thead>
+                    <tbody id="results-tbody">
+                    </tbody>
+                </table>
+            </div>
+
+            <div id="chart" class="chart" style="display: none;">
+                <h3 style="color: #569cd6; margin-bottom: 15px;">Operations per Second (Higher is Better)</h3>
+                <div id="chart-bars"></div>
+            </div>
+        </div>
+
+        <div class="benchmark-section">
+            <h2>📊 Overall Summary</h2>
+            <div id="summary" class="info" style="display: none;"></div>
+        </div>
+    </div>
+
+    <script type="module">
+        import Gyos from '../../dist/gyos.auto.esm.js';
+
+        function formatOpsPerSec(ops) {
+            if (ops >= 1000000) return `${(ops / 1000000).toFixed(2)}M ops/s`;
+            if (ops >= 100000) return `${(ops / 100000).toFixed(2)}K ops/s`;
+            return `${ops.toFixed(0)} ops/s`;
+        }
+
+        // Prevent V8 optimization
+        let blackhole = 0;
+
+        function benchmark(fn, iterations = 100000) {
+            // Warmup
+            for (let i = 0; i < 100; i++) fn();
+
+            // Actual benchmark
+            const start = performance.now();
+            for (let i = 0; i < iterations; i++) {
+                fn();
+            }
+            const end = performance.now();
+
+            const duration = end - start;
+            const opsPerSec = (iterations / duration) * 1000;
+
+            return { duration, opsPerSec, iterations };
+        }
+
+        window.runComparison = function () {
+            document.getElementById('progress').textContent = 'Running comparisons...';
+
+            setTimeout(() => {
+                const results = [];
+
+                // Test 1: Simple property access
+                {
+                    const plain = { count: 0, name: 'Test', active: true };
+
+                    const plainResult = benchmark(() => {
+                        blackhole = plain.count;
+                        blackhole = plain.name;
+                        blackhole = plain.active;
+                    }, 500000);
+
+                    const reactiveResult = benchmark(() => {
+                        Gyos.scope('CompTest1', { 
+                            count: 0, name: 'Test', active: true,
+                            onMount() {
+                                blackhole = this.count;
+                                blackhole = this.name;
+                                blackhole = this.active;
+                            }
+                        });
+                    }, 100000);
+
+                    results.push({
+                        name: 'Property Access (3 props)',
+                        plain: plainResult.opsPerSec,
+                        reactive: reactiveResult.opsPerSec
+                    });
+                }
+
+                // Test 2: Property updates
+                {
+                    const plain = { count: 0 };
+
+                    const plainResult = benchmark(() => {
+                        plain.count++;
+                    }, 500000);
+
+                    const reactiveResult = benchmark(() => {
+                        Gyos.scope('CompTest2', { 
+                            count: 0,
+                            onMount() {
+                                this.count++;
+                            }
+                        });
+                    }, 100000);
+
+                    results.push({
+                        name: 'Property Update (count++)',
+                        plain: plainResult.opsPerSec,
+                        reactive: reactiveResult.opsPerSec
+                    });
+                }
+
+                // Test 3: Nested object access
+                {
+                    const plain = { user: { profile: { name: 'John' } } };
+
+                    const plainResult = benchmark(() => {
+                        blackhole = plain.user.profile.name;
+                    }, 500000);
+
+                    const reactiveResult = benchmark(() => {
+                        Gyos.scope('CompTest3', { 
+                            user: { profile: { name: 'John' } },
+                            onMount() {
+                                blackhole = this.user.profile.name;
+                            }
+                        });
+                    }, 100000);
+
+                    results.push({
+                        name: 'Nested Access (3 levels)',
+                        plain: plainResult.opsPerSec,
+                        reactive: reactiveResult.opsPerSec
+                    });
+                }
+
+                // Test 4: Nested object update
+                {
+                    const plain = { user: { count: 0 } };
+
+                    const plainResult = benchmark(() => {
+                        plain.user.count++;
+                    }, 500000);
+
+                    const reactiveResult = benchmark(() => {
+                        Gyos.scope('CompTest4', { 
+                            user: { count: 0 },
+                            onMount() {
+                                this.user.count++;
+                            }
+                        });
+                    }, 100000);
+
+                    results.push({
+                        name: 'Nested Update (user.count++)',
+                        plain: plainResult.opsPerSec,
+                        reactive: reactiveResult.opsPerSec
+                    });
+                }
+
+                // Test 5: Array push
+                {
+                    const plain = { items: [] };
+
+                    const plainResult = benchmark(() => {
+                        plain.items.push(Math.random());
+                        if (plain.items.length > 100) plain.items = [];
+                    }, 10000);
+
+                    const reactiveResult = benchmark(() => {
+                        Gyos.scope('CompTest5', { 
+                            items: [],
+                            onMount() {
+                                this.items.push(Math.random());
+                                if (this.items.length > 100) this.items = [];
+                            }
+                        });
+                    }, 10000);
+
+                    results.push({
+                        name: 'Array Push',
+                        plain: plainResult.opsPerSec,
+                        reactive: reactiveResult.opsPerSec
+                    });
+                }
+
+                // Test 6: Object creation
+                {
+                    const plainResult = benchmark(() => {
+                        const obj = { count: 0, name: 'Test', items: [1, 2, 3] };
+                        blackhole = obj.count;
+                    }, 100000);
+
+                    const reactiveResult = benchmark(() => {
+                        Gyos.scope(`Temp${Math.random()}`, { count: 0, name: 'Test', items: [1, 2, 3] });
+                    }, 100000);
+
+                    results.push({
+                        name: 'Object Creation',
+                        plain: plainResult.opsPerSec,
+                        reactive: reactiveResult.opsPerSec
+                    });
+                }
+
+                displayResults(results);
+                document.getElementById('progress').textContent = '✓ Complete';
+            }, 10);
+        };
+
+        function displayResults(results) {
+            // Table
+            const tbody = document.getElementById('results-tbody');
+            tbody.innerHTML = '';
+
+            let totalOverhead = 0;
+            let gyosWins = 0;
+            let plainWins = 0;
+
+            results.forEach(result => {
+                const overhead = ((result.plain - result.reactive) / result.plain * 100);
+                totalOverhead += Math.abs(overhead);
+
+                const isGyosFaster = result.reactive > result.plain;
+                if (isGyosFaster) gyosWins++;
+                else plainWins++;
+
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${result.name}</td>
+                    <td class="${isGyosFaster ? 'loser' : 'winner'}">${formatOpsPerSec(result.plain)}</td>
+                    <td class="${isGyosFaster ? 'winner' : 'loser'}">${formatOpsPerSec(result.reactive)}</td>
+                    <td class="overhead">${Math.abs(overhead).toFixed(1)}%</td>
+                    <td class="winner">${isGyosFaster ? '✓ GyosJS' : '✓ Plain'}</td>
+                `;
+                tbody.appendChild(row);
+            });
+
+            document.getElementById('results-table').style.display = 'block';
+
+            // Chart
+            const chartBars = document.getElementById('chart-bars');
+            chartBars.innerHTML = '';
+
+            const maxOps = Math.max(...results.flatMap(r => [r.plain, r.reactive]));
+
+            results.forEach(result => {
+                const group = document.createElement('div');
+                group.className = 'bar-group';
+
+                const plainWidth = (result.plain / maxOps) * 100;
+                const reactiveWidth = (result.reactive / maxOps) * 100;
+
+                group.innerHTML = `
+                    <div class="bar-label">${result.name}</div>
+                    <div class="bar-container">
+                        <div class="bar plain" style="width: ${plainWidth}%">
+                            Plain: ${formatOpsPerSec(result.plain)}
+                        </div>
+                    </div>
+                    <div class="bar-container">
+                        <div class="bar gyos" style="width: ${reactiveWidth}%">
+                            GyosJS: ${formatOpsPerSec(result.reactive)}
+                        </div>
+                    </div>
+                `;
+                chartBars.appendChild(group);
+            });
+
+            document.getElementById('chart').style.display = 'block';
+
+            // Summary
+            const avgOverhead = (totalOverhead / results.length).toFixed(1);
+            const summary = document.getElementById('summary');
+            summary.innerHTML = `
+                <h3 style="color: #569cd6; margin-bottom: 10px;">Results Summary</h3>
+                <p><strong>Average Overhead:</strong> <span class="overhead">${avgOverhead}%</span></p>
+                <p><strong>Plain Objects Faster:</strong> ${plainWins} tests</p>
+                <p><strong>GyosJS Faster:</strong> ${gyosWins} tests</p>
+                <p style="margin-top: 15px;">
+                    <strong>Conclusion:</strong> 
+                    ${avgOverhead < 50 ?
+                    '<span class="winner">✓ GyosJS overhead is acceptable for the reactivity benefits</span>' :
+                    '<span class="overhead">⚠ Consider optimization opportunities</span>'}
+                </p>
+                <p style="margin-top: 10px; font-size: 12px; color: #9cdcfe;">
+                    Note: Reactivity overhead is expected and acceptable for most use cases. 
+                    Plain objects don't provide change tracking, automatic updates, or effect triggering.
+                </p>
+            `;
+            summary.style.display = 'block';
+        }
+
+        console.log('GyosJS Comparison Benchmark Ready');
+    </script>
+</body>
+
+</html>

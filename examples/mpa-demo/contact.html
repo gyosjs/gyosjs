@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Contact Page</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="icon" type="image/png" href="/gyosjs-logo.png">
+    <meta name="description" content="Contact Page description">
+    <link rel="stylesheet" href="https://gyosjs.test/built/css/app.css?v=1766381447">
+    <style id="theme-colors">
+        :root {
+            --primary: #0ea5e9;
+        }
+    </style>
+</head>
+
+<body g-boost>
+    <div id="app" g-outlet g-snapshot>
+        <nav class="flex items-center justify-center gap-4 p-4 bg-slate-100 shadow-md mb-6">
+            <a g-swap="morph" href="/mpa-demo/home.html"
+                class="text-blue-600 hover:underline font-semibold">Home</a>
+            <a g-swap="morph" href="/mpa-demo/contact.html"
+                class="text-blue-600 font-bold hover:underline">Contact</a>
+            <a g-swap="morph" href="/mpa-demo/about.html"
+                class="text-blue-600 font-semibold hover:underline" g-noscroll>About Us</a>
+        </nav>
+
+        <main id="main-content" class="p-4 max-w-3xl mx-auto bg-white rounded shadow relative">
+            <h1 class="text-2xl font-bold mb-4 text-slate-900 underline">Welcome to GyosJS MPA</h1>
+            <p class="text-slate-700">This is the contact page.</p>
+            <p>Click links above for SPA-like navigation!</p>
+            <p>
+                This is the contact page. Reach us at contact@example.com.
+            </p>
+            <div g-scope="ClockApp" g-persist="timer-app"
+                class="absolute top-1 right-1 bg-sky-400 text-slate-50 text-xs font-semibold p-2 rounded shadow">
+                <p>Current Time: <span g-ref="timer">[TIMER]</span></p>
+            </div>
+            <script type="module">
+                import Gyos from '../../dist/gyos.auto.esm.js';
+
+                Gyos.scope('ClockApp', {
+                    intervalId: null,
+                    startTimer() {
+                        const now = new Date();
+                        this.$refs.timer.innerText = `${String(now.getHours()).padStart(2, '0')
+                            }:${String(now.getMinutes()).padStart(2, '0')
+                            }:${String(now.getSeconds()).padStart(2, '0')
+                            }`;
+                    },
+                    onMount() {
+                        console.log('ClockApp mounted');
+                        this.intervalId = setInterval(this.startTimer, 1000);
+                    },
+                    onUnmount() {
+                        console.log('ClockApp unmounted');
+                        clearInterval(this.intervalId);
+                    },
+                });
+            </script>
+        </main>
+    </div>
+</body>
+
+</html>

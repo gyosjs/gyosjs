@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GyosJS - Composables Demo</title>
+  <link rel="icon" type="image/png" href="/p5-2-no-bg.png">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: linear-gradient(135deg, #40424e 0%, #4c3c5b 100%);
+      min-height: 100vh;
+      padding: 40px 20px;
+    }
+    
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+    
+    h1 {
+      color: white;
+      text-align: center;
+      margin-bottom: 40px;
+      font-size: 1.5rem;
+    }
+    
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 20px;
+    }
+    
+    .card {
+      background: white;
+      border-radius: 9px;
+      padding: 16px 24px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    }
+    
+    .card h2 {
+      color: #667eea;
+      margin-bottom: 20px;
+      font-size: 1.2rem;
+    }
+    
+    .stat {
+      font-size: 1.5rem;
+      font-weight: bold;
+      color: #333;
+      margin: 20px 0;
+    }
+    
+    .buttons {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    
+    button {
+      padding: 6px 20px;
+      min-width: 80px;
+      border: none;
+      border-radius: 8px;
+      background: #667eea;
+      color: white;
+      cursor: pointer;
+      font-weight: bold;
+      transition: all 0.3s;
+      margin: 4px auto;
+    }
+    
+    button:hover {
+      background: #5568d3;
+      transform: translateY(-2px);
+    }
+    
+    input {
+      width: 100%;
+      padding: 5px 12px;
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      font-size: .875rem;
+      margin-bottom: 10px;
+    }
+    
+    input[type="text"] {
+      flex: 1;
+      padding: 6px 16px;
+      font-size: 0.875rem;
+      border: 2px solid #e0e0e0;
+      border-radius: 6px;
+      outline: none;
+      transition: border-color 0.3s;
+    }
+    
+    input[type="text"]:focus {
+      border-color: #667eea;
+    }
+    
+    .position {
+      font-size: 1.2rem;
+      color: #666;
+    }
+    
+    .toggle-demo {
+      width: 60px;
+      height: 30px;
+      background: #ccc;
+      border-radius: 15px;
+      position: relative;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    
+    .toggle-demo.active {
+      background: #667eea;
+    }
+    
+    .toggle-demo::after {
+      content: '';
+      position: absolute;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: white;
+      top: 3px;
+      left: 3px;
+      transition: transform 0.3s;
+    }
+    
+    .toggle-demo.active::after {
+      transform: translateX(30px);
+    }
+    
+    .list-item {
+      padding: 10px;
+      background: #f8f9fa;
+      border-radius: 8px;
+      margin-bottom: 10px;
+    }
+    
+    .loading {
+      color: #666;
+      font-style: italic;
+    }
+    
+    .error {
+      color: #f44336;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h1>GyosJS Composables</h1>
+  
+  <div class="grid">
+    
+    <!-- useCounter -->
+    <div class="card" g-scope="CounterDemo">
+      <h2>useCounter</h2>
+      <div class="stat">{count()}</div>
+      <p style="margin-bottom: 12px;">Double: {double()}</p>
+      <div class="buttons">
+        <button @click="decrement(1)">-1</button>
+        <button @click="reset">Reset</button>
+        <button @click="increment(1)">+1</button>
+      </div>
+    </div>
+    
+    <!-- useToggle -->
+    <div class="card" g-scope="ToggleDemo">
+      <h2>useToggle</h2>
+      <div 
+        class="toggle-demo"
+        :class="{active: state()}"
+        @click="toggle">
+      </div>
+      <p style="margin-top: 20px;">State: {state() ? 'ON' : 'OFF'}</p>
+      <div class="buttons">
+        <button @click="setTrue">Set True</button>
+        <button @click="setFalse">Set False</button>
+        <button @click="toggle">Toggle</button>
+      </div>
+    </div>
+    
+    <!-- useMouse -->
+    <div class="card" g-scope="MouseDemo">
+      <h2>useMouse</h2>
+      <p class="position">X: {x()}px</p>
+      <p class="position">Y: {y()}px</p>
+      <p style="margin-top: 20px; color: #666;">
+        Move your mouse to see coordinates
+      </p>
+    </div>
+    
+    <!-- useWindowSize -->
+    <div class="card" g-scope="WindowDemo">
+      <h2>useWindowSize</h2>
+      <p class="position">Width: {width()}px</p>
+      <p class="position">Height: {height()}px</p>
+      <p style="margin-top: 20px; color: #666;">
+        Resize window to see changes
+      </p>
+    </div>
+    
+    <!-- useDebounce -->
+    <div class="card" g-scope="DebounceDemo">
+      <h2>useDebounce</h2>
+      <input 
+        type="text" 
+        g-model="value"
+        placeholder="Type something...">
+      <p><strong>Immediate:</strong> {value()}</p>
+      <p><strong>Debounced (500ms):</strong> {debounced()}</p>
+    </div>
+    
+    <!-- useFetch -->
+    <div class="card" g-scope="FetchDemo">
+      <h2>useFetch</h2>
+      <div *if="loading()" class="loading">
+        Loading...
+      </div>
+      <div *if="error()" class="error">
+        Error: {error().message}
+      </div>
+      <div *if="data()">
+        <p><strong>User:</strong> {data().name}</p>
+        <p><strong>Email:</strong> {data().email}</p>
+        <p><strong>City:</strong> {data().address.city}</p>
+      </div>
+      <button @click="refetch" style="margin-top: 10px;">
+        Refetch
+      </button>
+    </div>
+    
+    <!-- useLocalStorage -->
+    <div class="card" g-scope="StorageDemo">
+      <h2>useLocalStorage</h2>
+      <input 
+        type="text" 
+        g-model="state"
+        placeholder="Enter your name">
+      <p style="margin-top: 10px;">
+        Stored: {state()}
+      </p>
+      <p style="color: #666; font-size: 0.9rem; margin-top: 10px;">
+        Value persists across page reloads
+      </p>
+      <button @click="remove">Remove</button>
+    </div>
+    
+    <!-- useMediaQuery -->
+    <div class="card" g-scope="MediaQueryDemo">
+      <h2>useMediaQuery</h2>
+      <p>Is Mobile: {matches.mobile() ? 'Yes' : 'No'}</p>
+      <p>Is Tablet: {matches.tablet() ? 'Yes' : 'No'}</p>
+      <p>Is Desktop: {matches.desktop() ? 'Yes' : 'No'}</p>
+      <p style="margin-top: 20px; color: #666; font-size: 0.9rem;">
+        Resize window to see changes
+      </p>
+    </div>
+
+
+    <div class="card" g-scope="OclockDemo">
+      <h2>useInterval</h2>
+      <p style="text-align: center;">
+        _Count upwards every second_
+        <div style="text-align: center;" id="countInterval">[COUNT]</div><br>
+      </p>
+      <div class="buttons">
+        <button @click="start">Start Interval</button>
+        <button @click="stop">Stop Interval</button>
+        <button @click="restart">Restart Interval</button>
+      </div>
+    </div>
+    
+  </div>
+</div>
+
+<script type="module">
+  import Gyos from '../dist/gyos.auto.esm.js';
+  
+  // useCounter demo
+  Gyos.scope('CounterDemo', () => Gyos.useCounter(0));
+  
+  // useToggle demo
+  Gyos.scope('ToggleDemo', () => Gyos.useToggle(false));
+  
+  // useMouse demo
+  Gyos.scope('MouseDemo', Gyos.useMouse);
+  
+  // useWindowSize demo
+  Gyos.scope('WindowDemo', Gyos.useWindowSize);
+  
+  // useDebounce demo
+  Gyos.scope('DebounceDemo', () => Gyos.useDebounce('', 500));
+  
+  // useFetch demo
+  Gyos.scope('FetchDemo', () => Gyos.useFetch(
+    () => fetch('https://jsonplaceholder.typicode.com/users/1')
+  ));
+  
+  // useLocalStorage demo
+  Gyos.scope('StorageDemo', () => Gyos.useLocalStorage('gyos-username'));
+  
+  // useMediaQuery demo
+  Gyos.scope('MediaQueryDemo', () => Gyos.useMediaQuery({
+    mobile: '(max-width: 768px)',
+    tablet: '(min-width: 769px) and (max-width: 1024px)',
+    desktop: '(min-width: 1025px)',
+  }));
+
+  let startIndex = 0;
+  Gyos.scope('OclockDemo', () => Gyos.useInterval(() => {
+    document.querySelector('#countInterval').textContent = `Đếm: ${++startIndex}`;
+  }, 1000));
+</script>
+
+</body>
+</html>
