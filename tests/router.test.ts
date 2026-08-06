@@ -574,6 +574,28 @@ describe('router', () => {
 		expect(events).toEqual(['update-complete', 'after-navigate']);
 	});
 
+	it('consumes skipped view-transition promise rejections', async () => {
+		document.body.innerHTML = `<div id="out" g-outlet>old</div>`;
+		global.fetch = vi.fn().mockResolvedValue(buildResponse(
+			'<div id="out" g-outlet>new</div>',
+			'http://localhost:3000/next'
+		)) as any;
+		const readyCatch = vi.fn().mockResolvedValue(undefined);
+		const finishedCatch = vi.fn().mockResolvedValue(undefined);
+		(document as any).startViewTransition = vi.fn((callback: () => Promise<void>) => ({
+			ready: { catch: readyCatch },
+			finished: { catch: finishedCatch },
+			updateCallbackDone: callback()
+		}));
+		const navigate = (__routerTest as any).navigate as (opts: any) => Promise<void>;
+
+		await navigate({ url: '/next', method: 'GET', changeState: false });
+
+		expect(readyCatch).toHaveBeenCalledOnce();
+		expect(finishedCatch).toHaveBeenCalledOnce();
+		expect(document.getElementById('out')!.textContent).toBe('new');
+	});
+
 	it('waits for an in-progress DOM commit before starting the next navigation', async () => {
 		document.body.innerHTML = '<div id="out" g-outlet>old</div>';
 		global.fetch = vi.fn()

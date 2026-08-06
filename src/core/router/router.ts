@@ -303,6 +303,12 @@ function waitForNavigation<T>(promise: Promise<T>, signal: AbortSignal): Promise
 	});
 }
 
+function consumeViewTransitionRejection(promise: Promise<unknown> | undefined): void {
+	// Chrome rejects these when a newer transition skips the current one. The
+	// update callback remains the navigation source of truth and is awaited below.
+	void promise?.catch(() => undefined);
+}
+
 function runNavigationHooks(callbacks: Array<(url: string) => void>, url: string): void {
 	callbacks.forEach(callback => {
 		try {
@@ -723,6 +729,8 @@ async function navigate(opts: NavigateOptions): Promise<void> {
 		// Apply view transition if available
 		if ((document as any).startViewTransition) {
 			const transition = (document as any).startViewTransition(() => performUpdate());
+			consumeViewTransitionRejection(transition?.ready);
+			consumeViewTransitionRejection(transition?.finished);
 			if (transition?.updateCallbackDone) {
 				await transition.updateCallbackDone;
 			}
