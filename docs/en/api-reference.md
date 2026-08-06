@@ -38,6 +38,26 @@ The MPA layer is centered on:
 - `g-snapshot`
 - `g-persist`
 
+## Complete Lookup Index
+
+Use the browser's find command on this page when you already know the API name.
+
+| Group | Available syntax and APIs |
+| --- | --- |
+| Scope | `g-scope`, `g-scope-persist`, `gd-*`, `gm-*`, `Gyos.scope`, `mount`, `mountAll`, `mountTree`, `cleanup`, `mountedScopes` |
+| Scope context | `$refs`, `$watch`, `$effect`, `$emit`, `$on`, `$provide`, `$inject`, `onMount`, `onUpdate`, `onUnmount` |
+| Text and attributes | `{expression}`, pipes with `\|`, `:class`, `:style`, `:disabled`, `:readonly`, `:checked`, `:selected`, `:value`, `:src`, `:href`, `:alt`, `:title` |
+| Structural | `*if`, `*elseif`, `*else`, `*for`, `g-key`, `*switch`, `*case`, `*default`, `*await`, `*pending`, `*then`, `*catch` |
+| Directives | `g-show`, `g-text`, `g-html`, `g-ref`, `g-static`, `g-ignore`, `g-transition`, `g-portal`, `g-hydrate`, `g-provide`, `g-cloak`, `g-focus`, `g-tooltip`, `g-on`, `g-markdown`, `g-form`, `g-validate`, `g-errors`, `g-submit` |
+| Events and forms | `@event`, `$event`, event modifiers, `g-ignore-outside-click`, `g-model`, `.trim`, `.number`, `.debounce` |
+| Reactivity | `signal`, `computed`, `effect`, `batch`, `isSignal`, `isComputed`, `unref`, `untrack`, `markRaw`, `shallow` |
+| Extension | `directive`, `applyDirective`, `pipe`, `validator`, `getValidator`, `getValidatorNames`, `validate` |
+| Shared state and events | `store`, store helpers, `provide`, `inject`, `getGlobalContainer`, `on`, `emit`, `off`, `once` |
+| Composables | `useFetch`, `useCounter`, `useToggle`, `useLocalStorage`, `useInterval`, `useTimeout`, `useDebounce`, `useThrottle`, `useMouse`, `useWindowSize`, `useMediaQuery`, `useAsync` |
+| Transition and portal | `registerTransition`, `getTransitionConfig`, `applyTransitionStyles`, `portalCreate`, `portalDestroy` |
+| Utilities | `ready`, `nextTick`, `debounce`, `throttle`, `version` |
+| MPA Boost | `startRouter`, navigation hooks, `g-boost`, `g-no-boost`, `g-outlet`, `g-target`, `g-swap`, `g-preload`, `g-snapshot`, `g-persist`, history, spinner, custom-action, and script attributes |
+
 ---
 
 ## Scope APIs
@@ -70,6 +90,8 @@ Use `Gyos.scope()` when:
 - the logic is too large for inline HTML
 - you want methods, getters, or lifecycle code in JavaScript
 
+A named object definition is reused by the registry. Mounting the same name on multiple elements does not create independent state instances; use separate registrations or inline scopes when each element needs isolated state.
+
 ### `Gyos.scope(element, definition)`
 
 You can also register a scope directly on a specific element.
@@ -79,7 +101,11 @@ const el = document.getElementById('mounted-once');
 Gyos.scope(el, {
   message: 'Mounted directly on one element'
 });
+
+Gyos.mount(el);
 ```
+
+`Gyos.scope(element, definition)` registers the definition; mount the element explicitly when using the manual build or when adding it after DOM ready.
 
 ### `Gyos.mount(element)`
 
@@ -101,15 +127,24 @@ Gyos.ready(() => {
 
 ### `Gyos.mountTree(element)`
 
-Mount scopes only inside one subtree.
+Mount descendant scopes inside one subtree. It does not mount the supplied root itself; call `Gyos.mount(element)` too when that root carries `g-scope`.
 
 Useful after custom DOM insertion or partial updates outside the router.
 
 ### `Gyos.cleanup(target?)`
 
-Run registered cleanup callbacks and scope unmount lifecycle for the document or one target subtree.
+Dispose tracked effects for a target subtree. Omitting `target` defaults to `document.body`.
 
-This is an advanced escape hatch and is less common than normal mounting and unmounting. GyosJS cannot infer application timers or external subscriptions; release those explicitly from `onUnmount()` or an effect disposer.
+```js
+Gyos.cleanup(document.querySelector('#old-panel'));
+Gyos.cleanup();
+```
+
+Cleanup runs tracked effect disposers, event and form listener cleanup, custom-directive cleanup, scope `onUnmount()`, and mounted-scope deregistration. It does not remove the target or discover arbitrary application timers and subscriptions; stop those in `onUnmount()` or a registered disposer.
+
+### `Gyos.mountedScopes()`
+
+Return the live `Map<HTMLElement, Scope>` of mounted root scopes. This is mainly useful for debugging.
 
 ---
 
@@ -161,6 +196,42 @@ Rules:
 - `gm-method="code"` defines a method
 - kebab-case names are converted to camelCase
 - `gm-method:arg1:arg2="..."` creates a method with arguments
+
+HTML normalizes attribute names to lowercase, so write multi-word method arguments in kebab-case. `gd-*` parses exact booleans, numbers, JSON objects, and JSON arrays; every other value remains a plain string.
+
+### Scope lifecycle and context
+
+A mounted scope can define `onMount()`, `onUpdate()`, and `onUnmount()`. Every scope also receives `$refs`, `$watch`, `$effect`, `$emit`, `$on`, `$provide`, and `$inject`.
+
+```js
+Gyos.scope('SearchBox', {
+  query: '',
+
+  onMount() {
+    this.stopWatching = this.$watch('query', (value, previous) => {
+      console.log({ value, previous });
+    }, { debounce: 250 });
+  },
+
+  onUnmount() {
+    this.stopWatching?.();
+  }
+});
+```
+
+`$watch` accepts `{ immediate, debounce, deep }` and returns a disposer. `$effect(fn)` also returns a disposer; a cleanup returned by its callback runs before the next execution and on disposal. `$on` returns an unsubscribe function.
+
+### `g-scope-persist`
+
+Keep a scope instance in the in-memory scope cache when its DOM is removed and later mounted again:
+
+```html
+<section g-scope="SearchFilters" g-scope-persist="catalog-filters">
+  <input g-model="query">
+</section>
+```
+
+This preserves scope state, while router `g-persist` preserves the actual DOM node. Use it only when restoring the old scope instance is intentional.
 
 ### Example
 
@@ -215,9 +286,12 @@ GyosJS supports `:attribute` syntax for reactive DOM attributes.
 - `:disabled`
 - `:readonly`
 - `:checked`
+- `:selected`
 - `:value`
 - `:src`
 - `:href`
+- `:alt`
+- `:title`
 
 Bound URLs reject active schemes and unsafe `data:` values. URL bindings on active-content elements such as `script`, `iframe`, `embed`, `object`, `base`, and `link` are removed; configure trusted resources outside reactive bindings.
 
@@ -422,6 +496,12 @@ Apply transitions to structural changes.
 <div *if="open" g-transition="fade">Hello</div>
 ```
 
+Add a duration modifier in milliseconds when one instance needs different timing:
+
+```html
+<div *if="open" g-transition.150="fade">Fast fade</div>
+```
+
 ### `g-portal`
 
 Move a node to another part of the DOM.
@@ -449,6 +529,11 @@ Supported strategies:
 </div>
 ```
 
+- `idle` uses `requestIdleCallback` with a timer fallback.
+- `visible` waits for `IntersectionObserver` to report visibility.
+- `interaction` waits for the first user interaction.
+- `media(query)` waits for the media query to match.
+
 ### `g-provide`
 
 Provide values from markup to child scopes.
@@ -460,6 +545,49 @@ Provide values from markup to child scopes.
 ```
 
 The attribute accepts a JSON object only. For dynamic or executable providers, use `Gyos.provide()` or the scope `$provide()` method instead of generating JavaScript inside HTML attributes.
+
+### `g-cloak`
+
+Remove `g-cloak` after mounting. Pair it with CSS to hide unprocessed template content:
+
+```html
+<style>[g-cloak] { display: none !important; }</style>
+<div g-scope="Account" g-cloak>{user.name}</div>
+```
+
+### `g-focus`
+
+Focus an element when the directive mounts:
+
+```html
+<input g-focus placeholder="Focused after mount">
+```
+
+### `g-tooltip`
+
+Reactively write an expression to the native `title` attribute:
+
+```html
+<button g-tooltip="helpText">Help</button>
+```
+
+### `g-on:event`
+
+Listen to the current scope's event channel. The expression must resolve to a handler function or an available scope method:
+
+```html
+<div g-on:cart-updated="refreshSummary"></div>
+```
+
+### `g-markdown`
+
+Render the supported Markdown subset from a reactive string:
+
+```html
+<article g-markdown="articleBody"></article>
+```
+
+The built-in converter escapes raw HTML and blocks active URL schemes. Applications still own any richer content policy required for untrusted text.
 
 ### `g-form`, `g-validate`, `g-errors`
 
@@ -475,15 +603,19 @@ Attach validation state to a form object inside scope.
 </form>
 ```
 
-The form state exposes:
+`g-form="signupForm"` adds the following object to the current scope. The first six members are callable signals: call them in template expressions, or read their `.value` property from JavaScript.
 
-- `errors`
-- `touched`
-- `$invalid`
-- `$valid`
-- `$dirty`
-- `$pristine`
-- `validateAll()`
+| Member | Return value | Meaning |
+| --- | --- | --- |
+| `signupForm.errors()` | `Record<string, string \| null>` | Current error message for each validated field. `null` means that field currently passes validation. |
+| `signupForm.touched()` | `Record<string, boolean>` | Whether each validated field has blurred or was included in `validateAll()`. |
+| `signupForm.$invalid()` | `boolean` | `true` when at least one field has a non-null error. |
+| `signupForm.$valid()` | `boolean` | The inverse of `$invalid()`. |
+| `signupForm.$dirty()` | `boolean` | `true` after at least one field is touched. This tracks interaction, not whether a value differs from its initial value. |
+| `signupForm.$pristine()` | `boolean` | `true` while no field has been touched. |
+| `signupForm.validateAll()` | `Promise<boolean>` | Touch and validate every registered field, then resolve to `true` only when the form is valid. |
+
+New fields start with `null` errors, so a required empty field is initially considered valid. Validation runs after a 300 ms input debounce, on blur, when `validateAll()` is called, or when the form is submitted.
 
 #### `g-validate`
 
@@ -528,8 +660,19 @@ When MPA Boost is active, place `g-no-boost` on a validated form. Router submit 
   <input class="input" type="password" g-model="password" g-validate="required|minLength(8)|password">
   <small g-errors="password" style="color:#c33"></small>
 
-  <button class="btn btn-primary" :disabled="signupForm.$invalid">Submit</button>
+  <button class="btn btn-primary" :disabled="signupForm.$invalid()">Submit</button>
 </form>
+```
+
+Call `validateAll()` when validation must happen outside the submit flow:
+
+```js
+async checkForm() {
+  const valid = await this.signupForm.validateAll();
+  if (!valid) {
+    console.log(this.signupForm.errors());
+  }
+}
 ```
 
 ---
@@ -566,15 +709,26 @@ Gyos.directive('border', (el, binding) => {
 });
 ```
 
+### `Gyos.applyDirective(element, name, value, args?)`
+
+Apply a registered directive from JavaScript and receive its cleanup function:
+
+```js
+const cleanup = Gyos.applyDirective(element, 'tooltip', 'More details');
+cleanup();
+```
+
 ### Directive binding object
 
-Directive hooks receive a binding object with:
+Directive hooks receive this binding contract:
 
-- `value`
-- `oldValue`
-- `arg`
+| Property | Value |
+| --- | --- |
+| `value` | The current evaluated directive expression. |
+| `oldValue` | The previous evaluated value in `updated`; `undefined` during the initial `mounted` call. |
+| `arg` | `string[] \| undefined` containing colon arguments. |
 
-Arguments come from `g-directive:arg1:arg2="..."`.
+For `g-fetch:users:replace="apiUrl"`, `binding.arg` is `['users', 'replace']`. `Gyos.applyDirective()` calls `mounted` once and its returned cleanup calls `unmounted`; it does not create reactive `updated` calls.
 
 ---
 
@@ -724,6 +878,17 @@ Use pipes when:
 - the same display transform appears in many templates
 - you want formatting logic to stay readable and declarative
 
+### Built-in pipes
+
+| Pipe | Purpose |
+| --- | --- |
+| `currency`, `date`, `number`, `percent` | Format numeric or date values. |
+| `uppercase`, `lowercase`, `capitalize`, `slug`, `truncate`, `reverse` | Transform display strings. |
+| `fallback` | Supply a fallback for a falsy value. |
+| `json` | Serialize with optional indentation. |
+| `pluralize` | Choose a singular or plural label and include the count. |
+| `join`, `limit` | Join array values or take the first items. |
+
 ---
 
 ## Reactivity APIs
@@ -741,13 +906,16 @@ console.log(count.value); // read through property
 count.value = 2;          // write through property
 ```
 
-Useful members:
+| Member | Return value | Behavior |
+| --- | --- | --- |
+| `signal()` | `T` | Read and track the signal when called inside an effect or computed value. |
+| `signal(nextValue)` | `T` | Write and return `nextValue`. Subscribers run only when the configured equality check reports a change. |
+| `signal.value` | `T` | Tracking getter and writable setter. |
+| `signal.peek` | `T` | Read without collecting a reactive dependency. |
+| `signal.update(fn)` | `void` | Replace the value with `fn(currentValue)`. |
+| `signal.subscribe(fn)` | `() => void` | Subscribe to writes and return an unsubscribe function. |
 
-- callable read/write
-- `.value`
-- `.peek`
-- `.update(fn)`
-- `.subscribe(fn)`
+The optional second argument is either a debug label string or `{ debugLabel, equals }`. `equals(previous, next)` controls whether a write notifies subscribers.
 
 ### `Gyos.computed(fn)`
 
@@ -757,6 +925,8 @@ Create a derived reactive value.
 const count = Gyos.signal(2);
 const doubled = Gyos.computed(() => count.value * 2);
 ```
+
+A computed value is read-only. Read it with `doubled()` or `doubled.value`, use `doubled.peek` for a non-tracking read, and use `doubled.subscribe(fn)` to receive changes. `subscribe()` returns an unsubscribe function.
 
 ### `Gyos.effect(fn)`
 
@@ -768,7 +938,18 @@ const dispose = Gyos.effect(() => {
 });
 ```
 
-Returns a cleanup function.
+Returns a disposer that stops the effect. The callback may also return a per-run cleanup function; GyosJS runs it before the next execution and when the effect is disposed.
+
+```js
+const stop = Gyos.effect(() => {
+  const controller = new AbortController();
+  fetch(`/search?q=${query.value}`, { signal: controller.signal });
+
+  return () => controller.abort();
+});
+
+stop();
+```
 
 ### `Gyos.batch(fn)`
 
@@ -793,6 +974,14 @@ Read plain values and signals with one helper.
 
 Read signals without collecting dependencies for the current effect.
 
+### `Gyos.markRaw(object)`
+
+Exclude an object from deep proxy conversion. The containing property remains reactive when the whole object is replaced. Use this for browser objects, class instances, or third-party objects whose identity and behavior must be preserved.
+
+### `Gyos.shallow(object)`
+
+Make only the object's direct properties reactive. Nested objects remain raw.
+
 ---
 
 ## DI APIs
@@ -811,6 +1000,10 @@ You can also use scope-local forms:
 - `this.$inject(key)`
 
 Those scope helpers, and the directive context `inject()` helper, resolve values from the element injector chain.
+
+### `Gyos.getGlobalContainer()`
+
+Return the global dependency container for integration or debugging. Application code should normally prefer `provide` and `inject`.
 
 ---
 
@@ -838,11 +1031,13 @@ Later:
 const sameStore = Gyos.store('user');
 ```
 
-Helpers:
+Reading an unknown store throws. Define it first or guard the lookup with `Gyos.hasStore(name)`. Passing a definition for an existing name replaces that registry entry.
 
-- `Gyos.hasStore(name)`
-- `Gyos.removeStore(name)`
-- `Gyos.getStoreNames()`
+| Helper | Return value | Behavior |
+| --- | --- | --- |
+| `Gyos.hasStore(name)` | `boolean` | Check whether the name is registered. |
+| `Gyos.removeStore(name)` | `void` | Remove the registered store. |
+| `Gyos.getStoreNames()` | `string[]` | Return all registered store names. |
 
 Use stores when multiple scopes need the same application-level state.
 
@@ -852,24 +1047,24 @@ Use stores when multiple scopes need the same application-level state.
 
 ### `Gyos.on(event, handler)`
 
-Subscribe to a global event.
+Subscribe to a global event and return an unsubscribe function.
 
 ### `Gyos.emit(event, ...args)`
 
-Emit a global event.
+Emit a global event. Returns `void`.
 
 ### `Gyos.off(event, handler?)`
 
-Remove one handler or all handlers for the event.
+Remove one handler, or all handlers for the event when `handler` is omitted. Returns `void`.
 
 ### `Gyos.once(event, handler)`
 
-Subscribe for one emission only.
+Subscribe for one emission only and return an unsubscribe function.
 
 ### Debug helpers
 
-- `Gyos.getEventListeners()`
-- `Gyos.clearAllEvents()`
+- `Gyos.getEventListeners()` returns `Record<string, number>` with the listener count for every event.
+- `Gyos.clearAllEvents()` removes every global event listener and returns `void`.
 
 Use the global event bus for cross-scope communication. Use `$emit` and `$on` when the interaction should stay inside one scope tree.
 
@@ -895,31 +1090,30 @@ Validate a value against pipe-style rule strings.
 const error = await Gyos.validate('test@example.com', 'required|email');
 ```
 
+The promise resolves to `null` when valid or to the first error message. All built-in validators except `required` allow empty values, so combine a format rule with `required` when the field is mandatory.
+
 ### Built-in validators
 
-- `required`
-- `email`
-- `minLength(length)`
-- `maxLength(length)`
-- `min(value)`
-- `max(value)`
-- `number`
-- `integer`
-- `numeric`
-- `alpha`
-- `alphanumeric`
-- `pattern(regex)`
-- `same(fieldName)`
-- `different(fieldName)`
-- `url`
-- `phone`
-- `date`
-- `before(date)`
-- `after(date)`
-- `password`
-- `in(a,b,c)`
-- `notIn(a,b,c)`
-- `between(min,max)`
+| Rule | Valid when |
+| --- | --- |
+| `required` | The value is not `null`, an empty string, or an empty array. |
+| `email` | The value has a basic `name@domain.tld` shape. |
+| `minLength(length)` / `maxLength(length)` | String or array length is within the limit. |
+| `min(value)` / `max(value)` | Parsed numeric value is within the limit. |
+| `number` | The value can be parsed as a finite number. |
+| `integer` | The parsed numeric value is an integer. |
+| `numeric` | The value contains ASCII digits only. |
+| `alpha` | The value contains ASCII letters only. |
+| `alphanumeric` | The value contains ASCII letters and digits only. |
+| `pattern(regex)` | The value matches the supplied regular-expression source. |
+| `same(fieldName)` / `different(fieldName)` | The value equals or differs from another field in validation context. |
+| `url` | The browser `URL` constructor accepts the value. |
+| `phone` | Vietnamese phone format: `0` followed by nine digits. |
+| `date` | A parseable date written as `YYYY-MM-DD`. |
+| `before(date)` / `after(date)` | The parsed date is strictly before or after the target date. |
+| `password` | At least eight characters with an uppercase letter, lowercase letter, and number. |
+| `in(a,b,c)` / `notIn(a,b,c)` | The string value is included in or excluded from the supplied list. |
+| `between(min,max)` | The parsed numeric value is inside the inclusive range. |
 
 ### Validation context
 
@@ -937,20 +1131,34 @@ await Gyos.validate(confirmPassword, 'same(password)', {
 
 GyosJS includes small reusable composables:
 
-- `Gyos.useFetch(url)`
-- `Gyos.useCounter(initialValue)`
-- `Gyos.useToggle(initialValue)`
-- `Gyos.useLocalStorage(key, defaultValue)`
-- `Gyos.useInterval(callback, delay)`
-- `Gyos.useTimeout(callback, delay)`
-- `Gyos.useDebounce(initialValue, delay)`
-- `Gyos.useThrottle(initialValue, delay)`
-- `Gyos.useMouse()`
-- `Gyos.useWindowSize()`
-- `Gyos.useMediaQuery(queries)`
-- `Gyos.useAsync(asyncFn, immediate?)`
+| Composable | Return contract |
+| --- | --- |
+| `Gyos.useFetch(url)` | `data: Signal<T \| null>`, `loading: Signal<boolean>`, `error: Signal<Error \| null>`, plus async `refetch()` and `onMount()`. `url` may be a string or a function returning a URL, `Response`, or promise of either. |
+| `Gyos.useCounter(initialValue)` | Writable `count`, read-only `double`, and `increment(step?)`, `decrement(step?)`, `reset()`. |
+| `Gyos.useToggle(initialValue)` | One boolean signal exposed as both `state` and `value`, plus `toggle()`, `setTrue()`, `setFalse()`. |
+| `Gyos.useLocalStorage(key, defaultValue)` | Writable `state` that persists after writes, `remove()` to delete the storage key, and `onUnmount()` to stop persistence. |
+| `Gyos.useInterval(callback, delay)` | `start()`, `stop()`, `restart()`, `onMount()`, `onUnmount()`. A `null` delay disables the interval. |
+| `Gyos.useTimeout(callback, delay)` | `start()`, `clear()`, `onMount()`, `onUnmount()`. |
+| `Gyos.useDebounce(initialValue, delay)` | Writable `value`, read-only delayed `debounced`, and `onUnmount()`. It debounces a reactive value, not a function call. |
+| `Gyos.useThrottle(initialValue, delay)` | Writable `value`, read-only leading-edge `throttled`, and `onUnmount()`. It throttles a reactive value, not a function call. |
+| `Gyos.useMouse()` | `x` and `y` signals plus window-listener lifecycle hooks. |
+| `Gyos.useWindowSize()` | `width` and `height` signals plus window-listener lifecycle hooks. |
+| `Gyos.useMediaQuery(queries)` | `matches`, an object of boolean signals keyed like `queries`, plus lifecycle hooks. |
+| `Gyos.useAsync(asyncFn, immediate?)` | `data`, `loading`, `error` signals, async `execute()`, and `onMount()`. `immediate` defaults to `true`. |
 
 These are useful when one piece of logic appears across multiple scopes, but they are not required for ordinary GyosJS usage.
+
+```js
+const search = Gyos.useDebounce('', 300);
+
+search.value('gyos');
+console.log(search.debounced()); // still the previous value
+
+setTimeout(() => {
+  console.log(search.debounced()); // "gyos"
+  search.onUnmount();
+}, 350);
+```
 
 ---
 
@@ -974,7 +1182,7 @@ Use them declaratively:
 
 ### `Gyos.registerTransition(name, config)`
 
-Register a custom transition.
+Register or replace a custom transition. Returns `void`.
 
 ```js
 Gyos.registerTransition('pop', {
@@ -986,13 +1194,18 @@ Gyos.registerTransition('pop', {
 });
 ```
 
-### `Gyos.getTransitionConfig(name)`
+### `Gyos.getTransitionConfig(source)`
 
-Read a transition config.
+Read a transition config by registered name or directly from an element. Passing an element also reads a numeric `g-transition.N` duration modifier.
+
+```js
+Gyos.getTransitionConfig('fade');
+Gyos.getTransitionConfig(document.querySelector('[g-transition]'));
+```
 
 ### `Gyos.applyTransitionStyles()`
 
-Inject base transition styles into the page.
+Inject base transition styles into the page. Returns `void`.
 
 The auto build already calls this for you.
 
@@ -1002,11 +1215,11 @@ The auto build already calls this for you.
 
 ### `Gyos.portalCreate(sourceEl, targetSelector)`
 
-Move an element to another target in the DOM.
+Move an element to another target in the DOM. Returns `void`.
 
 ### `Gyos.portalDestroy(sourceEl)`
 
-Restore the element to its original location.
+Restore the element to its original location. Returns `void`.
 
 This is the programmatic version of what `g-portal` is solving declaratively.
 
@@ -1016,19 +1229,23 @@ This is the programmatic version of what `g-portal` is solving declaratively.
 
 ### `Gyos.ready(callback)`
 
-Run code on DOM ready.
+Run code on DOM ready. Returns `void`.
 
 ### `Gyos.nextTick(callback)`
 
-Run code on the next microtask after current updates.
+Schedule the callback in a microtask after current synchronous updates. Returns `void`.
 
 ### `Gyos.debounce(fn, delay)`
 
-Create a debounced wrapper.
+Return a wrapper that calls `fn` after calls have stopped for `delay` milliseconds. The wrapper returns `void` and does not expose a cancel method.
 
 ### `Gyos.throttle(fn, delay)`
 
-Create a throttled wrapper.
+Return a leading-edge wrapper that calls `fn` at most once per delay window. Calls inside the window are dropped; the wrapper returns `void`.
+
+### `Gyos.version`
+
+The current package version as a string.
 
 ---
 
@@ -1079,6 +1296,8 @@ Gyos.onAfterNavigate((url) => {
 - the View Transition update callback has completed, when supported
 
 The hook does not wait for the View Transition animation to finish.
+
+Both hook registration functions return `void`; the current public API does not provide hook removal. Register long-lived application hooks once during startup.
 
 ### Router target resolution
 

@@ -849,8 +849,9 @@ Common modifiers include:
 * `once` - Listens to the event only once.
 * `capture` - Listens to the event during the capturing phase.
 * `passive` - Optimizes performance for scroll and touch events.
-* `debounce.[ms]` - Limits the frequency of event handler calls (only for `input`, `change`).
-* `outside` - Listens to events when clicking outside the element.
+* `debounce.[ms]` - Delays any event handler until calls have stopped for the given milliseconds, for example `@input.debounce.300`.
+* `outside` - With `@click.outside`, listens for document clicks outside the bound element.
+* `global` - Attaches the listener to the document root instead of requiring the element to receive the event.
 * `escape` and `esc` - Listens only when the Escape key is pressed (only for `keydown`, `keyup`).
 * `space` - Listens only when the Space key is pressed (only for `keydown`, `keyup`).
 * `up` - Listens only when the Up Arrow key is pressed (only for `keydown`, `keyup`).
@@ -859,7 +860,7 @@ Common modifiers include:
 * `right` - Listens only when the Right Arrow key is pressed (only for `keydown`, `keyup`).
 * `enter`, `delete`, and `tab` - Match Enter, Delete/Backspace, and Tab respectively.
 
-`once` is consumed only after the event passes its key or `outside` filter and the handler runs. A non-matching key does not consume `@keydown.enter.once`.
+`once` is consumed only after the event passes its key or `outside` filter and the handler runs. A non-matching key does not consume `@keydown.enter.once`. A numeric modifier alone does not debounce: `@input.300` runs immediately, while `@input.debounce.300` is debounced.
 
 Do not combine `passive` with `prevent`. Browsers intentionally ignore `preventDefault()` inside passive listeners; use `passive` only when the handler will not cancel native scrolling or touch behavior.
 
@@ -953,6 +954,8 @@ Additionally, `g-model` supports modifiers to customize the binding behavior:
 * `debounce.[ms]` - Limits the frequency of data updates.
 * `trim` - Automatically trims whitespace from the beginning and end of the string.
 * `number` - Converts the value to a number.
+
+The numeric delay is recognized only after `debounce`: use `g-model.debounce.300="query"`, not `g-model.300="query"`. `g-model` listens to the `input` event, supports nested paths such as `user.name` and `items[0].title`, and writes booleans for checkboxes.
 
 > Note about IME (Vietnamese, Japanese, Chinese…):
 
