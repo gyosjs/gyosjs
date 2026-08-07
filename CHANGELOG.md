@@ -6,6 +6,17 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-08-07
+
+### Added
+
+- Named scope factories now create a fresh reactive instance for every mount and apply element `gd-*` values before template binding.
+- MPA Boost supports `g-router-remove` to remove a trigger only after its navigation commits, including load-more controls used with additive swaps.
+
+### Fixed
+
+- Repeated MPA visits to server-initialized factory scopes no longer reuse stale form state from a previous route.
+
 ## [0.1.1] - 2026-08-07
 
 ### Fixed
@@ -35,6 +46,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 - This is an experimental `0.x` release. Router, morphing, expression evaluation, and browser edge cases should be evaluated against an application's requirements before production adoption.
 
-[Unreleased]: https://github.com/gyosjs/gyosjs/compare/v0.1.1...HEAD
+[Unreleased]: https://github.com/gyosjs/gyosjs/compare/v0.1.2...HEAD
+[0.1.2]: https://github.com/gyosjs/gyosjs/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/gyosjs/gyosjs/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/gyosjs/gyosjs/releases/tag/v0.1.0

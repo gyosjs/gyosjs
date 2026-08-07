@@ -308,10 +308,13 @@ Append the incoming source fragment’s child nodes to the target.
     g-router-method="GET"
     g-target="#items"
     g-swap="append"
+    g-router-remove
 >
     Append items
 </button>
 ```
+
+`g-router-remove` removes this specific trigger only after the new fragment commits. If the response contains the next load-more control, the old and new controls do not remain together; failed requests keep the current trigger available.
 
 This is useful for timelines, feeds, or “show more” flows.
 

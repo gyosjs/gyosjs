@@ -92,6 +92,20 @@ Use `Gyos.scope()` when:
 
 A named object definition is reused by the registry. Mounting the same name on multiple elements does not create independent state instances; use separate registrations or inline scopes when each element needs isolated state.
 
+Use a factory when the same named scope can mount more than once and each mount needs fresh local state. This is the recommended form for page components that appear on multiple MPA routes:
+
+```js
+Gyos.scope('ProductForm', () => ({
+  step: 1,
+  name: '',
+  next() {
+    this.step++;
+  }
+}));
+```
+
+The factory runs once per mount. `gd-*` values from that element are applied to the returned object before it becomes reactive, so server-rendered values can initialize each route independently.
+
 ### `Gyos.scope(element, definition)`
 
 You can also register a scope directly on a specific element.
@@ -1322,7 +1336,7 @@ Boost responses must remain same-origin, return `text/html` or `application/xhtm
 
 ### Public TypeScript types
 
-The package root exports `Signal`, `SignalOptions`, `Computed`, `Scope`, `ComponentContext`, `WatchCallback`, `WatchOptions`, `Directive`, `DirectiveBinding`, `PipeFn`, `ValidatorFn`, `ValidationContext`, `HydrationStrategy`, `TransitionConfig`, and `RouterOptions` as type-only exports.
+The package root exports `Signal`, `SignalOptions`, `Computed`, `Scope`, `ScopeFactory`, `ScopeDefinition`, `ComponentContext`, `WatchCallback`, `WatchOptions`, `Directive`, `DirectiveBinding`, `PipeFn`, `ValidatorFn`, `ValidationContext`, `HydrationStrategy`, `TransitionConfig`, and `RouterOptions` as type-only exports.
 
 ### Router attributes you will use most
 
@@ -1338,6 +1352,7 @@ The package root exports `Signal`, `SignalOptions`, `Computed`, `Scope`, `Compon
 - `g-current-state`: suppress history changes, including redirected non-`GET` history updates
 - `g-noscroll`: skip hash, saved-position, and scroll-to-top handling for that trigger
 - `g-router-spin`: show a temporary spinner in the selected target while loading
+- `g-router-remove`: remove the trigger after a successful navigation commit; useful for replacing a load-more control during `append` or `prepend`
 - `g-router-link`: use any element as a router trigger and provide its URL
 - `g-router-method`: set `GET`, `POST`, `PUT`, `PATCH`, or `DELETE` for `g-router-link`
 - `g-router-params`: evaluate an object expression in the current scope and send it as query params or JSON
