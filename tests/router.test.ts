@@ -471,6 +471,33 @@ describe('router', () => {
 		expect(persist.detachPersist).not.toHaveBeenCalled();
 	});
 
+	it('removes an additive navigation trigger only after the new fragment commits', async () => {
+		document.body.innerHTML = `
+			<div g-outlet>
+				<div id="items"><div id="old">old</div></div>
+				<a id="more" href="/items" g-target="#items" g-swap="append" g-router-remove>more</a>
+			</div>
+		`;
+		const trigger = document.getElementById('more')!;
+		global.fetch = vi.fn().mockResolvedValue(buildResponse(
+			'<div id="items"><div id="new">new</div><a id="next" href="/items?page=3" g-router-remove>more</a></div>',
+			'http://localhost:3000/items?page=2'
+		)) as any;
+		const navigate = (__routerTest as any).navigate as (opts: any) => Promise<void>;
+
+		await navigate({
+			url: '/items?page=2',
+			method: 'GET',
+			trigger,
+			changeState: false
+		});
+
+		expect(trigger.isConnected).toBe(false);
+		expect(document.getElementById('new')).not.toBeNull();
+		expect(document.getElementById('next')).not.toBeNull();
+		expect(cleanupFns.disposeEffects).toHaveBeenCalledWith(trigger);
+	});
+
 	it('keeps document head and global scripts unchanged for a partial target update', async () => {
 		document.head.innerHTML = '<title>Current</title><meta name="current" content="1">';
 		document.body.innerHTML = `

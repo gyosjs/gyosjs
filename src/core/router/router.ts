@@ -510,6 +510,8 @@ async function navigate(opts: NavigateOptions): Promise<void> {
 		}
 
 		const swapMode = (opts.swapMode || opts.trigger?.getAttribute('g-swap') || 'inner').toLowerCase();
+		const removeTriggerAfterCommit = opts.trigger instanceof HTMLElement
+			&& opts.trigger.hasAttribute('g-router-remove');
 		const destructiveSwap = !['append', 'prepend'].includes(swapMode);
 		const isFullOutletNavigation = target === findGlobalOutlet();
 		const targetOutletIndex = getOutletIndex(document, target);
@@ -739,6 +741,10 @@ async function navigate(opts: NavigateOptions): Promise<void> {
 		}
 
 		assertActiveNavigation(transaction);
+		if (removeTriggerAfterCommit && opts.trigger instanceof HTMLElement && opts.trigger.isConnected) {
+			disposeEffects(opts.trigger);
+			opts.trigger.remove();
+		}
 		if (hasTargetSpinner) hideTargetSpinner(transaction.spinner);
 		transaction.spinner = null;
 		runNavigationHooks(afterNavigate, targetUrl);
