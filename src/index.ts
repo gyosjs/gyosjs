@@ -37,6 +37,8 @@ export type {
 	HydrationStrategy,
 	PipeFn,
 	Scope,
+	ScopeDefinition,
+	ScopeFactory,
 	Signal,
 	SignalOptions,
 	ValidatorFn,
@@ -173,7 +175,7 @@ const Gyos = {
 	onAfterNavigate,
 	portalCreate,
 	portalDestroy,
-	version: '0.1.1'
+	version: '0.1.2'
 };
 
 export default Gyos;

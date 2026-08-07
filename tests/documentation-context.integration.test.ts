@@ -90,6 +90,47 @@ describe('documentation scope context contracts', () => {
 		expect(Gyos.hasStore(storeName)).toBe(false);
 	});
 
+	it('creates fresh factory scope instances and applies server data to each mount', async () => {
+		const scopeName = `FactoryDocs${++id}`;
+		Gyos.scope(scopeName, () => ({
+			name: 'default',
+			nested: { count: 0 }
+		}));
+
+		document.body.innerHTML = `
+			<form id="first" g-scope="${scopeName}" gd-name="Product one">
+				<input g-model="name" value="Product one">
+			</form>
+		`;
+		Gyos.mountAll();
+		const first = document.getElementById('first')!;
+		const firstState = Gyos.mountedScopes().get(first);
+		expect(firstState.name).toBe('Product one');
+		firstState.name = 'locally edited';
+		firstState.nested.count = 4;
+		await flush();
+		Gyos.cleanup(first);
+
+		document.body.innerHTML = `
+			<form id="second" g-scope="${scopeName}" gd-name="Product two">
+				<input g-model="name" value="Product two">
+				<button type="button" @click="nested.count++">Increment</button>
+				<span>{nested.count}</span>
+			</form>
+		`;
+		Gyos.mountAll();
+		const second = document.getElementById('second')!;
+		const secondState = Gyos.mountedScopes().get(second);
+
+		expect(secondState).not.toBe(firstState);
+		expect(secondState.name).toBe('Product two');
+		expect(secondState.nested.count).toBe(0);
+		expect((second.querySelector('input') as HTMLInputElement).value).toBe('Product two');
+		second.querySelector('button')!.click();
+		await flush();
+		expect(second.querySelector('span')!.textContent).toBe('1');
+	});
+
 	it('keeps the global event bus separate and honors once/off', () => {
 		const regular = vi.fn();
 		const oneTime = vi.fn();

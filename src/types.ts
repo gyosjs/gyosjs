@@ -41,6 +41,9 @@ export interface Scope {
 	onUpdate?(): void;
 }
 
+export type ScopeFactory = (context: ComponentContext) => Scope;
+export type ScopeDefinition = Scope | ScopeFactory;
+
 /**
  * Component context
  */

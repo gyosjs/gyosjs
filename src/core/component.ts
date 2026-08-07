@@ -1,4 +1,4 @@
-import type { Scope, ComponentContext, WatchOptions } from '../types';
+import type { Scope, ScopeDefinition, ComponentContext, WatchOptions } from '../types';
 import { effect } from '../reactivity/signal';
 import { getInjector } from './di';
 import { parseTemplate } from '../template/parser';
@@ -16,12 +16,12 @@ setMountFunction(mount);
 /**
  * Registry of all scopes
  */
-const scopeRegistry = new Map<string, Scope>();
+const scopeRegistry = new Map<string, ScopeDefinition>();
 
 /**
  * Register a scope
  */
-export function scope(name: string | HTMLElement, definition: Scope): void {
+export function scope(name: string | HTMLElement, definition: ScopeDefinition): void {
 
 	if (name instanceof HTMLElement) {
 		// Mount scope directly on HTMLElement
@@ -237,8 +237,8 @@ function getPersistKey(el: HTMLElement, callback: (key: string) => any | void): 
 	);
 }
 
-function handleDefinition(el: HTMLElement, scopeAttr: string): Scope {
-	let definition: Scope | undefined;
+function handleDefinition(el: HTMLElement, scopeAttr: string): ScopeDefinition {
+	let definition: ScopeDefinition | undefined;
 	
 	// Resolve persist key with interpolation support
 	const cached = getPersistKey(el, persistKey => scopeCached.get(persistKey));
@@ -251,6 +251,18 @@ function handleDefinition(el: HTMLElement, scopeAttr: string): Scope {
 	if (!definition) definition = scopeRegistry.get(scopeAttr) || {};
 
 	const autoDef = parseAutoScope(el);
+	if (typeof definition === 'function') {
+		const factory = definition;
+		return context => {
+			const instance = factory(context);
+			if (!instance || typeof instance !== 'object') return instance;
+			Object.keys(autoDef).forEach(key => {
+				(instance as any)[key] = (autoDef as any)[key];
+			});
+			autoBindModelProp(el, instance);
+			return instance;
+		};
+	}
 	Object.keys(autoDef).forEach(key => {
 		(definition as any)[key] = (autoDef as any)[key];
 	});
@@ -294,7 +306,7 @@ function mountScope(el: HTMLElement, scopeAttr: string): void {
 /**
  * Internal mount function
  */
-function mountScopeInternal(el: HTMLElement, definition: Scope): void {
+function mountScopeInternal(el: HTMLElement, definition: ScopeDefinition): void {
 
 	// Create scope instance first (before context, so we can pass it to createContext)
 	let instance: any = null;
@@ -308,7 +320,10 @@ function mountScopeInternal(el: HTMLElement, definition: Scope): void {
 
 	// If function component, call it now with context
 	if (typeof definition === 'function' && !instance) {
-		instance = (definition as Function)(context);
+		const factoryResult = (definition as Function)(context);
+		instance = factoryResult && typeof factoryResult === 'object'
+			? makeReactive(factoryResult)
+			: factoryResult;
 	}
 
 	if (!instance || typeof instance !== 'object') {
