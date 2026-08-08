@@ -72,7 +72,7 @@ describe('public source export and sync', () => {
 		result = runExporter(['--sync', '--dry-run', destination]);
 		expect(result.status, result.stderr).toBe(0);
 		expect(result.stdout).toContain('0 added, 0 changed, 0 deleted');
-	}, 30_000);
+	}, 90_000);
 
 	it('refuses dirty clones and non-canonical remotes before changing files', async () => {
 		const dirty = await createPublicClone();

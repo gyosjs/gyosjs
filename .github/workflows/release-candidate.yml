@@ -1,0 +1,41 @@
+name: Release Candidate
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Expected package version without the v prefix
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    if: github.repository == 'gyosjs/gyosjs'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium firefox webkit
+      - name: Verify requested version
+        run: npm run version:check -- "${{ inputs.version }}"
+      - name: Verify release candidate
+        run: npm run release:check
+      - name: Create verified npm artifact
+        run: |
+          mkdir -p release-artifacts
+          npm pack --pack-destination release-artifacts
+      - uses: actions/upload-artifact@v4
+        with:
+          name: gyosjs-${{ inputs.version }}
+          path: release-artifacts/gyosjs-${{ inputs.version }}.tgz
+          if-no-files-found: error
+          retention-days: 7

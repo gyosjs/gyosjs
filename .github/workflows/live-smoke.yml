@@ -1,0 +1,22 @@
+name: Live Ecosystem Smoke
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '41 2 * * *'
+
+permissions:
+  contents: read
+
+jobs:
+  live:
+    if: github.repository == 'gyosjs/gyosjs'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+      - run: npm run live:check

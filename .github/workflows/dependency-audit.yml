@@ -1,0 +1,24 @@
+name: Dependency Audit
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '23 4 1 * *'
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    if: github.repository == 'gyosjs/gyosjs'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm audit --audit-level=high

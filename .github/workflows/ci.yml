@@ -29,8 +29,11 @@ jobs:
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
 
-      - name: Verify release
-        run: npm run release:check
+      - name: Verify source and package
+        run: npm run check
+
+      - name: Run Chromium E2E
+        run: npm run test:e2e
 
       - name: Upload browser traces
         if: failure()
@@ -40,3 +43,23 @@ jobs:
           path: test-results/
           if-no-files-found: ignore
           retention-days: 7
+
+  minimum-node:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up minimum Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 18.20.8
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify minimum Node.js support
+        run: npm run check

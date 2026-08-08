@@ -236,8 +236,8 @@ test('same-URL history entries restore their own scroll positions', async ({ pag
 	const fixture = (label: string) => `
 		<!doctype html><html><head><title>Same URL</title></head><body g-boost style="min-height: 3000px">
 			<div id="app" g-outlet>
-				<div id="same-panel" g-snapshot>Panel ${label}</div>
-				<a id="same-next" href="/router/fixtures/same-url.html" g-target="#same-panel" g-change-state>Same URL next</a>
+				<div id="same-panel" g-snapshot style="min-height: 3000px">Panel ${label}</div>
+				<a id="same-next" href="/router/fixtures/same-url.html" g-target="#same-panel" g-change-state g-noscroll>Same URL next</a>
 			</div>
 		</body></html>
 	`;
@@ -251,21 +251,18 @@ test('same-URL history entries restore their own scroll positions', async ({ pag
 
 	await page.goto('/router/layout-base.html');
 	await page.locator('#app').evaluate(outlet => {
-		outlet.innerHTML = '<a id="same-start" href="/router/fixtures/same-url.html">Same URL fixture</a>';
+		outlet.innerHTML = '<a id="same-start" href="/router/fixtures/same-url.html" g-noscroll>Same URL fixture</a>';
 	});
 	await page.locator('#same-start').click();
 	await expect(page.locator('#same-panel')).toHaveText('Panel A');
-	await page.evaluate(() => {
-		document.body.style.minHeight = '3000px';
-		window.scrollTo(0, 620);
-	});
+	await page.mouse.wheel(0, 620);
 	await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(500);
 	const firstEntryId = await page.evaluate(() => history.state?.gyosEntryId);
 	await page.locator('#same-next').evaluate(element => (element as HTMLElement).click());
 	await expect(page.locator('#same-panel')).toHaveText('Panel B');
 	const secondEntryId = await page.evaluate(() => history.state?.gyosEntryId);
 	expect(secondEntryId).not.toBe(firstEntryId);
-	await page.evaluate(() => window.scrollTo(0, 940));
+	await page.mouse.wheel(0, 940);
 	await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(800);
 
 	await page.goBack();

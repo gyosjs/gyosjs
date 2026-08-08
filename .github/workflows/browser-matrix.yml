@@ -1,0 +1,33 @@
+name: Browser Matrix
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 3 * * 1'
+
+permissions:
+  contents: read
+
+jobs:
+  e2e:
+    if: github.repository == 'gyosjs/gyosjs'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium firefox webkit
+      - run: npm run test:e2e:all
+      - name: Upload browser traces
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: browser-matrix-traces
+          path: test-results/
+          if-no-files-found: ignore
+          retention-days: 7
