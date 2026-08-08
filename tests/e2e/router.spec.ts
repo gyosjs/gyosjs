@@ -255,7 +255,7 @@ test('same-URL history entries restore their own scroll positions', async ({ pag
 	});
 	await page.locator('#same-start').click();
 	await expect(page.locator('#same-panel')).toHaveText('Panel A');
-	await page.mouse.wheel(0, 620);
+	await page.evaluate(() => window.scrollTo(0, 620));
 	await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(500);
 	const firstScroll = await page.evaluate(() => window.scrollY);
 	const firstEntryId = await page.evaluate(() => history.state?.gyosEntryId);
@@ -263,7 +263,7 @@ test('same-URL history entries restore their own scroll positions', async ({ pag
 	await expect(page.locator('#same-panel')).toHaveText('Panel B');
 	const secondEntryId = await page.evaluate(() => history.state?.gyosEntryId);
 	expect(secondEntryId).not.toBe(firstEntryId);
-	await page.mouse.wheel(0, 940);
+	await page.evaluate(() => window.scrollTo(0, 940));
 	await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(800);
 	const secondScroll = await page.evaluate(() => window.scrollY);
 
