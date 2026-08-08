@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: GyosJS documentation
+    url: https://gyosjs.dev
+    about: Check the guides and complete API reference before opening an issue.
+  - name: Security policy
+    url: https://github.com/gyosjs/gyosjs/security/policy
+    about: Report vulnerabilities privately instead of creating a public issue.

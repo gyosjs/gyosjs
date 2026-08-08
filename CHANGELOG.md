@@ -6,6 +6,11 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Changed
+
+- Maintenance tooling now verifies release metadata, documentation mirrors, live distribution endpoints, and Chromium/Firefox/WebKit browser behavior.
+- The minimum Node.js maintenance runtime is now stated precisely as 18.19 instead of the broader Node.js 18 range required by current tooling.
+
 ## [0.1.2] - 2026-08-07
 
 ### Added

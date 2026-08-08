@@ -1,0 +1,62 @@
+name: MPA Boost or router bug
+description: Report a navigation, swap, history, script, persist, or lifecycle regression.
+title: "[Router]: "
+body:
+  - type: input
+    id: version
+    attributes:
+      label: GyosJS version
+      placeholder: 0.1.2
+    validations:
+      required: true
+  - type: input
+    id: browser
+    attributes:
+      label: Browser and version
+    validations:
+      required: true
+  - type: dropdown
+    id: navigation
+    attributes:
+      label: Navigation type
+      options:
+        - Full outlet link
+        - Full outlet form
+        - Partial target
+        - Browser back or forward
+        - Preload
+        - Other router API
+    validations:
+      required: true
+  - type: textarea
+    id: contract
+    attributes:
+      label: Navigation contract
+      description: Include the starting URL, requested/final URL, method, response content type, target/outlet, swap mode, and expected history change.
+    validations:
+      required: true
+  - type: textarea
+    id: markup
+    attributes:
+      label: Minimal markup and server response
+      description: Include both trigger markup and the relevant incoming HTML.
+    validations:
+      required: true
+  - type: textarea
+    id: result
+    attributes:
+      label: Actual result
+      description: Include console errors and whether hard navigation produces the correct page.
+    validations:
+      required: true
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks
+      options:
+        - label: The endpoints are same-origin HTML endpoints.
+          required: true
+        - label: I tested the latest public patch release.
+          required: true
+        - label: This report does not contain a security vulnerability.
+          required: true

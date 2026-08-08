@@ -1,0 +1,61 @@
+name: Bug report
+description: Report a reproducible GyosJS runtime, template, form, or packaging problem.
+title: "[Bug]: "
+body:
+  - type: markdown
+    attributes:
+      value: Do not report vulnerabilities here. Follow SECURITY.md for private disclosure.
+  - type: input
+    id: version
+    attributes:
+      label: GyosJS version
+      placeholder: 0.1.2
+    validations:
+      required: true
+  - type: dropdown
+    id: install
+    attributes:
+      label: Installation
+      options:
+        - npm ESM
+        - npm auto entrypoint
+        - CDN auto bundle
+        - Local development build
+    validations:
+      required: true
+  - type: input
+    id: browser
+    attributes:
+      label: Browser and version
+      placeholder: Chrome 140, Firefox 142, Safari 18
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Minimal reproduction
+      description: Provide a repository, URL, or the smallest HTML and JavaScript that reproduces the problem.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: Include browser errors and relevant responses without secrets or private data.
+    validations:
+      required: true
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks
+      options:
+        - label: I tested the latest public patch release.
+          required: true
+        - label: This report does not contain a security vulnerability.
+          required: true

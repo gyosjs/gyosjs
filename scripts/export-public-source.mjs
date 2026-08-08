@@ -17,6 +17,7 @@ const sourceEntries = [
 	'CHANGELOG.md',
 	'CONTRIBUTING.md',
 	'LICENSE.md',
+	'MAINTAINING.md',
 	'README.md',
 	'RELEASE.md',
 	'SECURITY.md',

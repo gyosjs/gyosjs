@@ -1,0 +1,31 @@
+name: Feature proposal
+description: Describe an application problem that the current GyosJS contract cannot solve cleanly.
+title: "[Proposal]: "
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Application problem
+      description: Describe the server-rendered workflow and the limitation you encountered, not only the desired API name.
+    validations:
+      required: true
+  - type: textarea
+    id: current
+    attributes:
+      label: Current approach
+      description: Show the existing directives, APIs, or application code you tried and why they are insufficient.
+    validations:
+      required: true
+  - type: textarea
+    id: behavior
+    attributes:
+      label: Proposed behavior
+      description: Explain observable behavior, lifecycle, cleanup, and progressive-enhancement expectations.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+    validations:
+      required: true

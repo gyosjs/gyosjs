@@ -2,6 +2,8 @@
 
 GyosJS accepts contributions to the runtime, examples, tests, and documentation. The public documentation in `docs/en` is written for library users, so contributor-facing process stays here at the repo root.
 
+Maintainers should also follow `MAINTAINING.md` for triage, compatibility, cross-repository coordination, and release gates.
+
 ## Setup
 
 ```bash
