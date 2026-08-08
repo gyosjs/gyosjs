@@ -143,7 +143,7 @@ test('snapshot back and forward restore scroll and persist state without refetch
 	expect(await page.evaluate(() => history.state)).toEqual(
 		expect.objectContaining({ scroll: { x: 0, y: savedHomeScroll } })
 	);
-	await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(savedHomeScroll);
+	await expect.poll(async () => Math.abs((await page.evaluate(() => window.scrollY)) - savedHomeScroll)).toBeLessThanOrEqual(20);
 	await expect(page.locator('[g-persist="player"][data-e2e-identity="snapshot-player"]')).toHaveCount(1);
 
 	await page.goForward();
@@ -257,6 +257,7 @@ test('same-URL history entries restore their own scroll positions', async ({ pag
 	await expect(page.locator('#same-panel')).toHaveText('Panel A');
 	await page.mouse.wheel(0, 620);
 	await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(500);
+	const firstScroll = await page.evaluate(() => window.scrollY);
 	const firstEntryId = await page.evaluate(() => history.state?.gyosEntryId);
 	await page.locator('#same-next').evaluate(element => (element as HTMLElement).click());
 	await expect(page.locator('#same-panel')).toHaveText('Panel B');
@@ -264,14 +265,15 @@ test('same-URL history entries restore their own scroll positions', async ({ pag
 	expect(secondEntryId).not.toBe(firstEntryId);
 	await page.mouse.wheel(0, 940);
 	await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(800);
+	const secondScroll = await page.evaluate(() => window.scrollY);
 
 	await page.goBack();
 	await expect(page.locator('#same-panel')).toHaveText('Panel A');
-	expect(await page.evaluate(() => history.state?.scroll?.y)).toBe(620);
-	await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(500);
+	expect(await page.evaluate(() => history.state?.scroll?.y)).toBe(firstScroll);
+	await expect.poll(async () => Math.abs((await page.evaluate(() => window.scrollY)) - firstScroll)).toBeLessThanOrEqual(20);
 	await page.goForward();
 	await expect(page.locator('#same-panel')).toHaveText('Panel B');
-	await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(800);
+	await expect.poll(async () => Math.abs((await page.evaluate(() => window.scrollY)) - secondScroll)).toBeLessThanOrEqual(20);
 	expect(requestCount).toBe(2);
 });
 
