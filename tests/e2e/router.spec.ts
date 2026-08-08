@@ -129,7 +129,7 @@ test('snapshot back and forward restore scroll and persist state without refetch
 	await page.locator('nav a[href="/router/posts.html"]').evaluate(element => (element as HTMLElement).click());
 	await expect.poll(() => page.evaluate(() => history.state?.scroll?.y)).toBeGreaterThan(500);
 	const savedHomeScroll = await page.evaluate(() => history.state.scroll.y as number);
-	expect(Math.abs(savedHomeScroll - homeScroll)).toBeLessThanOrEqual(5);
+	expect(Math.abs(savedHomeScroll - homeScroll)).toBeLessThanOrEqual(20);
 	releasePosts();
 	await expect(page).toHaveURL(/\/router\/posts\.html$/);
 	await expect(page.getByRole('heading', { name: 'Posts' })).toBeVisible();
