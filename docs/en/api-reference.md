@@ -46,7 +46,7 @@ Use the browser's find command on this page when you already know the API name.
 | --- | --- |
 | Scope | `g-scope`, `g-scope-persist`, `gd-*`, `gm-*`, `Gyos.scope`, `mount`, `mountAll`, `mountTree`, `cleanup`, `mountedScopes` |
 | Scope context | `$refs`, `$watch`, `$effect`, `$emit`, `$on`, `$provide`, `$inject`, `onMount`, `onUpdate`, `onUnmount` |
-| Text and attributes | `{expression}`, pipes with `\|`, `:class`, `:style`, `:disabled`, `:readonly`, `:checked`, `:selected`, `:value`, `:src`, `:href`, `:alt`, `:title` |
+| Text and attributes | `{expression}`, pipes with `\|`, `:class`, `:style`, safe generic `:attribute` bindings, ARIA/data attributes, and form metadata |
 | Structural | `*if`, `*elseif`, `*else`, `*for`, `g-key`, `*switch`, `*case`, `*default`, `*await`, `*pending`, `*then`, `*catch` |
 | Directives | `g-show`, `g-text`, `g-html`, `g-ref`, `g-static`, `g-ignore`, `g-transition`, `g-portal`, `g-hydrate`, `g-provide`, `g-cloak`, `g-focus`, `g-tooltip`, `g-on`, `g-markdown`, `g-form`, `g-validate`, `g-errors`, `g-submit` |
 | Events and forms | `@event`, `$event`, event modifiers, `g-ignore-outside-click`, `g-model`, `.trim`, `.number`, `.debounce` |
@@ -141,9 +141,15 @@ Gyos.ready(() => {
 
 ### `Gyos.mountTree(element)`
 
-Mount descendant scopes inside one subtree. It does not mount the supplied root itself; call `Gyos.mount(element)` too when that root carries `g-scope`.
+Initialize one newly inserted subtree. GyosJS mounts a scope carried by the supplied root, mounts nested named or auto scopes, and processes ordinary markup against its nearest existing parent scope.
 
-Useful after custom DOM insertion or partial updates outside the router.
+This includes text interpolation, bindings, directives, events, models, and structural syntax. It is useful after application-owned DOM insertion; MPA Boost calls the equivalent subtree lifecycle automatically for committed swaps.
+
+```js
+const row = document.querySelector('#row-template').content.firstElementChild.cloneNode(true);
+document.querySelector('#rows').append(row);
+Gyos.mountTree(row);
+```
 
 ### `Gyos.cleanup(target?)`
 
@@ -276,6 +282,7 @@ Expressions are evaluated in the current scope context.
 - Functions in scope can be called directly.
 - Getter-style computed values can be referenced without parentheses.
 - Pipes use the `|` syntax and are resolved by GyosJS.
+- GyosJS leaves text inside `script`, `style`, `noscript`, `textarea`, `title`, and other browser raw-text or fallback containers unchanged. CSS braces, JSON-LD, and script blocks are not template expressions.
 
 ### Example
 
@@ -291,7 +298,7 @@ Expressions are evaluated in the current scope context.
 
 ## Attribute Bindings
 
-GyosJS supports `:attribute` syntax for reactive DOM attributes.
+GyosJS supports `:attribute` syntax for reactive DOM attributes. Bindings are not limited to a fixed HTML list, so ARIA, data, form metadata, and application-specific attributes can all follow reactive state.
 
 ### Common bindings
 
@@ -306,8 +313,34 @@ GyosJS supports `:attribute` syntax for reactive DOM attributes.
 - `:href`
 - `:alt`
 - `:title`
+- `:aria-expanded`, `:aria-current`, and other `:aria-*` attributes
+- `:data-state` and other `:data-*` attributes
+- `:name`, `:required`, `:min`, `:max`, `:pattern`, and other form metadata
+- custom attributes such as `:project-status`
+
+Framework-owned names (`g-*`, `gd-*`, `gm-*`, `@event`, `:binding`, and structural `*if`-style names), inline event handlers such as `onclick`, `srcdoc`, and `xmlns` cannot be created through a binding.
 
 Bound URLs reject active schemes and unsafe `data:` values. URL bindings on active-content elements such as `script`, `iframe`, `embed`, `object`, `base`, and `link` are removed; configure trusted resources outside reactive bindings.
+
+### Value and removal semantics
+
+| Result | DOM behavior |
+| --- | --- |
+| `null` or `undefined` | Remove the target attribute. |
+| `false` on an ordinary attribute | Remove the target attribute. |
+| `false` on `aria-*` or `data-*` | Keep the attribute with the string value `"false"`. |
+| Truthy/falsy value on a native boolean attribute | Toggle attribute presence and synchronize its reflected DOM property. |
+| Other value | Convert to a string and set the attribute. |
+
+```html
+<button
+  :aria-expanded="open"
+  :data-state="open ? 'open' : 'closed'"
+  :custom-state="open ? 'visible' : null"
+>Menu</button>
+
+<input :name="fieldName" :required="required" :min="minimum">
+```
 
 ### `:class`
 
@@ -432,6 +465,14 @@ Show or hide an element by toggling `display`.
 <p g-show="visible">This element is toggled</p>
 ```
 
+Add `g-transition` to animate changes after the initial mount:
+
+```html
+<aside g-show="open" g-transition.200="fade">Menu</aside>
+```
+
+Unlike `*if`, `g-show` keeps the element in the DOM. A leave transition finishes before `display: none` is applied, rapid toggles cancel stale transition work, and the element's original inline display value is restored when shown. Do not combine `g-show` with an application class that permanently sets `display: none`; use `g-cloak` to prevent an initial flash instead.
+
 ### `g-text`
 
 Set `textContent`.
@@ -504,10 +545,11 @@ Treat `g-ignore` as a mount-time boundary. Adding it after a branch has mounted 
 
 ### `g-transition`
 
-Apply transitions to structural changes.
+Apply transitions to structural changes and `g-show` visibility changes.
 
 ```html
 <div *if="open" g-transition="fade">Hello</div>
+<div g-show="open" g-transition="scale">Still exists while hidden</div>
 ```
 
 Add a duration modifier in milliseconds when one instance needs different timing:
@@ -1192,7 +1234,10 @@ Use them declaratively:
 
 ```html
 <div *if="open" g-transition="fade">Hello</div>
+<div g-show="open" g-transition.200="slide-down">Menu</div>
 ```
+
+Built-in transition helper classes use a `gyos-t-` prefix internally, so they do not redefine common application or Tailwind utilities such as `.opacity-0` and `.scale-100`.
 
 ### `Gyos.registerTransition(name, config)`
 

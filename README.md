@@ -33,7 +33,7 @@ GyosJS is not trying to replace a full SPA framework. If your app is primarily c
 Use the browser auto-init build when you want HTML-first usage with minimal setup.
 
 ```html
-<script src="https://cdn.jsdelivr.net/npm/gyosjs@0.1.2/dist/gyos.auto.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gyosjs@0.2.0/dist/gyos.auto.min.js"></script>
 ```
 
 That build attaches `window.Gyos`, starts the router when `g-boost` exists, injects transition styles, and mounts scopes when the page is ready.

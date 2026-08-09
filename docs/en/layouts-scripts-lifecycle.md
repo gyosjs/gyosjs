@@ -738,6 +738,25 @@ Use scope lifecycle for:
 - subscriptions
 - widget-level setup and cleanup
 
+### New markup inside an existing scope
+
+A partial target does not need to introduce another `g-scope`. After an `inner`, `replace`, `morph`, `append`, or `prepend` commit, GyosJS initializes the committed subtree against its nearest live scope. New text interpolation, bindings, events, models, structural syntax, and custom directives therefore work normally:
+
+```html
+<section g-scope="ResultsPage">
+    <div id="results"></div>
+</section>
+```
+
+```html
+<!-- Matching fragment returned by a filtered request. -->
+<div id="results">
+    <article g-reveal :aria-label="title">{title}</article>
+</div>
+```
+
+Do not add a global `onAfterNavigate` callback that rescans the document to mount those nodes. Reserve router hooks for app-wide concerns such as analytics. If your own non-router code inserts markup, call `Gyos.mountTree(insertedRoot)` once for that subtree.
+
 ### The effective order of events
 
 For a typical boosted navigation, the user-facing order is roughly:
@@ -921,6 +940,10 @@ Consider:
 - moving the logic into a scope lifecycle
 - making the script idempotent
 - marking it with `g-script-once` if it truly should run once
+
+### My custom directive did not run after a partial update
+
+GyosJS initializes committed partial markup automatically. If it still does not mount, check that the directive was registered before the swap completes, the node is not inside `g-ignore`, and the response contains the matching target fragment. For DOM inserted by application code rather than MPA Boost, call `Gyos.mountTree(insertedRoot)`.
 
 ### My focus did not survive a navigation
 

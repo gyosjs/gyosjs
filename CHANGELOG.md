@@ -6,10 +6,25 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-08-09
+
+### Added
+
+- Reactive `:attribute` bindings now support ARIA, data, form metadata, and custom attributes with boolean and removal semantics.
+- `g-transition` now animates elements controlled by `g-show` while preserving their DOM identity and original display mode.
+
 ### Changed
+
+- Built-in transition utility classes use the `gyos-t-` namespace to avoid collisions with application CSS and Tailwind utilities.
+- Router swaps initialize newly committed directives, events, bindings, models, and text inside an existing parent scope.
 
 - Maintenance tooling now verifies release metadata, documentation mirrors, live distribution endpoints, and Chromium/Firefox/WebKit browser behavior.
 - The minimum Node.js maintenance runtime is now stated precisely as 18.19 instead of the broader Node.js 18 range required by current tooling.
+
+### Fixed
+
+- Template interpolation skips raw-text and fallback containers such as `style`, `script`, `noscript`, and `textarea`.
+- Rapid transition toggles cancel stale enter/leave work without removing an element whose latest `g-show` state is visible.
 
 ## [0.1.2] - 2026-08-07
 
@@ -51,7 +66,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 - This is an experimental `0.x` release. Router, morphing, expression evaluation, and browser edge cases should be evaluated against an application's requirements before production adoption.
 
-[Unreleased]: https://github.com/gyosjs/gyosjs/compare/v0.1.2...HEAD
+[Unreleased]: https://github.com/gyosjs/gyosjs/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/gyosjs/gyosjs/compare/v0.1.2...v0.2.0
 [0.1.2]: https://github.com/gyosjs/gyosjs/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/gyosjs/gyosjs/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/gyosjs/gyosjs/releases/tag/v0.1.0

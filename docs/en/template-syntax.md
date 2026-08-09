@@ -43,13 +43,16 @@ In GyosJS, you can bind data to HTML and attributes as follows:
 * `:disabled="!isActive"` disables the button if `isActive` is false.
 * `:style` can accept a string or an object to apply dynamic styles.
 
-Allowed bindings include:
+Common bindings include:
 * `:class` - Dynamic class binding.
 * `:style` - Dynamic style binding.
 * `:src`, `:href`, `:alt`, `:title`, `:value` - Binding other HTML attributes.
-* `:disabled`, `:checked`, `:selected`, `:checked` - Binding boolean attributes.
+* `:disabled`, `:checked`, `:selected`, `:required` - Binding boolean attributes.
+* `:aria-*`, `:data-*` - Accessibility and application state attributes.
+* `:name`, `:min`, `:max`, `:pattern`, `:autocomplete` - Form metadata.
+* custom names such as `:project-status`.
 
-Accordingly, you can use similar syntax to bind data to HTML attributes when needed. 
+Use `null`, `undefined`, or `false` to remove an ordinary attribute. ARIA and data attributes keep `false` as the string `"false"`, while native boolean attributes toggle their presence and reflected DOM property. GyosJS blocks inline event handlers, active-content URLs, and framework-owned attribute names.
 
 > Note: attribute binding must be a string `'...'`, an object `{ ... }`, or an expression that returns the corresponding value.
 
@@ -412,6 +415,14 @@ Example above creates a scope with a variable `count`, displays the value, and p
 **In which:**
 * `g-show="isVisible"` displays the element if `isVisible` is true, otherwise hides it.
 * the button toggles the value of `isVisible`, making the paragraph appear or disappear when clicked.
+
+`g-transition` can animate `g-show` without removing the element:
+
+```html
+<aside g-show="isVisible" g-transition.200="fade">Account menu</aside>
+```
+
+The initial visibility is applied without animation. Later rapid toggles cancel stale enter or leave work. Avoid a permanent CSS class such as `hidden` on the same element; use `g-cloak` when the pre-mount state must stay hidden.
 
 ---
 

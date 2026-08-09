@@ -10,7 +10,7 @@ It has two major parts:
 If you are reading this page inside the GyosJS docs site, the inline HTML examples should work directly. If you are copying them into a standalone page, load GyosJS first.
 
 ```html
-<script src="https://cdn.jsdelivr.net/npm/gyosjs@0.1.2/dist/gyos.auto.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gyosjs@0.2.0/dist/gyos.auto.min.js"></script>
 ```
 
 ## Part 1. Build One Practical UI With One Scope
@@ -375,7 +375,7 @@ At minimum, a boosted page usually starts like this:
         ...
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/gyosjs@0.1.2/dist/gyos.auto.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gyosjs@0.2.0/dist/gyos.auto.min.js"></script>
 </body>
 ```
 
@@ -397,7 +397,7 @@ If your server already returns complete HTML pages, the first upgrade is simple.
 <head>
     <meta charset="UTF-8" />
     <title>Home</title>
-    <script src="https://cdn.jsdelivr.net/npm/gyosjs@0.1.2/dist/gyos.auto.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gyosjs@0.2.0/dist/gyos.auto.min.js"></script>
 </head>
 <body g-boost>
     <div id="app" g-outlet g-snapshot>
@@ -424,7 +424,7 @@ If your server already returns complete HTML pages, the first upgrade is simple.
 <head>
     <meta charset="UTF-8" />
     <title>Pricing</title>
-    <script src="https://cdn.jsdelivr.net/npm/gyosjs@0.1.2/dist/gyos.auto.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gyosjs@0.2.0/dist/gyos.auto.min.js"></script>
 </head>
 <body g-boost>
     <div id="app" g-outlet g-snapshot>
