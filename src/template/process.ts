@@ -8,7 +8,7 @@ import { processModel } from "./model";
 import { processAwaitDirective, processForDirective, processIfChain, processSwitchDirective, setProcessFunction } from "./structurals/structural";
 import { processTextNodes, processTextNodesStatic } from "./text";
 import { beginEffectCollection, flushEffectCollection } from "./effect-queue";
-import { getAllMountedScopes } from "../core/scope-registry";
+import { getScopeFromElement } from "../core/scope-registry";
 import { hasStructuralParent, isInIgnoredTree, walkerDOM } from "../utils/helpers";
 
 // Mount function injected from component.ts to avoid circular dependency
@@ -92,10 +92,10 @@ function processStructuralDirectives(elements: HTMLElement[], scope: any): void 
     });
 }
 
-const elementInScope = (el: HTMLElement): boolean => {
-    const mountedScopes = Array.from(getAllMountedScopes());
-    return mountedScopes.some(([mountedEl, _]) => mountedEl.contains(el) && mountedEl !== el);
-}
+const elementBelongsToAnotherScope = (el: HTMLElement, scope: any): boolean => {
+	const owner = getScopeFromElement(el);
+	return Boolean(owner && owner !== scope);
+};
 
 export function processParse(element: HTMLElement, scope: any, fromStructural = false): void {
 	if (isInIgnoredTree(element)) return;
@@ -120,7 +120,7 @@ export function processParse(element: HTMLElement, scope: any, fromStructural = 
 		// Structural processing may replace an element and detach its original subtree.
 		if (!document.body.contains(el)) return;
         if (el.attributes.length === 0) return; // Skip if no attributes
-        if (elementInScope(el) && !fromStructural) {
+        if (elementBelongsToAnotherScope(el, scope) && !fromStructural) {
             // (fromStructural allows processing newly created elements inside structurals)
             return; // Skip if inside mounted scope
         }

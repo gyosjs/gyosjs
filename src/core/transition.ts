@@ -43,52 +43,52 @@ export interface TransitionConfig {
  */
 const builtInTransitions: Record<string, TransitionConfig> = {
 	fade: {
-		enterFrom: 'opacity-0',
-		enterTo: 'opacity-100',
-		leaveFrom: 'opacity-100',
-		leaveTo: 'opacity-0',
+		enterFrom: 'gyos-t-opacity-0',
+		enterTo: 'gyos-t-opacity-100',
+		leaveFrom: 'gyos-t-opacity-100',
+		leaveTo: 'gyos-t-opacity-0',
 		duration: 250
 	},
 	'slide-down': {
-		enterFrom: 'translate-y--100 opacity-0',
-		enterTo: 'translate-y-0 opacity-100',
-		leaveFrom: 'translate-y-0 opacity-100',
-		leaveTo: 'translate-y-100 opacity-0',
+		enterFrom: 'gyos-t-translate-y--100 gyos-t-opacity-0',
+		enterTo: 'gyos-t-translate-y-0 gyos-t-opacity-100',
+		leaveFrom: 'gyos-t-translate-y-0 gyos-t-opacity-100',
+		leaveTo: 'gyos-t-translate-y-100 gyos-t-opacity-0',
 		duration: 250
 	},
 	'slide-up': {
-		enterFrom: 'translate-y-100 opacity-0',
-		enterTo: 'translate-y-0 opacity-100',
-		leaveFrom: 'translate-y-0 opacity-100',
-		leaveTo: 'translate-y--100 opacity-0',
+		enterFrom: 'gyos-t-translate-y-100 gyos-t-opacity-0',
+		enterTo: 'gyos-t-translate-y-0 gyos-t-opacity-100',
+		leaveFrom: 'gyos-t-translate-y-0 gyos-t-opacity-100',
+		leaveTo: 'gyos-t-translate-y--100 gyos-t-opacity-0',
 		duration: 250
 	},
 	'slide-left': {
-		enterFrom: 'translate-x-100 opacity-0',
-		enterTo: 'translate-x-0 opacity-100',
-		leaveFrom: 'translate-x-0 opacity-100',
-		leaveTo: 'translate-x--100 opacity-0',
+		enterFrom: 'gyos-t-translate-x-100 gyos-t-opacity-0',
+		enterTo: 'gyos-t-translate-x-0 gyos-t-opacity-100',
+		leaveFrom: 'gyos-t-translate-x-0 gyos-t-opacity-100',
+		leaveTo: 'gyos-t-translate-x--100 gyos-t-opacity-0',
 		duration: 250
 	},
 	'slide-right': {
-		enterFrom: 'translate-x--100 opacity-0',
-		enterTo: 'translate-x-0 opacity-100',
-		leaveFrom: 'translate-x-0 opacity-100',
-		leaveTo: 'translate-x-100 opacity-0',
+		enterFrom: 'gyos-t-translate-x--100 gyos-t-opacity-0',
+		enterTo: 'gyos-t-translate-x-0 gyos-t-opacity-100',
+		leaveFrom: 'gyos-t-translate-x-0 gyos-t-opacity-100',
+		leaveTo: 'gyos-t-translate-x-100 gyos-t-opacity-0',
 		duration: 250
 	},
 	scale: {
-		enterFrom: 'scale-50 opacity-0',
-		enterTo: 'scale-100 opacity-100',
-		leaveFrom: 'scale-100 opacity-100',
-		leaveTo: 'scale-50 opacity-0',
+		enterFrom: 'gyos-t-scale-50 gyos-t-opacity-0',
+		enterTo: 'gyos-t-scale-100 gyos-t-opacity-100',
+		leaveFrom: 'gyos-t-scale-100 gyos-t-opacity-100',
+		leaveTo: 'gyos-t-scale-50 gyos-t-opacity-0',
 		duration: 250
 	},
 	zoom: {
-		enterFrom: 'scale-0 opacity-0',
-		enterTo: 'scale-100 opacity-100',
-		leaveFrom: 'scale-100 opacity-100',
-		leaveTo: 'scale-0 opacity-0',
+		enterFrom: 'gyos-t-scale-0 gyos-t-opacity-0',
+		enterTo: 'gyos-t-scale-100 gyos-t-opacity-100',
+		leaveFrom: 'gyos-t-scale-100 gyos-t-opacity-100',
+		leaveTo: 'gyos-t-scale-0 gyos-t-opacity-0',
 		duration: 250
 	}
 };
@@ -116,125 +116,87 @@ export function registerTransition(name: string, config: TransitionConfig): void
  * Transition manager - Handles enter/leave animations
  */
 class TransitionManager {
-	private leavingElements = new WeakSet<HTMLElement>();
+	private active = new WeakMap<HTMLElement, { phase: 'enter' | 'leave'; cancel: () => void }>();
 
-	/**
-	 * Enter transition - Animates element appearing
-	 * 
-	 * @param el - Element to animate
-	 * @param config - Transition configuration
-	 */
-	async enter(el: HTMLElement, config: TransitionConfig): Promise<void> {
-		if (!el.isConnected || this.leavingElements.has(el)) return;
-		try {
-			const duration = config.duration || 250;
-
-			// Call before hook
-			if (config.onBeforeEnter) {
-				config.onBeforeEnter(el);
-			}
-
-			// Apply enter-from state
-			if (config.enterFrom) {
-				this.applyClasses(el, config.enterFrom);
-			}
-
-			// Force reflow to ensure classes are applied
-			el.offsetHeight;
-
-			// Add transition
-			el.style.transition = `all ${duration}ms ease-out`;
-
-			// Apply enter-to state
-			if (config.enterFrom) {
-				this.removeClasses(el, config.enterFrom);
-			}
-			if (config.enterTo) {
-				this.applyClasses(el, config.enterTo);
-			}
-
-			// Or use animation
-			if (config.enter) {
-				el.style.animation = config.enter;
-			}
-
-			// Wait for transition to complete
-			await this.waitForTransition(el, duration);
-			if (!el.isConnected || this.leavingElements.has(el)) return;
-
-			// Cleanup
-			el.style.transition = '';
-			el.style.animation = '';
-			if (config.enterTo) {
-				this.removeClasses(el, config.enterTo);
-			}
-
-			// Call after hook
-			if (config.onAfterEnter) {
-				config.onAfterEnter(el);
-			}
-		} catch (error) {
-			console.error('[GyosJS] Transition enter error:', error);
-		}
+	cancel(el: HTMLElement): void {
+		this.active.get(el)?.cancel();
 	}
 
-	/**
-	 * Leave transition - Animates element disappearing
-	 * 
-	 * @param el - Element to animate
-	 * @param config - Transition configuration
-	 */
-	async leave(el: HTMLElement, config: TransitionConfig): Promise<void> {
-		this.leavingElements.add(el);
-		try {
-			const duration = config.duration || 250;
+	enter(el: HTMLElement, config: TransitionConfig, interruptLeave = false): Promise<boolean> {
+		if (!el.isConnected) return Promise.resolve(false);
+		if (this.active.get(el)?.phase === 'leave' && !interruptLeave) return Promise.resolve(false);
+		return this.run(el, config, 'enter', false);
+	}
 
-			// Call before hook
-			if (config.onBeforeLeave) {
-				config.onBeforeLeave(el);
+	leave(el: HTMLElement, config: TransitionConfig, removeElement = true): Promise<boolean> {
+		return this.run(el, config, 'leave', removeElement);
+	}
+
+	private run(
+		el: HTMLElement,
+		config: TransitionConfig,
+		phase: 'enter' | 'leave',
+		removeElement: boolean
+	): Promise<boolean> {
+		this.cancel(el);
+		const fromClasses = phase === 'enter' ? config.enterFrom : config.leaveFrom;
+		const toClasses = phase === 'enter' ? config.enterTo : config.leaveTo;
+		const animation = phase === 'enter' ? config.enter : config.leave;
+		const beforeHook = phase === 'enter' ? config.onBeforeEnter : config.onBeforeLeave;
+		const afterHook = phase === 'enter' ? config.onAfterEnter : config.onAfterLeave;
+		const reduceMotion = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+		const duration = reduceMotion ? 0 : (config.duration ?? 250);
+		const originalTransition = el.style.transition;
+		const originalAnimation = el.style.animation;
+
+		return new Promise(resolve => {
+			let settled = false;
+			let timer: ReturnType<typeof setTimeout> | undefined;
+			const cleanup = () => {
+				if (fromClasses) this.removeClasses(el, fromClasses);
+				if (toClasses) this.removeClasses(el, toClasses);
+				el.style.transition = originalTransition;
+				el.style.animation = originalAnimation;
+				el.removeEventListener('transitionend', onEnd);
+				el.removeEventListener('animationend', onEnd);
+				if (timer !== undefined) clearTimeout(timer);
+				this.active.delete(el);
+			};
+			const finish = (cancelled: boolean) => {
+				if (settled) return;
+				settled = true;
+				cleanup();
+				if (!cancelled) {
+					afterHook?.(el);
+					if (phase === 'leave' && removeElement) el.remove();
+				}
+				resolve(!cancelled);
+			};
+			const onEnd = (event: Event) => {
+				if (event.target === el) finish(false);
+			};
+
+			this.active.set(el, { phase, cancel: () => finish(true) });
+			try {
+				beforeHook?.(el);
+				if (fromClasses) this.applyClasses(el, fromClasses);
+				el.offsetHeight;
+				el.style.transition = `all ${duration}ms ${phase === 'enter' ? 'ease-out' : 'ease-in'}`;
+				if (fromClasses) this.removeClasses(el, fromClasses);
+				if (toClasses) this.applyClasses(el, toClasses);
+				if (animation) el.style.animation = animation;
+				if (duration === 0) {
+					queueMicrotask(() => finish(false));
+				} else {
+					el.addEventListener('transitionend', onEnd);
+					el.addEventListener('animationend', onEnd);
+					timer = setTimeout(() => finish(false), duration + 50);
+				}
+			} catch (error) {
+				console.error(`[GyosJS] Transition ${phase} error:`, error);
+				finish(false);
 			}
-
-			// Apply leave-from state
-			if (config.leaveFrom) {
-				this.applyClasses(el, config.leaveFrom);
-			}
-
-			// Force reflow
-			el.offsetHeight;
-
-			// Add transition
-			el.style.transition = `all ${duration}ms ease-in`;
-
-			// Apply leave-to state
-			if (config.leaveFrom) {
-				this.removeClasses(el, config.leaveFrom);
-			}
-			if (config.leaveTo) {
-				this.applyClasses(el, config.leaveTo);
-			}
-
-			// Or use animation
-			if (config.leave) {
-				el.style.animation = config.leave;
-			}
-
-			// Wait for transition to complete
-			await this.waitForTransition(el, duration);
-
-			// Call after hook
-			if (config.onAfterLeave) {
-				config.onAfterLeave(el);
-			}
-
-			// Remove element
-			el.remove();
-		} catch (error) {
-			console.error('[GyosJS] Transition leave error:', error);
-			// Still remove element on error
-			el.remove();
-		} finally {
-			this.leavingElements.delete(el);
-		}
+		});
 	}
 
 	/**
@@ -252,33 +214,6 @@ class TransitionManager {
 	private removeClasses(el: HTMLElement, classes: string): void {
 		classes.split(' ').forEach(cls => {
 			if (cls) el.classList.remove(cls);
-		});
-	}
-
-	/**
-	 * Wait for transition to complete
-	 */
-	private waitForTransition(el: HTMLElement, duration: number): Promise<void> {
-		return new Promise(resolve => {
-			let settled = false;
-			let timeoutId: ReturnType<typeof setTimeout> | undefined;
-			const finish = () => {
-				if (settled) return;
-				settled = true;
-				el.removeEventListener('transitionend', handler);
-				el.removeEventListener('animationend', handler);
-				if (timeoutId !== undefined) clearTimeout(timeoutId);
-				resolve();
-			};
-			const handler = (event: Event) => {
-				if (event.target === el) finish();
-			};
-
-			el.addEventListener('transitionend', handler);
-			el.addEventListener('animationend', handler);
-
-			// Fallback timeout
-			timeoutId = setTimeout(finish, duration + 50);
 		});
 	}
 
@@ -385,23 +320,23 @@ export function applyTransitionStyles(): void {
 	style.id = styleId;
 	style.textContent = `
     /* Opacity utilities */
-    .opacity-0 { opacity: 0; }
-    .opacity-100 { opacity: 1; }
+    .gyos-t-opacity-0 { opacity: 0; }
+    .gyos-t-opacity-100 { opacity: 1; }
     
     /* Transform - Translate Y */
-    .translate-y-0 { transform: translateY(0); }
-    .translate-y--100 { transform: translateY(-100%); }
-    .translate-y-100 { transform: translateY(100%); }
+    .gyos-t-translate-y-0 { transform: translateY(0); }
+    .gyos-t-translate-y--100 { transform: translateY(-100%); }
+    .gyos-t-translate-y-100 { transform: translateY(100%); }
     
     /* Transform - Translate X */
-    .translate-x-0 { transform: translateX(0); }
-    .translate-x--100 { transform: translateX(-100%); }
-    .translate-x-100 { transform: translateX(100%); }
+    .gyos-t-translate-x-0 { transform: translateX(0); }
+    .gyos-t-translate-x--100 { transform: translateX(-100%); }
+    .gyos-t-translate-x-100 { transform: translateX(100%); }
     
     /* Transform - Scale */
-    .scale-0 { transform: scale(0); }
-    .scale-50 { transform: scale(0.5); }
-    .scale-100 { transform: scale(1); }
+    .gyos-t-scale-0 { transform: scale(0); }
+    .gyos-t-scale-50 { transform: scale(0.5); }
+    .gyos-t-scale-100 { transform: scale(1); }
     
     /* Animation Keyframes */
     @keyframes gyos-fade-in {

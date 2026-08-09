@@ -5,6 +5,7 @@ interface SwapOptions {
 	syncRootAttributes?: boolean;
 	signal?: AbortSignal;
 	beforeScripts?: () => Promise<void>;
+	onCommitted?: (target: HTMLElement, roots: Node[]) => void;
 }
 
 function syncAttributes(target: Element, source: Element): void {
@@ -75,6 +76,7 @@ export async function performSwap(
 	}
 
 	await options.beforeScripts?.();
+	options.onCommitted?.(result, normalized === 'append' || normalized === 'prepend' ? incomingChildren : [result]);
 
 	// Additive swaps must not re-run scripts that already existed in the target.
 	if (normalized === 'append' || normalized === 'prepend') {

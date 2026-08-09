@@ -3,10 +3,10 @@ import { effect } from '../reactivity/signal';
 import { getInjector } from './di';
 import { parseTemplate } from '../template/parser';
 import { hydrationManager, getHydrationStrategy } from './hydration';
-import { registerMountedScope, getMountedScope, scopeCached, getAllMountedScopes } from './scope-registry';
+import { registerMountedScope, getMountedScope, getScopeFromElement, scopeCached, getAllMountedScopes } from './scope-registry';
 import { makeReactive, SCOPE_VERSION } from './reactive';
 import { deepEqual, clone, DEBUG, walkerDOM, hasStructuralParent, hasUnsafePropertyPath, isInIgnoredTree } from '../utils/helpers';
-import { setMountFunction } from '../template/process';
+import { processParse, setMountFunction } from '../template/process';
 import { disposeEffects } from '../template/cleanup';
 import { evaluateExpression } from '../template/expression';
 
@@ -46,7 +46,13 @@ function getDepth(el: Element): number {
 /**
  * Mount all scopes in the document
  */
-export function mountAll(): void {
+export function mountAll(root?: HTMLElement | Iterable<HTMLElement>): void {
+	if (root) {
+		const roots = root instanceof HTMLElement ? [root] : Array.from(root);
+		roots.forEach(element => mountTree(element));
+		return;
+	}
+
 	const elements = document.querySelectorAll('[g-scope]');
 	const elementsNotScope = walkerDOM(document.body, el => {
 		if (el.hasAttribute('g-scope')) return false; // Skip elements with g-scope
@@ -68,20 +74,19 @@ export function mountAll(): void {
 }
 
 export function mountTree(el: HTMLElement): void {
-	if (isInIgnoredTree(el)) return;
-	const walker = document.createTreeWalker(el, NodeFilter.SHOW_ELEMENT, {
-		acceptNode(node) {
-			return (node as HTMLElement).hasAttribute('g-ignore')
-				? NodeFilter.FILTER_REJECT
-				: NodeFilter.FILTER_ACCEPT;
-		}
-	});
-	let node: Node | null = walker.currentNode;
-	while (node = walker.nextNode()) {
-		if (node instanceof HTMLElement && node.hasAttribute('g-scope')) {
-			mount(node);
-		}
-	}
+	if (isInIgnoredTree(el) || !document.body.contains(el)) return;
+	const hasAutoScope = (element: HTMLElement): boolean =>
+		Array.from(element.attributes).some(attribute => attribute.name.startsWith('gd-') || attribute.name.startsWith('gm-'));
+	const candidates = [el, ...walkerDOM(el, element => !isInIgnoredTree(element), NodeFilter.FILTER_REJECT)]
+		.filter(element => element.hasAttribute('g-scope') || hasAutoScope(element));
+
+	// Child scopes own their subtree before an existing parent scope parses the insertion.
+	candidates.sort((a, b) => getDepth(b) - getDepth(a));
+	candidates.forEach(element => !hasStructuralParent(element) && mount(element));
+
+	if (getMountedScope(el)) return;
+	const ownerScope = getScopeFromElement(el);
+	if (ownerScope) processParse(el, ownerScope);
 }
 
 /**

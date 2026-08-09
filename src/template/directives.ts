@@ -6,6 +6,8 @@ import { getDirective } from '../core/directive';
 import { evaluateExpression } from './expression';
 import { isInIgnoredTree, isInStaticParent } from '../utils/helpers';
 import { queueReactiveEffect } from './effect-queue';
+import { applyEnterTransition, applyLeaveTransition, parseTransitionConfig } from './structurals/transition-helpers';
+import { transitionManager } from '../core/transition';
 
 /**
  * Process built-in and custom directives
@@ -29,9 +31,36 @@ export function processDirectives(element: HTMLElement, scope: any, root: HTMLEl
     // Built-in directives: g-show
     if (element.hasAttribute('g-show')) {
         const expr = element.getAttribute('g-show')!;
+		const originalDisplay = element.style.display === 'none' ? '' : element.style.display;
+		let initialized = false;
+		let runId = 0;
         queueReactiveEffect(element, () => {
             const value = evaluateExpression(expr, scope);
-            element.style.display = value ? '' : 'none';
+			const visible = Boolean(value);
+			const currentRun = ++runId;
+			transitionManager.cancel(element);
+
+			if (!initialized) {
+				initialized = true;
+				element.style.display = visible ? originalDisplay : 'none';
+				return () => transitionManager.cancel(element);
+			}
+
+			if (!parseTransitionConfig(element, scope)) {
+				element.style.display = visible ? originalDisplay : 'none';
+				return () => transitionManager.cancel(element);
+			}
+
+			if (visible) {
+				element.style.display = originalDisplay;
+				void applyEnterTransition(element, scope, true);
+			} else if (element.style.display !== 'none') {
+				void applyLeaveTransition(element, scope, false).then(completed => {
+					if (completed !== false && currentRun === runId) element.style.display = 'none';
+				});
+			}
+
+			return () => transitionManager.cancel(element);
         });
     }
 

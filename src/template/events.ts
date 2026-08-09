@@ -209,6 +209,8 @@ export function processEvents(el: HTMLElement, scope: any): void {
     elementsToProcess.forEach(element => {
         // Skip if inside g-static parent (double check)
         if (isInStaticParent(element, el)) return;
+		const ownerScope = getScopeFromElement(element as HTMLElement);
+		if (ownerScope && ownerScope !== scope) return;
 
         const attrs = Array.from((element as HTMLElement).attributes);
 

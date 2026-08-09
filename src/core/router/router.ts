@@ -634,15 +634,19 @@ async function navigate(opts: NavigateOptions): Promise<void> {
 				? cloneHistoryTarget(target!)
 				: null;
 			let historyEdge: { currentEntryId: string; nextEntryId: string } | null = null;
+			let committedRoots: Node[] = [];
 			let finalized = false;
 			const finalizeCommit = () => {
 				if (finalized) return;
 				finalized = true;
+				const mountRoots = committedRoots.filter(
+					(root): root is HTMLElement => root instanceof HTMLElement && root.isConnected
+				);
 				mergePersistIntoLive(target!);
 				if (historyEdge) {
 					setHistoryFragment(historyEdge.nextEntryId, historyEdge.currentEntryId, target!);
 				}
-				mountAll();
+				mountAll(mountRoots.length > 0 ? mountRoots : undefined);
 			};
 
 			if (destructiveSwap) {
@@ -691,10 +695,10 @@ async function navigate(opts: NavigateOptions): Promise<void> {
 			// The global outlet is also the incoming layout root. Keep its node for
 			// inner swaps, but update attributes such as g-scope and layout classes.
 			try {
-				target = await performSwap(target!, src, swapMode, {
+					target = await performSwap(target!, src, swapMode, {
 					syncRootAttributes: isFullOutletNavigation,
 					signal: transaction.controller.signal,
-					beforeScripts: async () => {
+						beforeScripts: async () => {
 						if (!isFullOutletNavigation || currentHead) return;
 						const incomingTitle = doc.querySelector('title');
 						if (incomingTitle) {
@@ -702,8 +706,12 @@ async function navigate(opts: NavigateOptions): Promise<void> {
 						}
 						await updateHead(doc, transaction.controller.signal);
 						assertActiveNavigation(transaction);
-					}
-				});
+						},
+						onCommitted: (committedTarget, roots) => {
+							target = committedTarget;
+							committedRoots = roots;
+						}
+					});
 				assertActiveNavigation(transaction);
 
 				if (isFullOutletNavigation) {

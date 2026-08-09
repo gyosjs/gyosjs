@@ -125,9 +125,9 @@ export function propagateScopeToTree(element: Element, scope: any, skipIfExists:
  * @param scope - Current scope for expression evaluation
  * @returns Promise that resolves when transition completes
  */
-export function applyEnterTransition(element: HTMLElement, scope: any): Promise<void> {
+export function applyEnterTransition(element: HTMLElement, scope: any, interruptLeave = false): Promise<boolean> {
     const config = parseTransitionConfig(element, scope);
-    if (!config) return Promise.resolve();
+    if (!config) return Promise.resolve(true);
 
     DEBUG() && console.log('[Transition] Enter with:', config.name, config.duration ? `(${config.duration}ms)` : '', 'on', element.tagName, element.className);
 
@@ -136,7 +136,7 @@ export function applyEnterTransition(element: HTMLElement, scope: any): Promise<
         transitionConfig.duration = config.duration;
     }
 
-    return transitionManager.enter(element, transitionConfig);
+    return transitionManager.enter(element, transitionConfig, interruptLeave);
 }
 
 /**
@@ -147,9 +147,9 @@ export function applyEnterTransition(element: HTMLElement, scope: any): Promise<
  * @param scope - Current scope for expression evaluation
  * @returns Promise that resolves when transition completes
  */
-export function applyLeaveTransition(element: HTMLElement, scope: any): Promise<void> {
+export function applyLeaveTransition(element: HTMLElement, scope: any, removeElement = true): Promise<boolean> {
     const config = parseTransitionConfig(element, scope);
-    if (!config) return Promise.resolve();
+    if (!config) return Promise.resolve(true);
 
     DEBUG() && console.log('[Transition] Leave with:', config.name, config.duration ? `(${config.duration}ms)` : '', 'on', element.tagName, element.className);
 
@@ -158,5 +158,5 @@ export function applyLeaveTransition(element: HTMLElement, scope: any): Promise<
         transitionConfig.duration = config.duration;
     }
 
-    return transitionManager.leave(element, transitionConfig);
+	return transitionManager.leave(element, transitionConfig, removeElement);
 }

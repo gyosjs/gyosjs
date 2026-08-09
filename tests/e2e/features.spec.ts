@@ -128,3 +128,41 @@ test('passive event modifiers preserve native non-cancelable listener behavior',
 	expect(defaultPrevented).toBe(false);
 	await expect(page.locator('.passive-target')).toHaveText('1');
 });
+
+test('generic bindings and g-show transitions work together in the browser', async ({ page }) => {
+	await page.setContent(`
+		<div g-scope="%7B%20open%3A%20false%2C%20required%3A%20true%2C%20fieldName%3A%20'options%5Bpaper%5D'%20%7D">
+			<style id="consumer-style">.consumer-panel { display: grid; }</style>
+			<button
+				class="consumer-toggle"
+				@click="open = !open"
+				:aria-expanded="open"
+				:data-state="open ? 'open' : 'closed'"
+				:custom-state="open ? 'visible' : null"
+			>Toggle</button>
+			<input class="consumer-input" :name="fieldName" :required="required">
+			<section class="consumer-panel" g-show="open" g-transition.80="fade">Panel</section>
+		</div>
+	`);
+	await page.addScriptTag({ path: 'dist/gyos.auto.min.js' });
+
+	const toggle = page.locator('.consumer-toggle');
+	const panel = page.locator('.consumer-panel');
+	await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+	await expect(toggle).toHaveAttribute('data-state', 'closed');
+	await expect(toggle).not.toHaveAttribute('custom-state');
+	await expect(page.locator('.consumer-input')).toHaveAttribute('name', 'options[paper]');
+	await expect(page.locator('.consumer-input')).toHaveAttribute('required', '');
+	await expect(panel).toBeHidden();
+	expect(await page.locator('#consumer-style').textContent()).toContain('{ display: grid; }');
+
+	await toggle.click();
+	await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+	await expect(toggle).toHaveAttribute('custom-state', 'visible');
+	await expect(panel).toBeVisible();
+
+	await toggle.click();
+	await expect(panel).toHaveCount(1);
+	await expect(panel).toBeHidden({ timeout: 2000 });
+	await expect(panel).toHaveCount(1);
+});
