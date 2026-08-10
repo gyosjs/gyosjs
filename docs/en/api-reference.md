@@ -701,14 +701,14 @@ Run a scope method after `g-form` validates successfully.
 </form>
 ```
 
-The method receives the scope as `this`. Invalid forms do not call it. Without `g-submit`, a valid form continues through native `form.submit()`.
+The method receives the scope as `this`. Invalid forms do not call it. Without `g-submit`, a valid form is replayed through the normal submit event pipeline. This preserves the clicked submit button and lets MPA Boost intercept the validated request when `g-boost` is active. Without Boost, the browser continues with native form navigation.
 
-When MPA Boost is active, place `g-no-boost` on a validated form. Router submit capture runs before the `g-form` listener, so a boosted form may be dispatched before validation or submitted twice.
+Invalid submissions are stopped before downstream `@submit` handlers run. A validated submission runs those handlers once during replay. Add `g-no-boost` only when that form should intentionally use native navigation, not as a validation workaround.
 
 ### Form example
 
 ```html
-<form g-scope="{ email: '', password: '' }" g-form="signupForm" class="card card-body" g-no-boost>
+<form g-scope="{ email: '', password: '' }" g-form="signupForm" class="card card-body">
   <label>Email</label>
   <input class="input" g-model="email" g-validate="required|email" placeholder="you@example.com">
   <small g-errors="email" style="color:#c33"></small>
@@ -906,10 +906,26 @@ Checkboxes write boolean values:
 <input type="checkbox" g-model="accepted">
 ```
 
+### Radio handling
+
+Radio controls keep their HTML `value`. The model receives the selected radio value, and programmatic model changes update which option is checked.
+
+```html
+<label><input type="radio" name="plan" value="starter" g-model="plan"> Starter</label>
+<label><input type="radio" name="plan" value="pro" g-model="plan"> Pro</label>
+```
+
+Use `.number` when radio values should enter scope as numbers:
+
+```html
+<input type="radio" name="seats" value="10" g-model.number="seats">
+```
+
 ### Important notes
 
 - `g-model` listens on the `input` event
 - the bound field can be auto-created if it does not already exist
+- radio `value` attributes are never replaced by the model
 - pipes are not used in `g-model` expressions
 
 ---

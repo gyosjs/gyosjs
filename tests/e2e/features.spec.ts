@@ -62,6 +62,64 @@ test('form demo blocks invalid submit and accepts valid values', async ({ page }
 	await expect(form.locator('.success-message')).toContainText('Form submitted successfully');
 });
 
+test('g-form validates before MPA Boost fetches and swaps a POST response', async ({ page }) => {
+	let requests = 0;
+	let requestMethod = '';
+	let requestResourceType = '';
+	let submittedBody = '';
+	await page.route('**/booking', async route => {
+		requests++;
+		requestMethod = route.request().method();
+		requestResourceType = route.request().resourceType();
+		submittedBody = route.request().postData() ?? '';
+		await route.fulfill({
+			contentType: 'text/html',
+			body: '<!doctype html><html><head><title>Confirmed</title></head><body g-boost><div id="out" g-outlet>confirmed</div></body></html>'
+		});
+	});
+	await page.goto('/form-validation.html');
+	await page.evaluate(() => {
+		const Gyos = (window as any).Gyos;
+		(document.body as HTMLElement).setAttribute('g-boost', '');
+		document.body.innerHTML = `
+			<div id="out" g-outlet>
+				<form id="booking" g-scope="E2EBooking" g-form="bookingForm" action="/booking" method="post">
+					<input name="customer_name" g-model.trim="customerName" g-validate="required">
+					<span g-errors="customerName"></span>
+					<button type="submit">Book</button>
+				</form>
+			</div>
+		`;
+		(window as any).bookingSubmitEvents = 0;
+		(window as any).bookingRuntimeMarker = 'preserved';
+		Gyos.scope('E2EBooking', { customerName: '' });
+		Gyos.mountAll();
+		Gyos.startRouter();
+		(window as any).bookingScope = Gyos.mountedScopes().get(document.getElementById('booking'));
+		document.getElementById('booking')!.addEventListener('submit', () => {
+			(window as any).bookingSubmitEvents++;
+		});
+	});
+
+	await page.getByRole('button', { name: 'Book' }).click();
+	await expect(page.locator('[g-errors="customerName"], #booking span').first()).toHaveText('This field is required');
+	expect(requests).toBe(0);
+	expect(await page.evaluate(() => (window as any).bookingSubmitEvents)).toBe(0);
+
+	await page.locator('input[name="customer_name"]').fill('Gyos User');
+	await page.getByRole('button', { name: 'Book' }).click();
+	await expect.poll(() => page.evaluate(() => (window as any).bookingScope.bookingForm.$valid())).toBe(true);
+	await expect.poll(() => page.evaluate(() => (window as any).bookingSubmitEvents)).toBe(1);
+	await expect.poll(() => requests).toBe(1);
+	expect(requestMethod).toBe('POST');
+	expect(requestResourceType).toBe('fetch');
+	expect(submittedBody).toContain('name="customer_name"');
+	expect(submittedBody).toContain('Gyos User');
+	await expect(page.locator('#out')).toHaveText('confirmed');
+	expect(await page.evaluate(() => (window as any).bookingSubmitEvents)).toBe(1);
+	expect(await page.evaluate(() => (window as any).bookingRuntimeMarker)).toBe('preserved');
+});
+
 test('todo demo adds, toggles, counts, and removes an item', async ({ page }) => {
 	await page.goto('/todo.html');
 	const newTodo = page.getByPlaceholder('What needs to be done?');

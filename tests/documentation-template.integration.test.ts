@@ -309,6 +309,60 @@ describe('documentation template contracts', () => {
 		expect(checkbox.checked).toBe(false);
 	});
 
+	it('preserves radio values and synchronizes the checked option with g-model', async () => {
+		const name = `RadioModelDocs${++scopeId}`;
+		const autoName = `AutoRadioModelDocs${scopeId}`;
+		document.body.innerHTML = `
+			<div id="root" g-scope="${name}">
+				<input class="time-10" type="radio" name="time" value="10:00" g-model="time" />
+				<input class="time-11" type="radio" name="time" value="11:00" g-model="time" />
+				<input class="duration-30" type="radio" name="duration" value="30" g-model.number="duration" />
+				<input class="duration-60" type="radio" name="duration" value="60" g-model.number="duration" />
+			</div>
+			<div id="auto-root" g-scope="${autoName}">
+				<input class="auto-standard" type="radio" name="format" value="standard" g-model="format" />
+				<input class="auto-premium" type="radio" name="format" value="premium" g-model="format" checked />
+			</div>
+		`;
+		Gyos.scope(name, { time: '', duration: 30 });
+		Gyos.scope(autoName, {});
+
+		Gyos.mountAll();
+		const state = Gyos.mountedScopes().get(document.getElementById('root')!);
+		const time10 = document.querySelector<HTMLInputElement>('.time-10')!;
+		const time11 = document.querySelector<HTMLInputElement>('.time-11')!;
+		const duration30 = document.querySelector<HTMLInputElement>('.duration-30')!;
+		const duration60 = document.querySelector<HTMLInputElement>('.duration-60')!;
+		const autoState = Gyos.mountedScopes().get(document.getElementById('auto-root')!);
+
+		expect(time10.value).toBe('10:00');
+		expect(time11.value).toBe('11:00');
+		expect(time10.checked).toBe(false);
+		expect(time11.checked).toBe(false);
+		expect(duration30.checked).toBe(true);
+		expect(duration60.checked).toBe(false);
+		expect(autoState.format).toBe('premium');
+		expect(document.querySelector<HTMLInputElement>('.auto-standard')!.value).toBe('standard');
+		expect(document.querySelector<HTMLInputElement>('.auto-premium')!.value).toBe('premium');
+
+		time11.checked = true;
+		time11.dispatchEvent(new Event('input', { bubbles: true }));
+		duration60.checked = true;
+		duration60.dispatchEvent(new Event('input', { bubbles: true }));
+		await flush();
+
+		expect(state.time).toBe('11:00');
+		expect(state.duration).toBe(60);
+
+		state.time = '10:00';
+		state.duration = 30;
+		await flush();
+		expect(time10.checked).toBe(true);
+		expect(time11.checked).toBe(false);
+		expect(duration30.checked).toBe(true);
+		expect(duration60.checked).toBe(false);
+	});
+
 	it('renders if, switch, keyed for, static, text, html, show, and pipe syntax', async () => {
 		const name = `DirectiveDocs${++scopeId}`;
 		const pipeName = `surroundDocs${scopeId}`;

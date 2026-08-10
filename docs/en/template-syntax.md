@@ -966,7 +966,7 @@ Additionally, `g-model` supports modifiers to customize the binding behavior:
 * `trim` - Automatically trims whitespace from the beginning and end of the string.
 * `number` - Converts the value to a number.
 
-The numeric delay is recognized only after `debounce`: use `g-model.debounce.300="query"`, not `g-model.300="query"`. `g-model` listens to the `input` event, supports nested paths such as `user.name` and `items[0].title`, and writes booleans for checkboxes.
+The numeric delay is recognized only after `debounce`: use `g-model.debounce.300="query"`, not `g-model.300="query"`. `g-model` listens to the `input` event, supports nested paths such as `user.name` and `items[0].title`, and writes booleans for checkboxes. For radio groups, it preserves each HTML `value`, writes the selected value to scope, and reacts to programmatic model changes by updating `checked`. Add `.number` when radio values should be stored as numbers.
 
 > Note about IME (Vietnamese, Japanese, Chinese…):
 

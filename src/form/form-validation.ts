@@ -6,6 +6,12 @@ import { effect, signal } from '../reactivity/signal';
 import type { Signal } from '../types';
 import { validate } from './validator';
 import { hasUnsafePropertyPath, isInIgnoredTree } from '../utils/helpers';
+import {
+    approveNextFormSubmission,
+    cancelApprovedFormSubmission,
+    registerValidatedForm,
+    unregisterValidatedForm
+} from './form-submission';
 
 /**
  * Form validation state with typed signals
@@ -33,6 +39,23 @@ function getFieldName(el: Element): string {
         attr.name === 'g-model' || attr.name.startsWith('g-model.')
     );
     return modelAttr?.value || el.getAttribute('name') || (el as HTMLElement).id;
+}
+
+function getControlValue(
+    el: HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement,
+    form: HTMLFormElement
+): string {
+    if (!(el instanceof HTMLInputElement)) return el.value;
+    if (el.type === 'checkbox') return el.checked ? el.value : '';
+    if (el.type !== 'radio') return el.value;
+
+    const fieldName = getFieldName(el);
+    const checked = Array.from(form.querySelectorAll<HTMLInputElement>('input[type="radio"]')).find(candidate => {
+        if (isInIgnoredTree(candidate) || !candidate.checked) return false;
+        if (el.name && candidate.name === el.name) return true;
+        return getFieldName(candidate) === fieldName;
+    });
+    return checked?.value ?? '';
 }
 
 /**
@@ -92,6 +115,7 @@ export function processFormDirective(form: HTMLFormElement, scope: any): void {
     form.removeAttribute('g-form');
 
     const state = getFormState(form);
+    registerValidatedForm(form);
 
     // Create validateAll function
     const validateAll = async (): Promise<boolean> => {
@@ -134,35 +158,84 @@ export function processFormDirective(form: HTMLFormElement, scope: any): void {
         Object.assign(scope[formName], formStateObj);
     }
 
-    // Prevent default form submission and validate first
+    let replayingSubmission = false;
+    let validatingSubmission = false;
+    let replayScheduled = false;
+    let replayTimer: ReturnType<typeof setTimeout> | undefined;
+    let active = true;
+
+    // Hold the first submit while validation runs, then replay a normal submit
+    // so MPA Boost, native navigation, and user submit listeners keep working.
     const submitListener = async (e: Event) => {
-        e.preventDefault();
-
-        const isValid = await validateAll();
-
-        if (!isValid) return;
-
-        const submitMethod = form.getAttribute('g-submit');
-
-        // If not defined, submit the form normally
-        if (!submitMethod) {
-            form.submit();
+        if (replayingSubmission) {
+            replayingSubmission = false;
+            cancelApprovedFormSubmission(form);
             return;
         }
 
-        // Trigger custom submit handler if exists
-        const submitHandler = (scope as any)[submitMethod];
-        if (typeof submitHandler === 'function') {
-            submitHandler.call(scope);
+        e.preventDefault();
+        e.stopImmediatePropagation();
+
+        if (validatingSubmission || replayScheduled) return;
+        validatingSubmission = true;
+
+        try {
+            const isValid = await validateAll();
+
+            if (!active || !isValid) return;
+
+            const submitMethod = form.getAttribute('g-submit');
+
+            // If not defined, replay through the normal submit event pipeline.
+            if (!submitMethod) {
+                const submitter = typeof SubmitEvent !== 'undefined' && e instanceof SubmitEvent && (
+                    e.submitter instanceof HTMLButtonElement || e.submitter instanceof HTMLInputElement
+                ) ? e.submitter : undefined;
+
+                // Browsers ignore a re-entrant requestSubmit while the original
+                // submission algorithm is still finishing. Replay in the next task.
+                replayScheduled = true;
+                replayTimer = setTimeout(() => {
+                    replayScheduled = false;
+                    replayTimer = undefined;
+                    if (!active) return;
+
+                    approveNextFormSubmission(form);
+                    replayingSubmission = true;
+                    try {
+                        form.requestSubmit(submitter);
+                    } finally {
+                        // requestSubmit dispatches synchronously. If native validation or
+                        // another capture listener stopped it, do not leak approval state.
+                        if (replayingSubmission) {
+                            replayingSubmission = false;
+                            cancelApprovedFormSubmission(form);
+                        }
+                    }
+                }, 0);
+                return;
+            }
+
+            // Trigger custom submit handler if exists
+            const submitHandler = (scope as any)[submitMethod];
+            if (typeof submitHandler === 'function') {
+                submitHandler.call(scope);
+            }
+        } finally {
+            validatingSubmission = false;
         }
     };
-    form.addEventListener('submit', submitListener);
+    form.addEventListener('submit', submitListener, true);
 
     if (!(form as any).__gyos_effects__) {
         (form as any).__gyos_effects__ = [];
     }
     (form as any).__gyos_effects__.push(() => {
-        form.removeEventListener('submit', submitListener);
+        active = false;
+        if (replayTimer !== undefined) clearTimeout(replayTimer);
+        replayScheduled = false;
+        form.removeEventListener('submit', submitListener, true);
+        unregisterValidatedForm(form);
         formStates.delete(form);
         formValidators.delete(form);
     });
@@ -203,7 +276,7 @@ export function processValidateDirective(el: HTMLElement): void {
 
     // Validation function
     const validateField = async () => {
-        const value = el.value;
+        const value = getControlValue(el, form);
 
         // Get form context for validators that need it (like 'same')
         const formData: Record<string, any> = {};
@@ -213,7 +286,7 @@ export function processValidateDirective(el: HTMLElement): void {
             if (input instanceof HTMLInputElement || input instanceof HTMLTextAreaElement || input instanceof HTMLSelectElement) {
                 const fieldName = getFieldName(input);
                 if (fieldName) {
-                    formData[fieldName] = input.value;
+                    formData[fieldName] = getControlValue(input, form);
                 }
             }
         });

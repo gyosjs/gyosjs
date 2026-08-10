@@ -50,6 +50,7 @@ vi.mock('../src/core/scope-registry', () => scopeRegistry);
 vi.mock('../src/core/router/diff-nodes', () => diffFns);
 
 import { startRouter, onAfterNavigate, __routerTest } from '../src/core/router/router';
+import { processFormDirective, processValidateDirective } from '../src/form/form-validation';
 
 const buildResponse = (html: string, url = '/response', redirected = false) =>
 	Promise.resolve({
@@ -64,6 +65,7 @@ const buildResponse = (html: string, url = '/response', redirected = false) =>
 describe('router', () => {
 	beforeEach(() => {
 		__routerTest.resetRouterState();
+		document.body.removeAttribute('g-boost');
 		vi.clearAllMocks();
 		vi.spyOn(history, 'replaceState').mockImplementation(() => null as any);
 		vi.spyOn(history, 'pushState').mockImplementation(() => null as any);
@@ -182,6 +184,54 @@ describe('router', () => {
 		// Wait for navigation to complete
 		await vi.waitFor(() => expect(mounts.mountAll).toHaveBeenCalled(), { timeout: 1000 });
 		expect(document.querySelector('[g-outlet]')!.textContent).toContain('ok');
+	});
+
+	it('waits for g-form validation before boosting an approved POST submit', async () => {
+		document.body.setAttribute('g-boost', '');
+		document.body.innerHTML = `
+			<form id="booking" g-form="bookingForm" action="/booking" method="POST">
+				<input name="customer_name" g-model="customerName" g-validate="required">
+				<button type="submit">Book</button>
+			</form>
+			<div g-outlet>booking</div>
+		`;
+		const form = document.getElementById('booking') as HTMLFormElement;
+		const field = form.querySelector('input')!;
+		const scope: any = { customerName: '' };
+		processFormDirective(form, scope);
+		processValidateDirective(field);
+		const requestSubmit = vi.spyOn(form, 'requestSubmit').mockImplementation(submitter => {
+			form.dispatchEvent(new SubmitEvent('submit', {
+				bubbles: true,
+				cancelable: true,
+				submitter: submitter ?? undefined
+			}));
+		});
+		const observedSubmit = vi.fn();
+		form.addEventListener('submit', observedSubmit);
+		global.fetch = vi.fn().mockResolvedValue(
+			buildResponse('<div g-outlet>confirmed</div>', 'http://localhost:3000/booking/confirmed', true)
+		) as any;
+
+		startRouter();
+		form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+		form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+		await vi.waitFor(() => expect(scope.bookingForm.$invalid()).toBe(true));
+		expect(global.fetch).not.toHaveBeenCalled();
+		expect(observedSubmit).not.toHaveBeenCalled();
+
+		field.value = 'Gyos User';
+		form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+		form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+		await vi.waitFor(() => expect(scope.bookingForm.$valid()).toBe(true));
+		await vi.waitFor(() => expect(requestSubmit).toHaveBeenCalledTimes(1));
+		await vi.waitFor(() => expect(global.fetch).toHaveBeenCalledTimes(1), { timeout: 1000 });
+		const [url, init] = (global.fetch as any).mock.calls[0] as [string, RequestInit];
+		expect(url).toBe('http://localhost:3000/booking');
+		expect(init.method).toBe('POST');
+		expect((init.body as FormData).get('customer_name')).toBe('Gyos User');
+		expect(observedSubmit).toHaveBeenCalledTimes(1);
+		await vi.waitFor(() => expect(document.querySelector('[g-outlet]')!.textContent).toContain('confirmed'));
 	});
 
 	it('lets only the latest navigation commit even when an aborted fetch resolves later', async () => {

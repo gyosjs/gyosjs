@@ -15,6 +15,7 @@ import { detachPersist, mergePersistIntoLive } from './persist';
 import { performSwap } from './swap';
 import { handleScroll, saveScrollPosition } from './scroll';
 import { diffNodes } from './diff-nodes';
+import { shouldDeferToFormValidation } from '../../form/form-submission';
 
 export interface RouterOptions {
 	showProgress?: boolean; // Show progress bar during navigation (default: true)
@@ -895,6 +896,7 @@ function onSubmitCapture(event: Event): void {
 
 	if (form.closest('[g-no-boost]')) return;
 	if (!(form.hasAttribute('g-boost') || hasGlobalBoost())) return;
+	if (shouldDeferToFormValidation(form)) return;
 
 	event.preventDefault();
 

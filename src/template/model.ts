@@ -130,6 +130,8 @@ export function processModel(element: HTMLElement, scope: any, root: HTMLElement
     const initialValue = evaluateExpression(expr, currentScope, false);
     if (inputElement.type === 'checkbox') {
         inputElement.checked = !!initialValue;
+    } else if (inputElement.type === 'radio') {
+        inputElement.checked = String(unref(initialValue)) === inputElement.value;
     } else {
         inputElement.value = unref(initialValue);
     }
@@ -152,6 +154,7 @@ export function processModel(element: HTMLElement, scope: any, root: HTMLElement
 
     const eventInput = (e: Event) => {
         const target = e.target as HTMLInputElement;
+        if (target.type === 'radio' && !target.checked) return;
         const value = target.type === 'checkbox' ? target.checked : target.value;
         debouncedUpdate(value);
     };
@@ -173,6 +176,8 @@ export function processModel(element: HTMLElement, scope: any, root: HTMLElement
         const newValue = evaluateExpression(expr, currentScope, false);
         if (inputElement.type === 'checkbox') {
             inputElement.checked = !!newValue;
+        } else if (inputElement.type === 'radio') {
+            inputElement.checked = String(unref(newValue)) === inputElement.value;
         } else if (inputElement.value !== newValue) {
             inputElement.value = unref(newValue);
         }

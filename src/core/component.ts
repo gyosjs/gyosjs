@@ -208,6 +208,7 @@ function autoBindModelProp(el: HTMLElement, scope: Scope): void {
 		const attrs = node.getAttributeNames();
 		return attrs.some(attr => attr.startsWith('g-model'));
 	});
+	const radioDefaults = new Map<string, string | number>();
 
 	for (const node of walker) {
 		if (isInIgnoredTree(node)) continue;
@@ -216,12 +217,31 @@ function autoBindModelProp(el: HTMLElement, scope: Scope): void {
 		if (!modelAttr) continue;
 
 		// If prop exists or is nested, skip
-		if (modelAttr.value in scope || modelAttr.value.includes('.')) continue;
+		if (modelAttr.value.includes('.')) continue;
 
 		const element = node as HTMLInputElement;
+		if (element.type === 'radio') {
+			if (modelAttr.value in scope) continue;
+			if (!radioDefaults.has(modelAttr.value)) radioDefaults.set(modelAttr.value, '');
+			if (element.checked) {
+				const value = modelAttr.name.split('.').includes('number')
+					? Number(element.value)
+					: element.value;
+				radioDefaults.set(modelAttr.value, value);
+			}
+			continue;
+		}
+		if (modelAttr.value in scope) continue;
+
 		const valueAuto = element.type === 'checkbox' ? element.checked : element.value;
 		(scope as any)[modelAttr.value] = valueAuto;
 		DEBUG() && console.log(`[g-model] Auto-bound property "${modelAttr.value}" with initial value:`, valueAuto);
+	}
+
+	for (const [prop, value] of radioDefaults) {
+		if (prop in scope) continue;
+		(scope as any)[prop] = value;
+		DEBUG() && console.log(`[g-model] Auto-bound radio property "${prop}" with initial value:`, value);
 	}
 }
 

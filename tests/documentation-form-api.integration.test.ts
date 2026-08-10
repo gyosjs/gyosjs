@@ -147,6 +147,41 @@ describe('documentation form and public API contracts', () => {
 		expect(document.querySelectorAll('.summary div')).toHaveLength(0);
 	});
 
+	it('validates radio groups and unchecked checkboxes by their selected state', async () => {
+		const scopeName = `ChoiceFormDocs${++id}`;
+		const submitted = vi.fn();
+		document.body.innerHTML = `
+			<form id="choice-form" g-scope="${scopeName}" g-form="choices" g-submit="submitForm">
+				<input class="morning" type="radio" name="slot" value="morning" g-model="slot" g-validate="required" />
+				<input class="afternoon" type="radio" name="slot" value="afternoon" g-model="slot" g-validate="required" />
+				<input class="terms" type="checkbox" name="terms" value="accepted" g-model="terms" g-validate="required" />
+			</form>
+		`;
+		Gyos.scope(scopeName, { slot: '', terms: false, submitForm: submitted });
+		Gyos.mountAll();
+		const form = document.getElementById('choice-form') as HTMLFormElement;
+		const state = Gyos.mountedScopes().get(form);
+
+		form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+		await vi.waitFor(() => expect(state.choices.$invalid()).toBe(true));
+		expect(state.choices.errors().slot).toBe('This field is required');
+		expect(state.choices.errors().terms).toBe('This field is required');
+		expect(submitted).not.toHaveBeenCalled();
+
+		const afternoon = document.querySelector<HTMLInputElement>('.afternoon')!;
+		const terms = document.querySelector<HTMLInputElement>('.terms')!;
+		afternoon.checked = true;
+		afternoon.dispatchEvent(new Event('input', { bubbles: true }));
+		terms.checked = true;
+		terms.dispatchEvent(new Event('input', { bubbles: true }));
+		form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+
+		await vi.waitFor(() => expect(submitted).toHaveBeenCalledTimes(1));
+		expect(state.slot).toBe('afternoon');
+		expect(state.terms).toBe(true);
+		expect(state.choices.$valid()).toBe(true);
+	});
+
 	it('disposes form listeners and pending validation when a form is cleaned up', async () => {
 		vi.useFakeTimers();
 		const scopeName = `FormCleanupDocs${++id}`;
@@ -171,6 +206,27 @@ describe('documentation form and public API contracts', () => {
 		await flush();
 		expect(submitEvent.defaultPrevented).toBe(false);
 		expect(submitted).not.toHaveBeenCalled();
+	});
+
+	it('cancels a validated native-submit replay when the form is cleaned up', async () => {
+		vi.useFakeTimers();
+		const scopeName = `ReplayCleanupDocs${++id}`;
+		document.body.innerHTML = `
+			<form id="replay-cleanup" g-scope="${scopeName}" g-form="form">
+				<input g-model="email" g-validate="required|email" />
+			</form>
+		`;
+		Gyos.scope(scopeName, { email: 'dev@gyos.test' });
+		Gyos.mountAll();
+		const form = document.getElementById('replay-cleanup') as HTMLFormElement;
+		const requestSubmit = vi.spyOn(form, 'requestSubmit');
+
+		form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+		await flush();
+		Gyos.cleanup(form);
+		await vi.runAllTimersAsync();
+
+		expect(requestSubmit).not.toHaveBeenCalled();
 	});
 
 	it('covers the documented counter, toggle, debounce, local storage, and async composables', async () => {
