@@ -102,6 +102,30 @@ describe('router', () => {
 		expect(persist.mergePersistIntoLive).toHaveBeenCalled();
 	});
 
+	it('keeps noscript fallback content inert after a boosted swap', async () => {
+		document.body.innerHTML = `
+			<a id="link" href="/next" g-boost>next</a>
+			<div id="out" g-outlet g-snapshot>old</div>
+		`;
+		global.fetch = vi.fn().mockResolvedValue(buildResponse(`
+			<div id="out" g-outlet>
+				<noscript><style>#control { display: none !important; }</style></noscript>
+				<button id="control">Still visible</button>
+			</div>
+		`, 'http://localhost:3000/next')) as any;
+		const navigate = (__routerTest as any).navigate as (opts: any) => Promise<void>;
+
+		await navigate({ url: '/next', method: 'GET', changeState: false });
+
+		expect(document.querySelector('#out noscript')).toBeNull();
+		expect(document.querySelector('#out style')).toBeNull();
+		expect(document.getElementById('control')?.textContent).toBe('Still visible');
+		expect(
+			Array.from((__routerTest.snapshots as Map<string, { html: string }>).values())
+				.every(snapshot => !snapshot.html.includes('<noscript'))
+		).toBe(true);
+	});
+
 	it('aborts in-flight navigation when a new navigation starts', async () => {
 		document.body.innerHTML = `<div id="out" g-outlet></div>`;
 

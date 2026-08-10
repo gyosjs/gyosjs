@@ -420,6 +420,31 @@ test('small MPA demo navigates without a full document reload and keeps ClockApp
 	expect(await page.evaluate(() => (window as any).__gyosE2EPageIdentity)).toBe('mpa-home');
 });
 
+test('boosted parsing keeps noscript fallback styles inert', async ({ page }) => {
+	await page.route('**/router/fixtures/noscript-destination.html', route => route.fulfill({
+		contentType: 'text/html',
+		body: `
+			<!doctype html>
+			<html><head><title>Fallback fixture</title></head><body g-boost>
+				<div id="app" g-outlet>
+					<noscript><style>#fallback-control { display: none !important; }</style></noscript>
+					<button id="fallback-control">Still visible</button>
+				</div>
+			</body></html>
+		`
+	}));
+	await page.goto('/router/layout-base.html');
+	await page.locator('#app').evaluate(outlet => {
+		outlet.innerHTML = '<a id="fallback-fixture" href="/router/fixtures/noscript-destination.html">Fallback fixture</a>';
+	});
+
+	await page.locator('#fallback-fixture').click();
+
+	await expect(page).toHaveURL(/\/router\/fixtures\/noscript-destination\.html$/);
+	await expect(page.locator('#fallback-control')).toBeVisible();
+	await expect(page.locator('#app noscript, #app noscript style')).toHaveCount(0);
+});
+
 test('CDN bundle attaches window.Gyos and auto-mounts markup', async ({ page }) => {
 	await page.setContent(`
 		<div g-scope="{ count: 1 }">

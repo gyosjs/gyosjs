@@ -134,6 +134,18 @@ function findGlobalOutlet(): HTMLElement | null {
 	return document.querySelector('[g-outlet]');
 }
 
+function stripInertFallbackContent(root: ParentNode): void {
+	root.querySelectorAll('noscript').forEach(element => element.remove());
+}
+
+function parseNavigationDocument(html: string): Document {
+	const doc = new DOMParser().parseFromString(html, 'text/html');
+	// DOMParser disables scripting and parses noscript children as active markup.
+	// A boosted page runs with scripting enabled, so those fallbacks must stay inert.
+	stripInertFallbackContent(doc);
+	return doc;
+}
+
 function resolveTarget(
 	trigger?: Element | null,
 	targetSelector?: string | null,
@@ -172,7 +184,7 @@ function resolveTarget(
 
 function saveSnapshot(url: string, html: string): void {
 	// create HTMLElement by html string to remove scripts and get clean snapshot
-	const doc = new DOMParser().parseFromString(html, 'text/html');
+	const doc = parseNavigationDocument(html);
 
 	// Ignore hash for snapshot keys
 	if (url.includes('#')) url = url.split('#')[0];
@@ -602,11 +614,12 @@ async function navigate(opts: NavigateOptions): Promise<void> {
 
 		// Parse HTML
 		const doc = html
-			? new DOMParser().parseFromString(html, 'text/html')
+			? parseNavigationDocument(html)
 			: document.implementation.createHTMLDocument();
 
 		// Pick source fragment
 		const src = opts.historyFragment || pickSourceFragment(doc, target, targetOutletIndex);
+		stripInertFallbackContent(src);
 		assertActiveNavigation(transaction);
 
 		// Final URL is response.url because in headers there could be redirects
