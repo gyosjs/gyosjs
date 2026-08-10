@@ -6,6 +6,13 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.2.2] - 2026-08-10
+
+### Fixed
+
+- Validated forms now complete `g-form` validation before MPA Boost handles their submit, preventing full-page redirects and duplicate or pre-validation requests.
+- Radio `g-model` bindings preserve option values, synchronize checked state, and auto-bind the selected option; checkbox and radio validation now reads only selected controls.
+
 ## [0.2.1] - 2026-08-10
 
 ### Fixed
@@ -72,7 +79,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 - This is an experimental `0.x` release. Router, morphing, expression evaluation, and browser edge cases should be evaluated against an application's requirements before production adoption.
 
-[Unreleased]: https://github.com/gyosjs/gyosjs/compare/v0.2.1...HEAD
+[Unreleased]: https://github.com/gyosjs/gyosjs/compare/v0.2.2...HEAD
+[0.2.2]: https://github.com/gyosjs/gyosjs/compare/v0.2.1...v0.2.2
 [0.2.1]: https://github.com/gyosjs/gyosjs/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/gyosjs/gyosjs/compare/v0.1.2...v0.2.0
 [0.1.2]: https://github.com/gyosjs/gyosjs/compare/v0.1.1...v0.1.2
