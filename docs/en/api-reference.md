@@ -283,6 +283,7 @@ Expressions are evaluated in the current scope context.
 - Getter-style computed values can be referenced without parentheses.
 - Pipes use the `|` syntax and are resolved by GyosJS.
 - GyosJS leaves text inside `script`, `style`, `noscript`, `textarea`, `title`, and other browser raw-text or fallback containers unchanged. CSS braces, JSON-LD, and script blocks are not template expressions.
+- MPA Boost removes `noscript` elements from fetched documents and snapshots before a swap. `DOMParser` parses their children as markup because scripting is disabled in the temporary document; inserting that markup could otherwise activate fallback styles or controls that remain inert during a native JavaScript-enabled page load.
 
 ### Example
 

@@ -6,6 +6,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Fixed
+
+- MPA Boost removes `noscript` fallback content from fetched documents and cached snapshots before swapping, preventing `DOMParser` from turning inert fallback styles or markup into active page content.
+
 ## [0.2.0] - 2026-08-09
 
 ### Added

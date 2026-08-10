@@ -584,6 +584,8 @@ After a successful response is read and parsed as HTML, the router picks the sou
 
 This is the key rule that makes both full-document responses and partial fragments workable.
 
+Before source selection, GyosJS removes every `noscript` element from the fetched document. A `DOMParser` document has scripting disabled and therefore parses `noscript` children as real markup. Removing the fallback preserves the semantics of the live JavaScript-enabled page and also keeps snapshots from activating fallback CSS on Back/Forward.
+
 Unnamed nested outlets require stable outlet order across full-page responses. A stable target `id` remains the most explicit option.
 
 ### 7. The commit begins
@@ -707,6 +709,21 @@ Server response:
 ```
 
 The router finds `#sidebar` in the response and swaps only that area.
+
+For a quick view or modal that should keep the current URL and history entry, use the complete fragment-link recipe:
+
+```html
+<a
+    href="/products/42/quick-view"
+    g-target="#quick-view-shell"
+    g-swap="inner"
+    g-current-state
+>
+    Quick view
+</a>
+```
+
+Each attribute has a separate job: `g-target` selects the live region, `g-swap` chooses how its response content is committed, and `g-current-state` prevents the fragment URL from replacing or extending navigation history. Also ensure the link is not inside a `g-no-boost` ancestor.
 
 ### Pattern 3: Partial list item payload
 
@@ -1115,6 +1132,12 @@ It skips title/head replacement when the selected target is the first global out
 ### 7. A missing persist placeholder does not destroy the island
 
 If page B does not contain an element or comment placeholder for a parked island, GyosJS keeps that island alive in its hidden parking container. If page C later provides the same key, the original DOM node is inserted there. Use explicit keys such as `g-persist="player"`; generated keys are not a readable cross-page contract.
+
+### 8. `noscript` is a full-load fallback, not Boost content
+
+You may keep `noscript` fallbacks in server-rendered pages for visitors without JavaScript. During a boosted navigation, GyosJS strips them from the fetched document before selecting or swapping an outlet.
+
+Do not depend on `noscript` children being present after Boost, and do not place application state inside them. `g-ignore` is unrelated: it controls GyosJS template initialization after nodes exist, while destination parsing happens before that boundary can apply.
 
 ---
 
