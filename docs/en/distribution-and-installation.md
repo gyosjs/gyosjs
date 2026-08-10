@@ -9,7 +9,7 @@ This page explains how GyosJS is packaged for real use: CDN, npm, and the differ
 Use:
 
 ```html
-<script src="https://cdn.jsdelivr.net/npm/gyosjs@0.2.0/dist/gyos.auto.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gyosjs@0.2.1/dist/gyos.auto.min.js"></script>
 ```
 
 Choose this when:
@@ -76,7 +76,7 @@ For production, prefer version-pinned URLs instead of floating `latest`.
 Example:
 
 ```html
-<script src="https://cdn.jsdelivr.net/npm/gyosjs@0.2.0/dist/gyos.auto.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gyosjs@0.2.1/dist/gyos.auto.min.js"></script>
 ```
 
 When you upgrade GyosJS, change the version deliberately.
