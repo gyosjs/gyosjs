@@ -657,7 +657,7 @@ Pass mount-time options when the defaults need adjustment:
 | Option | Default | Meaning |
 | --- | --- | --- |
 | `threshold` | `0.1` | Intersection threshold number or number array, clamped to `0..1`. |
-| `rootMargin` | `0px 0px -8% 0px` | Margin passed to `IntersectionObserver`. |
+| `rootMargin` | `0px` | Margin passed to `IntersectionObserver`. Use a negative bottom margin only when content has enough space below it to cross the reduced viewport boundary. |
 | `className` | `is-revealed` | One or more classes added while revealed. The data attribute is always available. |
 | `once` | `true` | Stop observing after the first reveal. `g-reveal:repeat` sets this to `false`. |
 | `target` | `self` | Observe the element or its direct `parent`. `g-reveal:parent` selects the parent. |

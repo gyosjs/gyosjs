@@ -24,7 +24,7 @@ interface RevealPool {
 const DEFAULT_OPTIONS: NormalizedRevealOptions = {
 	classNames: ['is-revealed'],
 	once: true,
-	rootMargin: '0px 0px -8% 0px',
+	rootMargin: '0px',
 	target: 'self',
 	threshold: 0.1
 };

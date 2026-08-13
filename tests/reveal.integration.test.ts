@@ -53,7 +53,7 @@ describe('g-reveal', () => {
 
 		expect(document.documentElement.classList.contains('gyos-reveal-ready')).toBe(true);
 		expect(observers).toHaveLength(1);
-		expect(observers[0].options).toMatchObject({ rootMargin: '0px 0px -8% 0px', threshold: 0.1 });
+		expect(observers[0].options).toMatchObject({ rootMargin: '0px', threshold: 0.1 });
 		expect(observers[0].observe).toHaveBeenCalledTimes(2);
 
 		intersect(observers[0], first, true);

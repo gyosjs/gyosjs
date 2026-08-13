@@ -20,6 +20,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - Custom directives mount when their value is omitted or initially `undefined`, allowing later reactive updates instead of silently skipping initialization.
 - `g-ignore-outside-click` skips the current click, including clicks on marked descendants, without disabling future `@click.outside` handling.
 - Models rendered inside `*for` can write inherited or auto-created primitive properties back to their parent scope; asynchronously rendered radio values, checked state, and classes remain aligned.
+- `g-reveal` uses the full viewport by default so elements at the end of a document can intersect; applications can still opt into a negative `rootMargin` when layout spacing permits it.
 
 ## [0.2.2] - 2026-08-10
 
