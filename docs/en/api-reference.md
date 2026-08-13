@@ -48,7 +48,7 @@ Use the browser's find command on this page when you already know the API name.
 | Scope context | `$refs`, `$watch`, `$effect`, `$emit`, `$on`, `$provide`, `$inject`, `onMount`, `onUpdate`, `onUnmount` |
 | Text and attributes | `{expression}`, pipes with `\|`, `:class`, `:style`, safe generic `:attribute` bindings, ARIA/data attributes, and form metadata |
 | Structural | `*if`, `*elseif`, `*else`, `*for`, `g-key`, `*switch`, `*case`, `*default`, `*await`, `*pending`, `*then`, `*catch` |
-| Directives | `g-show`, `g-text`, `g-html`, `g-ref`, `g-static`, `g-ignore`, `g-transition`, `g-portal`, `g-hydrate`, `g-provide`, `g-cloak`, `g-focus`, `g-tooltip`, `g-on`, `g-markdown`, `g-form`, `g-validate`, `g-errors`, `g-submit` |
+| Directives | `g-show`, `g-text`, `g-html`, `g-ref`, `g-static`, `g-ignore`, `g-transition`, `g-portal`, `g-hydrate`, `g-reveal`, `g-provide`, `g-cloak`, `g-focus`, `g-tooltip`, `g-on`, `g-markdown`, `g-form`, `g-validate`, `g-errors`, `g-submit` |
 | Events and forms | `@event`, `$event`, event modifiers, `g-ignore-outside-click`, `g-model`, `.trim`, `.number`, `.debounce` |
 | Reactivity | `signal`, `computed`, `effect`, `batch`, `isSignal`, `isComputed`, `unref`, `untrack`, `markRaw`, `shallow` |
 | Extension | `directive`, `applyDirective`, `pipe`, `validator`, `getValidator`, `getValidatorNames`, `validate` |
@@ -348,14 +348,21 @@ Bound URLs reject active schemes and unsafe `data:` values. URL bindings on acti
 String form:
 
 ```html
-<div :class="'active'"></div>
+<div class="card" :class="selected ? 'active featured' : 'idle'"></div>
 ```
+
+String bindings are merged with the element's static classes. When the expression changes, Gyos removes stale classes previously returned by this binding but keeps classes such as `card` that came from the static `class` attribute.
 
 Object form:
 
 ```html
 <div :class="{ active: isActive, hidden: !visible }"></div>
 ```
+
+Object keys are toggled directly. A false value removes that class, including a same-named class present in the initial markup.
+
+Adding or deleting keys on a reactive class object in place also updates the element.
+An object key may contain multiple whitespace-separated classes, which are toggled together.
 
 ### `:style`
 
@@ -370,6 +377,8 @@ Object form:
 ```html
 <div :style="{ color: textColor, fontSize: size + 'px' }"></div>
 ```
+
+Static inline declarations coexist with both forms. When a dynamic property disappears, Gyos removes it or restores the original static value. Object keys added or deleted in place are reactive.
 
 ### Boolean attribute bindings
 
@@ -591,6 +600,72 @@ Supported strategies:
 - `interaction` waits for the first user interaction.
 - `media(query)` waits for the media query to match.
 
+### `g-reveal`
+
+Expose viewport visibility for presentation effects without delaying content mounting. The default behavior is one-shot: when the element first intersects the viewport, Gyos adds `data-gyos-revealed` and the compatibility class `is-revealed`, then stops observing it.
+
+```html
+<section g-reveal>...</section>
+<article g-reveal>...</article>
+```
+
+Gyos does not ship reveal animation CSS. Keep the content visible when JavaScript is unavailable by hiding it only after Gyos adds the root readiness class:
+
+```css
+html.gyos-reveal-ready [g-reveal] {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 600ms ease, transform 600ms ease;
+}
+
+html.gyos-reveal-ready [g-reveal][data-gyos-revealed] {
+  opacity: 1;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.gyos-reveal-ready [g-reveal] {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
+```
+
+Use `:parent` when the element's own clipping or transform makes its parent the more reliable intersection target. Use `:repeat` only when the effect should reset after leaving the viewport:
+
+```html
+<div class="image-frame">
+  <img g-reveal:parent class="clip-reveal" src="project.jpg" alt="Finished project">
+</div>
+
+<aside g-reveal:repeat>Visible only while intersecting</aside>
+```
+
+Pass mount-time options when the defaults need adjustment:
+
+```html
+<section g-reveal="{
+  threshold: 0.2,
+  rootMargin: '0px 0px -12% 0px',
+  className: 'is-visible',
+  once: true,
+  target: 'self'
+}">...</section>
+```
+
+| Option | Default | Meaning |
+| --- | --- | --- |
+| `threshold` | `0.1` | Intersection threshold number or number array, clamped to `0..1`. |
+| `rootMargin` | `0px 0px -8% 0px` | Margin passed to `IntersectionObserver`. |
+| `className` | `is-revealed` | One or more classes added while revealed. The data attribute is always available. |
+| `once` | `true` | Stop observing after the first reveal. `g-reveal:repeat` sets this to `false`. |
+| `target` | `self` | Observe the element or its direct `parent`. `g-reveal:parent` selects the parent. |
+
+Elements with the same observer options share one `IntersectionObserver`. Gyos unobserves pending elements during structural removal and MPA swaps. Reduced-motion users and browsers without `IntersectionObserver` receive revealed content immediately. A one-shot element restored from a snapshot stays revealed.
+
+`g-reveal` and `g-hydrate="visible"` solve different problems: reveal changes presentation state for content that is already mounted and accessible; visible hydration postpones mounting the scope and its behavior.
+
 ### `g-provide`
 
 Provide values from markup to child scopes.
@@ -787,6 +862,8 @@ Directive hooks receive this binding contract:
 
 For `g-fetch:users:replace="apiUrl"`, `binding.arg` is `['users', 'replace']`. `Gyos.applyDirective()` calls `mounted` once and its returned cleanup calls `unmounted`; it does not create reactive `updated` calls.
 
+A bare directive such as `g-focus` receives `undefined` as its value. A directive whose declared scope field is initially `undefined` still mounts and can receive a later `updated` call.
+
 ---
 
 ## Events
@@ -846,6 +923,8 @@ Expression:
 <div @click.outside="open = false"></div>
 <div @keydown.escape.global="open = false"></div>
 ```
+
+Add `g-ignore-outside-click` to a trigger or related control when its click must not count as outside. The marker skips only that click; it does not disable later outside handling, and it also covers descendants of the marked element.
 
 ### Event example
 
@@ -1398,7 +1477,7 @@ Boost responses must remain same-origin, return `text/html` or `application/xhtm
 
 ### Public TypeScript types
 
-The package root exports `Signal`, `SignalOptions`, `Computed`, `Scope`, `ScopeFactory`, `ScopeDefinition`, `ComponentContext`, `WatchCallback`, `WatchOptions`, `Directive`, `DirectiveBinding`, `PipeFn`, `ValidatorFn`, `ValidationContext`, `HydrationStrategy`, `TransitionConfig`, and `RouterOptions` as type-only exports.
+The package root exports `Signal`, `SignalOptions`, `Computed`, `Scope`, `ScopeFactory`, `ScopeDefinition`, `ComponentContext`, `WatchCallback`, `WatchOptions`, `Directive`, `DirectiveBinding`, `RevealOptions`, `PipeFn`, `ValidatorFn`, `ValidationContext`, `HydrationStrategy`, `TransitionConfig`, and `RouterOptions` as type-only exports.
 
 ### Router attributes you will use most
 

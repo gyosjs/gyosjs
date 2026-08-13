@@ -426,6 +426,17 @@ The initial visibility is applied without animation. Later rapid toggles cancel 
 
 ---
 
+`g-reveal` marks an already-mounted element when it enters the viewport. It adds `data-gyos-revealed` and `is-revealed`; your application defines the animation CSS.
+
+```html
+<article g-reveal>Project card</article>
+<div><img g-reveal:parent src="project.jpg" alt="Project"></div>
+```
+
+The default is one-shot. Use `g-reveal:repeat` to remove the reveal state when the element leaves the viewport. Gyos shares compatible observers, respects reduced motion, falls back to visible content, and cleans pending observations during MPA swaps.
+
+---
+
 `g-html` inserts raw HTML into an element.
 
 **Example:**
@@ -725,7 +736,7 @@ button:hover {
 
 ---
 
-* and some other directives like: `g-provide`, `g-on`, `g-focus`, `g-cloak`, `g-tooltip`, `g-on`...
+* and some other directives like: `g-provide`, `g-reveal`, `g-on`, `g-focus`, `g-cloak`, `g-tooltip`...
 
 ---
 
@@ -912,7 +923,7 @@ Do not combine `passive` with `prevent`. Browsers intentionally ignore `preventD
 * `gd-is-open="false"` declares the variable `isOpen` in the scope.
 * `@click.outside="isOpen = false"` closes the dropdown when clicking outside the element.
 * `@keydown.escape.global="isOpen = false"` closes the dropdown when pressing the Escape key.
-* `g-ignore-outside-click` prevents __duplicate event__ clicks from also being treated as outside-clicks.
+* `g-ignore-outside-click` skips that click for outside handlers without disabling future outside clicks. Descendants of the marked element are covered as well.
 
 By default, keyboard events (`keydown`, `keyup`) only listen when the element is focused. Use the `global` modifier to listen to events across the entire page.
 
@@ -1084,7 +1095,7 @@ Gyos.pipe('multiply', function(value, factor) {
 
 In this section, we have explored the powerful template syntax of GyosJS, including:
 * Structural Directives: `*if`, `*for`, `*switch`, `*await`.
-* Attribute Directives: `g-scope`, `g-model`, `g-ref`, `g-show`, `g-html`, `g-text`, `g-static`, `g-ignore`, `g-portal`, `g-transition`, `g-hydrate`.
+* Attribute Directives: `g-scope`, `g-model`, `g-ref`, `g-show`, `g-html`, `g-text`, `g-static`, `g-ignore`, `g-portal`, `g-transition`, `g-hydrate`, `g-reveal`.
 * Event Handling Syntax: `@[eventName].[modifiers]="handler"`.
 * G-Model Syntax: `g-model="[variable]"` with modifiers.
 * Expressions Syntax: using expressions, operators, and pipes in templates.
