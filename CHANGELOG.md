@@ -6,6 +6,21 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.2.3] - 2026-08-13
+
+### Added
+
+- Built-in `g-reveal` exposes one-shot or repeating viewport state with shared observers, reduced-motion fallback, parent observation, and automatic MPA lifecycle cleanup while leaving animation CSS to the application.
+
+### Fixed
+
+- String and ternary `:class` bindings preserve static classes while removing only stale classes managed by the binding.
+- String and object `:style` bindings preserve unrelated static declarations, restore overridden static values, and remove stale dynamic properties.
+- Reactive objects now track missing property reads and enumeration shape, keeping later assignments, key additions/deletions, in-place `:class`/`:style`, and `Object.keys/values/entries` consumers current.
+- Custom directives mount when their value is omitted or initially `undefined`, allowing later reactive updates instead of silently skipping initialization.
+- `g-ignore-outside-click` skips the current click, including clicks on marked descendants, without disabling future `@click.outside` handling.
+- Models rendered inside `*for` can write inherited or auto-created primitive properties back to their parent scope; asynchronously rendered radio values, checked state, and classes remain aligned.
+
 ## [0.2.2] - 2026-08-10
 
 ### Fixed
@@ -79,7 +94,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 - This is an experimental `0.x` release. Router, morphing, expression evaluation, and browser edge cases should be evaluated against an application's requirements before production adoption.
 
-[Unreleased]: https://github.com/gyosjs/gyosjs/compare/v0.2.2...HEAD
+[Unreleased]: https://github.com/gyosjs/gyosjs/compare/v0.2.3...HEAD
+[0.2.3]: https://github.com/gyosjs/gyosjs/compare/v0.2.2...v0.2.3
 [0.2.2]: https://github.com/gyosjs/gyosjs/compare/v0.2.1...v0.2.2
 [0.2.1]: https://github.com/gyosjs/gyosjs/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/gyosjs/gyosjs/compare/v0.1.2...v0.2.0
