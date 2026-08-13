@@ -7,6 +7,7 @@ import { evaluateExpression } from './expression';
 import { getScopeFromElement } from '../core/scope-registry';
 import { DEBUG, hasUnsafePropertyPath, isInIgnoredTree, isInStaticParent } from '../utils/helpers';
 import { queueReactiveEffect } from './effect-queue';
+import { ensureModelPropertyOwner } from './scope-chain';
 
 /**
  * Parse path kiểu:
@@ -125,6 +126,8 @@ export function processModel(element: HTMLElement, scope: any, root: HTMLElement
 
     // Get current scope from element
     const currentScope = getScopeFromElement(element) || scope;
+	const modelParts = parsePath(expr);
+	if (typeof modelParts[0] === 'string') ensureModelPropertyOwner(currentScope, modelParts[0]);
 
     // Set initial value (no pipes in v-model)
     const initialValue = evaluateExpression(expr, currentScope, false);

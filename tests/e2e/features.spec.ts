@@ -40,6 +40,29 @@ test('advanced modal portals and closes by outside click and Escape', async ({ p
 	await expect(modalRoot.locator('.modal-overlay')).toHaveCount(0);
 });
 
+test('ignored controls do not disable later outside clicks', async ({ page }) => {
+	await page.goto('/advanced.html');
+	await page.evaluate(() => {
+		const root = document.createElement('div');
+		root.id = 'outside-regression';
+		root.setAttribute('g-scope', 'OutsideRegression');
+		root.innerHTML = `
+			<img class="gallery" @click.outside="outsideCount++">
+			<button g-ignore-outside-click><span class="next">Next</span></button>
+			<output>{outsideCount}</output>
+		`;
+		(window as any).Gyos.scope('OutsideRegression', { outsideCount: 0 });
+		document.body.append(root);
+		(window as any).Gyos.mountTree(root);
+	});
+
+	await page.locator('#outside-regression .next').click();
+	await page.locator('h1').click();
+	await expect(page.locator('#outside-regression output')).toHaveText('1');
+	await page.locator('h1').click();
+	await expect(page.locator('#outside-regression output')).toHaveText('2');
+});
+
 test('form demo blocks invalid submit and accepts valid values', async ({ page }) => {
 	await page.goto('/form-validation.html');
 	const form = page.locator('form');
@@ -223,4 +246,23 @@ test('generic bindings and g-show transitions work together in the browser', asy
 	await expect(panel).toHaveCount(1);
 	await expect(panel).toBeHidden({ timeout: 2000 });
 	await expect(panel).toHaveCount(1);
+});
+
+test('g-reveal marks content after a real viewport intersection', async ({ page }) => {
+	await page.goto('/advanced.html');
+	await page.evaluate(() => {
+		const root = document.createElement('div');
+		root.id = 'reveal-browser-root';
+		root.setAttribute('g-scope', 'RevealBrowserScope');
+		root.innerHTML = '<div style="height: 200vh"></div><section class="browser-reveal" g-reveal>Reveal me</section>';
+		(window as any).Gyos.scope('RevealBrowserScope', {});
+		document.body.append(root);
+		(window as any).Gyos.mountTree(root);
+	});
+
+	const target = page.locator('.browser-reveal');
+	await expect(target).not.toHaveAttribute('data-gyos-revealed', '');
+	await target.scrollIntoViewIfNeeded();
+	await expect(target).toHaveAttribute('data-gyos-revealed', '');
+	await expect(target).toHaveClass(/is-revealed/);
 });

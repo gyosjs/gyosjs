@@ -15,6 +15,7 @@
  */
 import type { Directive } from '../types';
 import { getScopeFromElement } from './scope-registry';
+import { revealDirective } from './reveal';
 
 const directives = new Map<string, Directive>();
 
@@ -213,3 +214,5 @@ directive('markdown', {
 		el.innerHTML = html;
 	},
 });
+
+directive('reveal', revealDirective);

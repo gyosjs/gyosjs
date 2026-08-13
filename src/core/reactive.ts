@@ -165,8 +165,13 @@ export function reactive<T extends object>(raw: T): T {
     proxy = new Proxy(raw, {
         get(target, key, receiver) {
             const value = Reflect.get(target, key, receiver);
-            // Không tạo signal cho property không phải own (vd forEach, map, filter...)
+			// Missing own fields can become reactive later; prototype APIs stay untouched.
             if (!Object.prototype.hasOwnProperty.call(target, key)) {
+				if (typeof key !== 'symbol' && !isReservedKey(key) && !(key in target)) {
+					const existingSig = fieldSignals.get(target)?.get(key);
+					if (hasCurrentEffect()) return (existingSig || getFieldSignal(target, key, undefined)).value;
+					if (existingSig) return existingSig.peek;
+				}
                 return value;
             }
 
@@ -271,6 +276,7 @@ export function reactive<T extends object>(raw: T): T {
         },
 
         ownKeys(target) {
+			ensureVersion(target).value;
             return Reflect.ownKeys(target).filter(key => !isReservedKey(key));
         },
 

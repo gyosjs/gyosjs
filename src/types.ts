@@ -89,6 +89,14 @@ export interface DirectiveBinding {
 	arg?: string[];
 }
 
+export interface RevealOptions {
+	className?: string;
+	once?: boolean;
+	rootMargin?: string;
+	target?: 'self' | 'parent';
+	threshold?: number | number[];
+}
+
 /**
  * Pipe function
  */

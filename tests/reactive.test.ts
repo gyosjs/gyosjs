@@ -3,6 +3,39 @@ import { makeReactive, reactive } from '../src/core/reactive';
 import { effect } from '../src/reactivity/signal';
 
 describe('reactive objects', () => {
+	it('tracks collection shape for keys added and deleted in place', async () => {
+		const state = makeReactive<{ fields: { first?: boolean; second?: boolean } }>({
+			fields: { first: true }
+		});
+		const snapshots: string[] = [];
+		const dispose = effect(() => {
+			snapshots.push(Object.keys(state.fields).sort().join(','));
+		});
+
+		state.fields.second = true;
+		await Promise.resolve();
+		await Promise.resolve();
+		delete state.fields.first;
+		await Promise.resolve();
+		await Promise.resolve();
+
+		expect(snapshots).toEqual(['first', 'first,second', 'second']);
+		dispose();
+	});
+
+	it('tracks a missing property when it is assigned later', async () => {
+		const state = makeReactive<{ optional?: string }>({});
+		const values: Array<string | undefined> = [];
+		const dispose = effect(() => values.push(state.optional));
+
+		state.optional = 'ready';
+		await Promise.resolve();
+		await Promise.resolve();
+
+		expect(values).toEqual([undefined, 'ready']);
+		dispose();
+	});
+
 	it('does not wrap an existing reactive proxy again', () => {
 		const proxy = reactive({ value: 1 });
 

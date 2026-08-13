@@ -6,26 +6,128 @@ import { getScopeFromElement } from '../core/scope-registry';
 import { isInIgnoredTree, isInStaticParent, DEBUG, walkerDOM } from '../utils/helpers';
 import { queueReactiveEffect } from './effect-queue';
 
-function handleClassBinding(el: HTMLElement, value: unknown): void {
-	if (typeof value === 'string') {
-		el.className = value;
-	} else if (value && typeof value === 'object') {
-		Object.entries(value).forEach(([className, condition]) => {
-			el.classList.toggle(className, Boolean(condition));
-		});
-	}
+interface ClassBindingState {
+	staticClasses: Set<string>;
+	dynamicClasses: Set<string>;
 }
 
-function handleStyleBinding(el: HTMLElement, value: unknown): void {
+interface StyleValue {
+	priority: string;
+	value: string;
+}
+
+interface StyleBindingState {
+	staticStyles: Map<string, StyleValue>;
+	dynamicProperties: Set<string>;
+}
+
+function createClassBindingState(el: HTMLElement): ClassBindingState {
+	return {
+		staticClasses: new Set(el.classList),
+		dynamicClasses: new Set()
+	};
+}
+
+function classNamesFromBinding(value: unknown): Set<string> {
 	if (typeof value === 'string') {
-		el.setAttribute('style', value);
-	} else if (value && typeof value === 'object') {
-		Object.entries(value).forEach(([property, propertyValue]) => {
-			(el.style as any)[property] = propertyValue ?? '';
-		});
-	} else if (value == null || value === false) {
-		el.removeAttribute('style');
+		return new Set(value.split(/\s+/).filter(Boolean));
 	}
+	if (value && typeof value === 'object') {
+		return new Set(
+			Object.entries(value)
+				.filter(([, condition]) => Boolean(condition))
+				.flatMap(([className]) => className.split(/\s+/).filter(Boolean))
+		);
+	}
+	return new Set();
+}
+
+function handleClassBinding(el: HTMLElement, value: unknown, state: ClassBindingState): void {
+	const nextClasses = classNamesFromBinding(value);
+	if (value && typeof value === 'object') {
+		for (const [className, condition] of Object.entries(value)) {
+			if (!condition) {
+				for (const token of className.split(/\s+/).filter(Boolean)) el.classList.remove(token);
+			}
+		}
+	}
+
+	for (const className of state.dynamicClasses) {
+		if (!nextClasses.has(className) && !state.staticClasses.has(className)) {
+			el.classList.remove(className);
+		}
+	}
+	for (const className of nextClasses) {
+		el.classList.add(className);
+	}
+
+	state.dynamicClasses = nextClasses;
+}
+
+function readStyleValues(style: CSSStyleDeclaration): Map<string, StyleValue> {
+	const values = new Map<string, StyleValue>();
+	for (let index = 0; index < style.length; index++) {
+		const property = style.item(index);
+		values.set(property, {
+			priority: style.getPropertyPriority(property),
+			value: style.getPropertyValue(property)
+		});
+	}
+	return values;
+}
+
+function normalizeStyleProperty(property: string): string {
+	if (property.startsWith('--') || property.includes('-')) return property.toLowerCase();
+	return property.replace(/[A-Z]/g, match => `-${match.toLowerCase()}`);
+}
+
+function styleValuesFromBinding(value: unknown): {
+	mentioned: Set<string>;
+	values: Map<string, StyleValue>;
+} {
+	const scratch = document.createElement('div').style;
+	const mentioned = new Set<string>();
+
+	if (typeof value === 'string') {
+		scratch.cssText = value;
+		for (const property of readStyleValues(scratch).keys()) mentioned.add(property);
+	} else if (value && typeof value === 'object') {
+		for (const [property, propertyValue] of Object.entries(value)) {
+			const normalized = normalizeStyleProperty(property);
+			mentioned.add(normalized);
+			if (propertyValue == null || propertyValue === false) continue;
+			if (property.startsWith('--')) scratch.setProperty(property, String(propertyValue));
+			else (scratch as any)[property] = propertyValue;
+		}
+	}
+
+	return { mentioned, values: readStyleValues(scratch) };
+}
+
+function createStyleBindingState(el: HTMLElement): StyleBindingState {
+	return {
+		staticStyles: readStyleValues(el.style),
+		dynamicProperties: new Set()
+	};
+}
+
+function restoreStaticStyle(el: HTMLElement, property: string, state: StyleBindingState): void {
+	const original = state.staticStyles.get(property);
+	if (original) el.style.setProperty(property, original.value, original.priority);
+	else el.style.removeProperty(property);
+}
+
+function handleStyleBinding(el: HTMLElement, value: unknown, state: StyleBindingState): void {
+	const next = styleValuesFromBinding(value);
+	for (const property of state.dynamicProperties) {
+		if (!next.mentioned.has(property)) restoreStaticStyle(el, property, state);
+	}
+	for (const property of next.mentioned) {
+		const styleValue = next.values.get(property);
+		if (styleValue) el.style.setProperty(property, styleValue.value, styleValue.priority);
+		else el.style.removeProperty(property);
+	}
+	state.dynamicProperties = next.mentioned;
 }
 
 const booleanAttributes = new Set([
@@ -123,11 +225,13 @@ export function processBindings(element: HTMLElement, scope: any, root: HTMLElem
 	for (const attribute of boundAttributes(element)) {
 		const attrName = attribute.name.slice(1);
 		const expression = attribute.value;
+		const classState = attrName === 'class' ? createClassBindingState(element) : undefined;
+		const styleState = attrName === 'style' ? createStyleBindingState(element) : undefined;
 		queueReactiveEffect(element, () => {
 			const currentScope = getScopeFromElement(element) || scope;
 			const value = evaluateExpression(expression, currentScope);
-			if (attrName === 'class') handleClassBinding(element, value);
-			else if (attrName === 'style') handleStyleBinding(element, value);
+			if (attrName === 'class') handleClassBinding(element, value, classState!);
+			else if (attrName === 'style') handleStyleBinding(element, value, styleState!);
 			else applyAttributeBinding(element, attrName, value);
 		});
 	}
@@ -140,8 +244,8 @@ export function processBindingsStatic(root: HTMLElement, scope: any): void {
 		for (const attribute of boundAttributes(element)) {
 			const attrName = attribute.name.slice(1);
 			const value = evaluateExpression(attribute.value, scope);
-			if (attrName === 'class') handleClassBinding(element, value);
-			else if (attrName === 'style') handleStyleBinding(element, value);
+			if (attrName === 'class') handleClassBinding(element, value, createClassBindingState(element));
+			else if (attrName === 'style') handleStyleBinding(element, value, createStyleBindingState(element));
 			else applyAttributeBinding(element, attrName, value);
 		}
 	}

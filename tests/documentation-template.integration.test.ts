@@ -263,6 +263,89 @@ describe('documentation template contracts', () => {
 		expect(image.hasAttribute('src')).toBe(false);
 	});
 
+	it('merges string class bindings with static classes and removes stale dynamic classes', async () => {
+		const name = `StringClassBinding${++scopeId}`;
+		document.body.innerHTML = `
+			<div id="root" g-scope="${name}">
+				<span class="g_class shared" :class="condition ? 'class_a shared' : 'class_b'">Status</span>
+				<span class="object-static" :class="{ 'object-static': objectActive }">Object</span>
+				<span class="shape" :class="classes">Shape</span>
+			</div>
+		`;
+		Gyos.scope(name, { condition: true, objectActive: false, classes: { 'ready highlighted': true } });
+
+		Gyos.mountAll();
+		const state = Gyos.mountedScopes().get(document.getElementById('root')!);
+		const element = document.querySelector<HTMLElement>('span')!;
+
+		expect(element.classList.contains('g_class')).toBe(true);
+		expect(element.classList.contains('shared')).toBe(true);
+		expect(element.classList.contains('class_a')).toBe(true);
+		expect(document.querySelectorAll('span')[1].classList.contains('object-static')).toBe(false);
+		expect(document.querySelector('.shape')!.classList.contains('ready')).toBe(true);
+		expect(document.querySelector('.shape')!.classList.contains('highlighted')).toBe(true);
+
+		state.condition = false;
+		await flush();
+
+		expect(element.classList.contains('g_class')).toBe(true);
+		expect(element.classList.contains('shared')).toBe(true);
+		expect(element.classList.contains('class_a')).toBe(false);
+		expect(element.classList.contains('class_b')).toBe(true);
+
+		state.classes.active = true;
+		await flush();
+		expect(document.querySelector('.shape')!.classList.contains('active')).toBe(true);
+		delete state.classes.active;
+		await flush();
+		expect(document.querySelector('.shape')!.classList.contains('active')).toBe(false);
+	});
+
+	it('merges style bindings with static declarations and clears stale dynamic properties', async () => {
+		const name = `StyleBindingOwnership${++scopeId}`;
+		document.body.innerHTML = `
+			<div id="root" g-scope="${name}">
+				<p style="display: grid; color: black" :style="primary ? 'color: red; gap: 12px' : 'padding: 4px'">String</p>
+				<span style="color: black" :style="styles">Object</span>
+			</div>
+		`;
+		Gyos.scope(name, { primary: true, styles: { color: 'red', marginTop: '8px' } });
+
+		Gyos.mountAll();
+		const state = Gyos.mountedScopes().get(document.getElementById('root')!);
+		const paragraph = document.querySelector('p')!;
+		const span = document.querySelector('span')!;
+		expect(paragraph.style.display).toBe('grid');
+		expect(paragraph.style.color).toBe('red');
+		expect(paragraph.style.gap).toBe('12px');
+		expect(span.style.color).toBe('red');
+		expect(span.style.marginTop).toBe('8px');
+
+		state.primary = false;
+		state.styles = { paddingTop: '6px' };
+		await flush();
+
+		expect(paragraph.style.display).toBe('grid');
+		expect(paragraph.style.color).toBe('black');
+		expect(paragraph.style.gap).toBe('');
+		expect(paragraph.style.padding).toBe('4px');
+		expect(span.style.color).toBe('black');
+		expect(span.style.marginTop).toBe('');
+		expect(span.style.paddingTop).toBe('6px');
+
+		state.styles = { color: false };
+		await flush();
+		expect(span.style.color).toBe('');
+		expect(span.style.paddingTop).toBe('');
+
+		state.styles.borderWidth = '2px';
+		await flush();
+		expect(span.style.borderWidth).toBe('2px');
+		delete state.styles.borderWidth;
+		await flush();
+		expect(span.style.borderWidth).toBe('');
+	});
+
 	it('supports documented model controls, modifiers, nested paths, and programmatic updates', async () => {
 		const name = `ModelDocs${++scopeId}`;
 		document.body.innerHTML = `
@@ -361,6 +444,64 @@ describe('documentation template contracts', () => {
 		expect(time11.checked).toBe(false);
 		expect(duration30.checked).toBe(true);
 		expect(duration60.checked).toBe(false);
+	});
+
+	it('writes inherited g-model state from async for rows and keeps radio bindings aligned', async () => {
+		const name = `AsyncForRadio${++scopeId}`;
+		document.body.innerHTML = `
+			<div id="root" g-scope="${name}">
+				<label *for="slot in slots" g-key="slot.id" :class="selected === slot.value ? 'selected' : 'idle'">
+					<input type="radio" name="slot" :value="slot.value" g-model="selected" />
+					{slot.label}
+				</label>
+			</div>
+		`;
+		Gyos.scope(name, { slots: [], selected: '10:00' });
+
+		Gyos.mountAll();
+		const state = Gyos.mountedScopes().get(document.getElementById('root')!);
+		state.slots = [
+			{ id: 1, value: '10:00', label: 'Ten' },
+			{ id: 2, value: '11:00', label: 'Eleven' }
+		];
+		await flush();
+
+		const radios = Array.from(document.querySelectorAll<HTMLInputElement>('input[type="radio"]'));
+		expect(radios.map(radio => radio.value)).toEqual(['10:00', '11:00']);
+		expect(radios.map(radio => radio.checked)).toEqual([true, false]);
+		expect(radios[0].closest('label')!.classList.contains('selected')).toBe(true);
+
+		radios[1].checked = true;
+		radios[1].dispatchEvent(new Event('input', { bubbles: true }));
+		await flush();
+
+		expect(state.selected).toBe('11:00');
+		expect(radios.map(radio => radio.checked)).toEqual([false, true]);
+		expect(radios[0].closest('label')!.classList.contains('selected')).toBe(false);
+		expect(radios[1].closest('label')!.classList.contains('selected')).toBe(true);
+	});
+
+	it('auto-creates a missing inherited model field on the parent scope', async () => {
+		const name = `ForAutoModel${++scopeId}`;
+		document.body.innerHTML = `
+			<div id="root" g-scope="${name}">
+				<label *for="option in options" g-key="option">
+					<input type="radio" name="choice" :value="option" g-model="selected">
+				</label>
+				<output>{selected || 'none'}</output>
+			</div>
+		`;
+		Gyos.scope(name, { options: ['a', 'b'] });
+
+		Gyos.mountAll();
+		const state = Gyos.mountedScopes().get(document.getElementById('root')!);
+		const second = document.querySelectorAll<HTMLInputElement>('input')[1];
+		second.checked = true;
+		second.dispatchEvent(new Event('input', { bubbles: true }));
+		await flush();
+
+		expect(state.selected).toBe('b');
+		expect(document.querySelector('output')!.textContent).toBe('b');
 	});
 
 	it('renders if, switch, keyed for, static, text, html, show, and pipe syntax', async () => {
@@ -519,6 +660,27 @@ describe('documentation template contracts', () => {
 		expect(state.outsideCount).toBe(1);
 	});
 
+	it('ignores marked outside clicks without disposing the outside listener', async () => {
+		vi.useFakeTimers();
+		const name = `IgnoredOutside${++scopeId}`;
+		document.body.innerHTML = `
+			<div id="root" g-scope="${name}">
+				<img class="gallery" @click.outside="outsideCount++" />
+				<button g-ignore-outside-click><span class="next">Next</span></button>
+			</div>
+		`;
+		Gyos.scope(name, { outsideCount: 0 });
+		Gyos.mountAll();
+		const state = Gyos.mountedScopes().get(document.getElementById('root')!);
+		await vi.runAllTimersAsync();
+
+		document.querySelector('.next')!.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+		document.body.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+		document.body.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+		expect(state.outsideCount).toBe(2);
+	});
+
 	it('consumes once before an accepted handler can synchronously re-enter', () => {
 		const name = `OnceReentryDocs${++scopeId}`;
 		document.body.innerHTML = `
@@ -651,6 +813,31 @@ describe('documentation template contracts', () => {
 		state.color = 'blue';
 		await flush();
 		expect(updated.mock.calls.at(-1)?.[1]).toMatchObject({ value: 'blue', oldValue: 'red' });
+	});
+
+	it('mounts bare directives and tracks directive values initialized as undefined', async () => {
+		const directiveName = `docs-optional-${++scopeId}`;
+		const scopeName = `${directiveName}-scope`;
+		const mounted = vi.fn();
+		const updated = vi.fn();
+		Gyos.directive(directiveName, { mounted, updated });
+		document.body.innerHTML = `
+			<div id="root" g-scope="${scopeName}">
+				<p g-${directiveName}>Bare</p>
+				<p g-${directiveName}="option">Optional</p>
+			</div>
+		`;
+		Gyos.scope(scopeName, {});
+
+		Gyos.mountAll();
+		const state = Gyos.mountedScopes().get(document.getElementById('root')!);
+		expect(mounted).toHaveBeenCalledTimes(2);
+		expect(mounted.mock.calls.map(call => call[1].value)).toEqual([undefined, undefined]);
+
+		state.option = 'ready';
+		await flush();
+		expect(updated).toHaveBeenCalledTimes(1);
+		expect(updated.mock.calls[0][1]).toMatchObject({ value: 'ready', oldValue: undefined });
 	});
 
 	it('runs focus, tooltip, and cloak built-in directives', async () => {

@@ -36,6 +36,7 @@ export type {
 	DirectiveBinding,
 	HydrationStrategy,
 	PipeFn,
+	RevealOptions,
 	Scope,
 	ScopeDefinition,
 	ScopeFactory,
@@ -175,7 +176,7 @@ const Gyos = {
 	onAfterNavigate,
 	portalCreate,
 	portalDestroy,
-	version: '0.2.2'
+	version: '0.2.3'
 };
 
 export default Gyos;

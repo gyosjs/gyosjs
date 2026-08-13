@@ -4,6 +4,7 @@
  */
 import { evaluateExpression } from '../expression';
 import { disposeEffects } from '../cleanup';
+import { attachParentScope } from '../scope-chain';
 import { transitionManager } from '../../core/transition';
 import {
 	findElementsWithTransition,
@@ -59,6 +60,7 @@ function createChildScope(
     index: number
 ): any {
     const childScope: any = {};
+	attachParentScope(childScope, parentScope);
 	const state = signal({ list, index });
 	Object.defineProperty(childScope, FOR_SCOPE_STATE, { value: state });
 
@@ -100,6 +102,9 @@ function createChildScope(
         if (!(key in childScope)) {
             Object.defineProperty(childScope, key, {
                 get: () => parentScope[key],
+				set: (value) => {
+					parentScope[key] = value;
+				},
                 enumerable: true,
                 configurable: true,
             });

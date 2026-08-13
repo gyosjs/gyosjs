@@ -140,12 +140,11 @@ function setupClickOutsideHandler(
         const target = e.target as Node;
 
         // Check if click is outside element AND element is still in DOM
-        if (!document.body.contains(element) ||
-			(target instanceof Element && target.hasAttribute('g-ignore-outside-click'))) {
-            // Element removed, cleanup
-            cleanup();
-            return;
-        }
+		if (!document.body.contains(element)) {
+			cleanup();
+			return;
+		}
+		if (target instanceof Element && target.closest('[g-ignore-outside-click]')) return;
 
         if (element !== target && !element.contains(target)) {
             const currentScope = getScopeFromElement(element) || scope;

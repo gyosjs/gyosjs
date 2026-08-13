@@ -97,10 +97,13 @@ export function processDirectives(element: HTMLElement, scope: any, root: HTMLEl
             if (directive) {
                 // g-on needs the handler itself. The general evaluator intentionally
                 // invokes bare functions to support function-style computed values.
-                const value = directiveName === 'on' && typeof scope[attr.value] === 'function'
-                    ? scope[attr.value]
-                    : evaluateExpression(attr.value, scope, false);
-                if (value === undefined) return; // Skip if value is undefined
+				const evaluateValue = () => {
+					if (attr.value.trim() === '') return undefined;
+					return directiveName === 'on' && typeof scope[attr.value] === 'function'
+						? scope[attr.value]
+						: evaluateExpression(attr.value, scope, false);
+				};
+				const value = evaluateValue();
 				let oldValue = directive.mounted ? value : undefined;
 				let initialized = !directive.mounted;
 
@@ -128,7 +131,7 @@ export function processDirectives(element: HTMLElement, scope: any, root: HTMLEl
                 // Setup reactive update if has updated hook
                 if (directive.updated) {
                     queueReactiveEffect(element, () => {
-                        const newValue = evaluateExpression(attr.value, scope, false);
+						const newValue = evaluateValue();
 						if (!initialized) {
 							initialized = true;
 							oldValue = newValue;
