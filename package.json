@@ -1,6 +1,6 @@
 {
   "name": "gyosjs",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "type": "module",
   "description": "Reactive HTML for server-rendered websites, with signals, template directives, and MPA boost navigation",
   "engines": {

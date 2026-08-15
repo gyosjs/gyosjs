@@ -169,7 +169,6 @@ export function processFormDirective(form: HTMLFormElement, scope: any): void {
     const submitListener = async (e: Event) => {
         if (replayingSubmission) {
             replayingSubmission = false;
-            cancelApprovedFormSubmission(form);
             return;
         }
 
@@ -206,11 +205,11 @@ export function processFormDirective(form: HTMLFormElement, scope: any): void {
                         form.requestSubmit(submitter);
                     } finally {
                         // requestSubmit dispatches synchronously. If native validation or
-                        // another capture listener stopped it, do not leak approval state.
+                        // another listener stopped it, do not leak approval state.
                         if (replayingSubmission) {
                             replayingSubmission = false;
-                            cancelApprovedFormSubmission(form);
                         }
+                        cancelApprovedFormSubmission(form);
                     }
                 }, 0);
                 return;

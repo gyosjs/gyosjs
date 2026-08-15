@@ -6,6 +6,13 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.2.4] - 2026-08-15
+
+### Fixed
+
+- MPA Boost now lets cancelable link clicks and form submissions reach application handlers before interception, so `preventDefault()`, inline `return false`, and confirmation dialogs can stop navigation.
+- Validated `g-form` submission replay preserves application cancellation and clears temporary Router approval, allowing later submissions to proceed normally.
+
 ## [0.2.3] - 2026-08-13
 
 ### Added
@@ -95,7 +102,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 - This is an experimental `0.x` release. Router, morphing, expression evaluation, and browser edge cases should be evaluated against an application's requirements before production adoption.
 
-[Unreleased]: https://github.com/gyosjs/gyosjs/compare/v0.2.3...HEAD
+[Unreleased]: https://github.com/gyosjs/gyosjs/compare/v0.2.4...HEAD
+[0.2.4]: https://github.com/gyosjs/gyosjs/compare/v0.2.3...v0.2.4
 [0.2.3]: https://github.com/gyosjs/gyosjs/compare/v0.2.2...v0.2.3
 [0.2.2]: https://github.com/gyosjs/gyosjs/compare/v0.2.1...v0.2.2
 [0.2.1]: https://github.com/gyosjs/gyosjs/compare/v0.2.0...v0.2.1

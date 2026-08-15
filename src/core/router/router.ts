@@ -111,8 +111,8 @@ export function startRouter(options?: RouterOptions): void {
 		progressBar = new ProgressBar(progressBarEnabled);
 	}
 
-	document.addEventListener('click', onClickCapture, true);
-	document.addEventListener('submit', onSubmitCapture, true);
+	document.addEventListener('click', onClick);
+	document.addEventListener('submit', onSubmit);
 	document.addEventListener('mouseover', onMouseOverCapture, true);
 	window.addEventListener('popstate', onPopState);
 
@@ -837,7 +837,7 @@ function onClickRouter(element: Element) : void {
 	}
 }
 
-function onClickCapture(event: MouseEvent): void {
+function onClick(event: MouseEvent): void {
 	if (event.defaultPrevented) return;
 	if (event.button !== 0) return;
 	if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
@@ -890,7 +890,9 @@ function onMouseOverCapture(event: MouseEvent): void {
 	preload(url.toString());
 }
 
-function onSubmitCapture(event: Event): void {
+function onSubmit(event: Event): void {
+	if (event.defaultPrevented) return;
+
 	const form = event.target as HTMLFormElement | null;
 	if (!form || form.tagName.toLowerCase() !== 'form') return;
 
@@ -956,8 +958,8 @@ function onPopState(event: PopStateEvent): void {
 }
 
 function resetRouterState(): void {
-	document.removeEventListener('click', onClickCapture, true);
-	document.removeEventListener('submit', onSubmitCapture, true);
+	document.removeEventListener('click', onClick);
+	document.removeEventListener('submit', onSubmit);
 	document.removeEventListener('mouseover', onMouseOverCapture, true);
 	window.removeEventListener('popstate', onPopState);
 	if (activeNavigation) cancelNavigation(activeNavigation);

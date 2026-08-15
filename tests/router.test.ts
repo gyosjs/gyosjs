@@ -186,6 +186,29 @@ describe('router', () => {
 		expect(document.querySelector('[g-outlet]')!.textContent).toContain('ok');
 	});
 
+	it('honors canceled click and submit events before boosting', () => {
+		document.body.setAttribute('g-boost', '');
+		document.body.innerHTML = `
+			<a id="cancel-link" href="/cancelled-link">Cancel link</a>
+			<form id="cancel-form" action="/cancelled-form" method="DELETE">
+				<button type="submit">Delete</button>
+			</form>
+			<div g-outlet>unchanged</div>
+		`;
+		const link = document.getElementById('cancel-link')!;
+		const form = document.getElementById('cancel-form')!;
+		link.addEventListener('click', event => event.preventDefault());
+		form.addEventListener('submit', event => event.preventDefault());
+		global.fetch = vi.fn() as any;
+
+		startRouter();
+		link.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, button: 0 }));
+		form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+
+		expect(global.fetch).not.toHaveBeenCalled();
+		expect(document.querySelector('[g-outlet]')!.textContent).toBe('unchanged');
+	});
+
 	it('waits for g-form validation before boosting an approved POST submit', async () => {
 		document.body.setAttribute('g-boost', '');
 		document.body.innerHTML = `
@@ -232,6 +255,51 @@ describe('router', () => {
 		expect((init.body as FormData).get('customer_name')).toBe('Gyos User');
 		expect(observedSubmit).toHaveBeenCalledTimes(1);
 		await vi.waitFor(() => expect(document.querySelector('[g-outlet]')!.textContent).toContain('confirmed'));
+	});
+
+	it('honors cancellation during g-form replay and clears Router approval', async () => {
+		document.body.setAttribute('g-boost', '');
+		document.body.innerHTML = `
+			<form id="danger" g-form="dangerForm" action="/danger" method="POST">
+				<input name="confirmation" g-model="confirmation" g-validate="required" value="confirmed">
+				<button type="submit">Submit</button>
+			</form>
+			<div g-outlet>unchanged</div>
+		`;
+		const form = document.getElementById('danger') as HTMLFormElement;
+		const field = form.querySelector('input')!;
+		const scope: any = { confirmation: 'confirmed' };
+		processFormDirective(form, scope);
+		processValidateDirective(field);
+		const requestSubmit = vi.spyOn(form, 'requestSubmit').mockImplementation(submitter => {
+			form.dispatchEvent(new SubmitEvent('submit', {
+				bubbles: true,
+				cancelable: true,
+				submitter: submitter ?? undefined
+			}));
+		});
+		let cancelSubmission = true;
+		const observedSubmit = vi.fn((event: Event) => {
+			if (cancelSubmission) event.preventDefault();
+		});
+		form.addEventListener('submit', observedSubmit);
+		global.fetch = vi.fn().mockResolvedValue(
+			buildResponse('<div g-outlet>submitted</div>', 'http://localhost:3000/danger', true)
+		) as any;
+
+		startRouter();
+		form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+		await vi.waitFor(() => expect(requestSubmit).toHaveBeenCalledTimes(1));
+		await vi.waitFor(() => expect(observedSubmit).toHaveBeenCalledTimes(1));
+		expect(global.fetch).not.toHaveBeenCalled();
+		expect(document.querySelector('[g-outlet]')!.textContent).toBe('unchanged');
+
+		cancelSubmission = false;
+		form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+		await vi.waitFor(() => expect(requestSubmit).toHaveBeenCalledTimes(2));
+		await vi.waitFor(() => expect(observedSubmit).toHaveBeenCalledTimes(2));
+		await vi.waitFor(() => expect(global.fetch).toHaveBeenCalledTimes(1));
+		await vi.waitFor(() => expect(document.querySelector('[g-outlet]')!.textContent).toContain('submitted'));
 	});
 
 	it('lets only the latest navigation commit even when an aborted fetch resolves later', async () => {

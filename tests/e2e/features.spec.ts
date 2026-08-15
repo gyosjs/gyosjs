@@ -143,6 +143,79 @@ test('g-form validates before MPA Boost fetches and swaps a POST response', asyn
 	expect(await page.evaluate(() => (window as any).bookingRuntimeMarker)).toBe('preserved');
 });
 
+test('MPA Boost honors canceled link and form events', async ({ page }) => {
+	let requests = 0;
+	await page.route('**/danger', async route => {
+		requests++;
+		await route.fulfill({
+			contentType: 'text/html',
+			body: '<div g-outlet>unexpected</div>',
+		});
+	});
+	await page.goto('/form-validation.html');
+	await page.evaluate(() => {
+		const Gyos = (window as any).Gyos;
+		document.body.setAttribute('g-boost', '');
+		document.body.innerHTML = `
+			<div id="out" g-outlet>
+				<a href="/danger" onclick="return false">Cancel link</a>
+				<form action="/danger" method="post" onsubmit="return false">
+					<button type="submit">Cancel form</button>
+				</form>
+			</div>
+		`;
+		Gyos.startRouter();
+	});
+
+	await page.getByRole('link', { name: 'Cancel link' }).click();
+	await page.getByRole('button', { name: 'Cancel form' }).click();
+
+	expect(requests).toBe(0);
+	await expect(page.locator('#out')).toContainText('Cancel form');
+});
+
+test('g-form replay honors cancellation without leaking Router approval', async ({ page }) => {
+	let requests = 0;
+	await page.route('**/danger', async route => {
+		requests++;
+		await route.fulfill({
+			contentType: 'text/html',
+			body: '<div id="out" g-outlet>submitted</div>',
+		});
+	});
+	await page.goto('/form-validation.html');
+	await page.evaluate(() => {
+		const Gyos = (window as any).Gyos;
+		document.body.setAttribute('g-boost', '');
+		document.body.innerHTML = `
+			<div id="out" g-outlet>
+				<form id="danger-form" g-scope="E2EDanger" g-form="dangerForm"
+					action="/danger" method="post"
+					onsubmit="window.dangerSubmitEvents++; return window.allowDangerSubmit">
+					<input name="confirmation" g-model="confirmation" g-validate="required">
+					<button type="submit">Submit danger form</button>
+				</form>
+			</div>
+		`;
+		(window as any).allowDangerSubmit = false;
+		(window as any).dangerSubmitEvents = 0;
+		Gyos.scope('E2EDanger', { confirmation: 'confirmed' });
+		Gyos.mountAll();
+		Gyos.startRouter();
+	});
+
+	await page.getByRole('button', { name: 'Submit danger form' }).click();
+	await expect.poll(() => page.evaluate(() => (window as any).dangerSubmitEvents)).toBe(1);
+	expect(requests).toBe(0);
+	await expect(page.locator('#danger-form')).toBeVisible();
+
+	await page.evaluate(() => ((window as any).allowDangerSubmit = true));
+	await page.getByRole('button', { name: 'Submit danger form' }).click();
+	await expect.poll(() => page.evaluate(() => (window as any).dangerSubmitEvents)).toBe(2);
+	await expect.poll(() => requests).toBe(1);
+	await expect(page.locator('#out')).toHaveText('submitted');
+});
+
 test('todo demo adds, toggles, counts, and removes an item', async ({ page }) => {
 	await page.goto('/todo.html');
 	const newTodo = page.getByPlaceholder('What needs to be done?');

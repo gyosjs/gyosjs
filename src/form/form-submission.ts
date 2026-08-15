@@ -1,8 +1,8 @@
 const managedForms = new WeakSet<HTMLFormElement>();
 const approvedSubmissions = new WeakSet<HTMLFormElement>();
 
-// Coordinates the validation listener on a form with the Router's earlier
-// document-capture listener without exposing state on application elements.
+// Coordinates the form capture validator with the Router's document listener
+// without exposing state on application elements.
 
 export function registerValidatedForm(form: HTMLFormElement): void {
 	managedForms.add(form);
