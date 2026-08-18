@@ -46,6 +46,17 @@ const terser = options => ({
   }
 });
 
+const emitCss = () => ({
+  name: 'gyos-css',
+  buildStart() {
+    this.emitFile({
+      type: 'asset',
+      fileName: 'gyos.css',
+      source: readFileSync('./src/styles/gyos.css', 'utf8')
+    });
+  }
+});
+
 export default [
   // Core ESM build (tree-shakeable, emits types)
   {
@@ -57,7 +68,7 @@ export default [
       sourcemap: true
     },
     treeshake: { moduleSideEffects: false },
-    plugins: [resolve(), tsConfig(true)]
+    plugins: [resolve(), tsConfig(true), emitCss()]
   },
   // Core UMD build (no side effects)
   {
@@ -126,6 +137,102 @@ export default [
     input: 'src/auto-init.ts',
     output: {
       file: 'dist/gyos.auto.min.js',
+      format: 'umd',
+      name: 'Gyos',
+      banner,
+      sourcemap: false,
+      exports: 'named'
+    },
+    treeshake: { moduleSideEffects: false },
+    plugins: [
+      resolve(),
+      tsConfig(false, false),
+      terser({
+        compress: terserCompress,
+        mangle: { toplevel: true },
+        format: { comments: /^!/ }
+      })
+    ]
+  },
+  // CSP core ESM build (restricted expression interpreter)
+  {
+    input: 'src/csp.ts',
+    output: {
+      file: 'dist/gyos.csp.esm.js',
+      format: 'esm',
+      banner,
+      sourcemap: true
+    },
+    treeshake: { moduleSideEffects: false },
+    plugins: [resolve(), tsConfig(false)]
+  },
+  // CSP core UMD build
+  {
+    input: 'src/csp.ts',
+    output: {
+      file: 'dist/gyos.csp.js',
+      format: 'umd',
+      name: 'Gyos',
+      banner,
+      sourcemap: true,
+      exports: 'named'
+    },
+    treeshake: { moduleSideEffects: false },
+    plugins: [resolve(), tsConfig(false)]
+  },
+  // Minified CSP core UMD build
+  {
+    input: 'src/csp.ts',
+    output: {
+      file: 'dist/gyos.csp.min.js',
+      format: 'umd',
+      name: 'Gyos',
+      banner,
+      sourcemap: false,
+      exports: 'named'
+    },
+    treeshake: { moduleSideEffects: false },
+    plugins: [
+      resolve(),
+      tsConfig(false, false),
+      terser({
+        compress: terserCompress,
+        mangle: { toplevel: true },
+        format: { comments: /^!/ }
+      })
+    ]
+  },
+  // CSP auto-init ESM build
+  {
+    input: 'src/csp-auto-init.ts',
+    output: {
+      file: 'dist/gyos.csp.auto.esm.js',
+      format: 'esm',
+      banner,
+      sourcemap: true
+    },
+    treeshake: { moduleSideEffects: false },
+    plugins: [resolve(), tsConfig(false)]
+  },
+  // CSP auto-init UMD build
+  {
+    input: 'src/csp-auto-init.ts',
+    output: {
+      file: 'dist/gyos.csp.auto.js',
+      format: 'umd',
+      name: 'Gyos',
+      banner,
+      sourcemap: true,
+      exports: 'named'
+    },
+    treeshake: { moduleSideEffects: false },
+    plugins: [resolve(), tsConfig(false)]
+  },
+  // Minified CSP auto-init UMD build (CDN-friendly)
+  {
+    input: 'src/csp-auto-init.ts',
+    output: {
+      file: 'dist/gyos.csp.auto.min.js',
       format: 'umd',
       name: 'Gyos',
       banner,

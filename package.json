@@ -1,6 +1,6 @@
 {
   "name": "gyosjs",
-  "version": "0.2.4",
+  "version": "0.3.0",
   "type": "module",
   "description": "Reactive HTML for server-rendered websites, with signals, template directives, and MPA boost navigation",
   "engines": {
@@ -22,6 +22,17 @@
       "import": "./dist/gyos.auto.esm.js",
       "default": "./dist/gyos.auto.esm.js"
     },
+    "./csp": {
+      "types": "./dist/csp.d.ts",
+      "import": "./dist/gyos.csp.esm.js",
+      "default": "./dist/gyos.csp.esm.js"
+    },
+    "./csp/auto": {
+      "types": "./dist/csp-auto-init.d.ts",
+      "import": "./dist/gyos.csp.auto.esm.js",
+      "default": "./dist/gyos.csp.auto.esm.js"
+    },
+    "./styles.css": "./dist/gyos.css",
     "./package.json": "./package.json"
   },
   "files": [
@@ -30,7 +41,11 @@
   "sideEffects": [
     "./dist/gyos.auto.js",
     "./dist/gyos.auto.min.js",
-    "./dist/gyos.auto.esm.js"
+    "./dist/gyos.auto.esm.js",
+    "./dist/gyos.csp.auto.js",
+    "./dist/gyos.csp.auto.min.js",
+    "./dist/gyos.csp.auto.esm.js",
+    "./dist/gyos.css"
   ],
   "overrides": {
     "form-data": "4.0.6",
@@ -56,7 +71,8 @@
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "pack:check": "node scripts/verify-package.mjs",
-    "check": "npm run docs:check && npm run typecheck && npm run test:unit && npm run pack:check",
+    "csp:check": "node scripts/verify-csp-build.mjs",
+    "check": "npm run docs:check && npm run typecheck && npm run test:unit && npm run pack:check && npm run csp:check",
     "release:check": "npm run check && npm run version:check && npm run test:e2e:all",
     "export:public": "node scripts/export-public-source.mjs",
     "sync:public": "node scripts/export-public-source.mjs --sync",
@@ -88,6 +104,7 @@
     "@playwright/test": "1.55.1",
     "@rollup/plugin-node-resolve": "^15.2.3",
     "@rollup/plugin-typescript": "^11.1.6",
+    "acorn": "^8.18.0",
     "jsdom": "^24.0.0",
     "rollup": "^4.62.4",
     "terser": "^5.49.0",

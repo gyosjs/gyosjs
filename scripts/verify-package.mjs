@@ -39,7 +39,15 @@ const requiredFiles = [
 	'dist/gyos.auto.esm.js',
 	'dist/gyos.auto.js',
 	'dist/gyos.auto.min.js',
+	'dist/gyos.csp.esm.js',
+	'dist/gyos.csp.js',
+	'dist/gyos.csp.min.js',
+	'dist/gyos.csp.auto.esm.js',
+	'dist/gyos.csp.auto.js',
+	'dist/gyos.csp.auto.min.js',
+	'dist/gyos.css',
 	'dist/index.d.ts',
+	'dist/csp.d.ts',
 	'LICENSE.md',
 	'README.md',
 	'package.json'
@@ -54,9 +62,9 @@ const consumerWorkspace = await mkdtemp(path.join(consumerRoot, 'consumer-'));
 try {
 	runNpm(['run', 'build'], root);
 	const rootPackage = JSON.parse(await readFile(path.join(root, 'package.json'), 'utf8'));
-	const sourceIndex = await readFile(path.join(root, 'src', 'index.ts'), 'utf8');
+	const sourceIndex = await readFile(path.join(root, 'src', 'public-api.ts'), 'utf8');
 	if (!sourceIndex.includes(`version: '${rootPackage.version}'`)) {
-		throw new Error(`src/index.ts version does not match package version ${rootPackage.version}.`);
+		throw new Error(`src/public-api.ts version does not match package version ${rootPackage.version}.`);
 	}
 
 	const packResult = JSON.parse(runNpm([
@@ -92,11 +100,16 @@ try {
 	await writeFile(path.join(fixture, 'src', 'main.ts'), `
 import Gyos, { signal, startRouter } from 'gyosjs';
 import AutoGyos from 'gyosjs/auto';
+import CspGyos from 'gyosjs/csp';
+import CspAutoGyos from 'gyosjs/csp/auto';
+import 'gyosjs/styles.css';
 
 const count = signal(1);
 document.body.dataset.packageSmoke = [
   Gyos.version,
   AutoGyos.version,
+  CspGyos.version,
+  CspAutoGyos.version,
   String(count.value),
   typeof startRouter
 ].join(':');
