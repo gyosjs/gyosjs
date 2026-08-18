@@ -3,6 +3,7 @@
  * Handles template expressions, pipes, and string interpolation
  */
 import { parsePipeExpression, applyPipe } from "../core/pipe";
+import { expressionRuntime } from "../runtime/evaluator";
 
 /**
  * Interpolate {expression} in template strings
@@ -117,20 +118,5 @@ function evaluateSimpleExpression(expr: string, scope: any): any {
         return Number(expr);
     }
 
-    // Use Function to evaluate in scope context
-    // This allows getters and signals to be tracked properly
-    try {
-        const method = scope[expr];
-        if (typeof method === "function") {
-            return method.call(scope);
-        } else {
-            // Wrap expression in try-catch to handle null/undefined access gracefully
-            const safeExpr = `try { return ${expr} } catch(e) { return undefined }`;
-            const fn = new Function("$scope", `with($scope) { ${safeExpr} }`);
-            return fn(scope);
-        }
-    } catch (e) {
-        console.error("[GyosJS] Error evaluating expression:", expr, e);
-        return undefined;
-    }
+    return expressionRuntime().evaluate(expr, scope);
 }

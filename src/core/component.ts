@@ -9,6 +9,7 @@ import { deepEqual, clone, DEBUG, walkerDOM, hasStructuralParent, hasUnsafePrope
 import { processParse, setMountFunction } from '../template/process';
 import { disposeEffects } from '../template/cleanup';
 import { evaluateExpression } from '../template/expression';
+import { expressionRuntime } from '../runtime/evaluator';
 
 // Inject mount function into process.ts to handle nested scopes in structural directives
 setMountFunction(mount);
@@ -123,10 +124,7 @@ function parseInlineScope(scopeStr: string): Scope | undefined {
 			return undefined; // Not an inline definition
 		}
 
-		// Parse as JavaScript object using Function constructor
-		// This allows methods and complex expressions
-		const fn = new Function(`return (${trimmed})`);
-		const definition = fn();
+		const definition = expressionRuntime().parseScope(trimmed);
 
 		DEBUG() && console.log('[GyosJS] Parsed inline scope:', definition);
 		return definition;
@@ -189,10 +187,10 @@ function parseAutoScope(el: HTMLElement): Scope {
 				DEBUG() && console.log("[GyosJS] Scope mount error: Forbidden expression:", expr);
 			}
 
-			const args = key.split(':').slice(1).join(', ');
+			const args = key.split(':').slice(1);
 			const propName = key.split(':')[0];
 			try {
-				definition[propName] = new Function(args, `with(this) { ${expr} }`);
+				definition[propName] = expressionRuntime().createMethod(args, expr);
 				removeAttrs.push(attr.name);
 			} catch (_) {
 				DEBUG() && console.log("[GyosJS] Scope mount error: Invalid method expression:", propName);

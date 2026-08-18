@@ -1,4 +1,8 @@
-import Gyos, { applyTransitionStyles, startRouter, mountAll, ready } from './index';
+import Gyos, { applyTransitionStyles, startRouter, mountAll, ready } from './public-api';
+import { setExpressionRuntime } from './runtime/evaluator';
+import { standardExpressionRuntime } from './runtime/standard-evaluator';
+
+setExpressionRuntime(standardExpressionRuntime);
 
 /**
  * Browser auto-init entry.

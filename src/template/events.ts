@@ -1,6 +1,7 @@
 import { getScopeFromElement } from '../core/scope-registry';
 import { isInIgnoredTree, isInStaticParent, walkerDOM } from '../utils/helpers';
 import { batch } from '../reactivity/signal';
+import { expressionRuntime } from '../runtime/evaluator';
 
 /**
  * Event Processing
@@ -33,22 +34,7 @@ function executeHandler(handler: string, scope: any, e: Event, modifiers: string
     if (modifiers.includes('stop')) e.stopPropagation();
 
     try {
-        const isMethodCall = handler.includes('(');
-        if (isMethodCall) {
-            // Method call with args: "doSomething()" or "method(arg1, arg2)"
-            const fn = new Function('$event', `with(this) { ${handler} }`);
-            fn.call(scope, e);
-        } else {
-            // Check if it's a method name or expression
-            const method = scope[handler];
-            if (typeof method === 'function') {
-                method.call(scope, e);
-            } else {
-                // Expression like "count++", "count = 0"
-                const fn = new Function('$event', `with(this) { ${handler} }`);
-                fn.call(scope, e);
-            }
-        }
+        expressionRuntime().execute(handler, scope, e);
     } catch (err) {
         console.error('[GyosJS] Error in event handler:', err);
     }
