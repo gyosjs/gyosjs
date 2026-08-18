@@ -1018,7 +1018,7 @@ If the answer is yes, you are probably using GyosJS in the way it is strongest.
 
 ### Security boundary
 
-GyosJS template expressions, inline `g-scope`, `gm-*`, event expressions, and `g-router-params` are executable JavaScript from trusted application templates. They are not a sandbox and must never be generated from user-controlled strings. Because this implementation uses `Function()`, a strict Content Security Policy without `unsafe-eval` is not currently compatible.
+GyosJS template expressions, inline `g-scope`, `gm-*`, event expressions, and `g-router-params` are application code from trusted templates. They are not a sandbox and must never be generated from user-controlled strings. The standard build supports full JavaScript-style expressions through dynamic compilation. Applications that cannot allow `unsafe-eval` can use the separate CSP build and its restricted expression subset; move complex logic into named scope methods. See [Content Security Policy](./content-security-policy.md).
 
 `g-html` is the explicit raw-HTML escape hatch and requires application-level sanitization. `g-markdown` escapes raw HTML and blocks active URL schemes, but applications should still apply their own content policy for untrusted rich text. Bound `href` and `src` values reject active schemes and active-content elements; validate destination URLs on the server as well.
 

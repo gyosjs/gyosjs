@@ -55,8 +55,10 @@ Use the browser's find command on this page when you already know the API name.
 | Shared state and events | `store`, store helpers, `provide`, `inject`, `getGlobalContainer`, `on`, `emit`, `off`, `once` |
 | Composables | `useFetch`, `useCounter`, `useToggle`, `useLocalStorage`, `useInterval`, `useTimeout`, `useDebounce`, `useThrottle`, `useMouse`, `useWindowSize`, `useMediaQuery`, `useAsync` |
 | Transition and portal | `registerTransition`, `getTransitionConfig`, `applyTransitionStyles`, `portalCreate`, `portalDestroy` |
-| Utilities | `ready`, `nextTick`, `debounce`, `throttle`, `version` |
+| Utilities | `ready`, `nextTick`, `debounce`, `throttle`, `setCspNonce`, `version` |
 | MPA Boost | `startRouter`, navigation hooks, `g-boost`, `g-no-boost`, `g-outlet`, `g-target`, `g-swap`, `g-preload`, `g-snapshot`, `g-persist`, history, spinner, custom-action, and script attributes |
+
+Strict CSP deployments use a separate package entry and a restricted expression language. See [Content Security Policy](./content-security-policy.md) for installation, supported syntax, nonce handling, and security boundaries.
 
 ---
 
@@ -1398,6 +1400,19 @@ Return a wrapper that calls `fn` after calls have stopped for `delay` millisecon
 
 Return a leading-edge wrapper that calls `fn` at most once per delay window. Calls inside the window are dropped; the wrapper returns `void`.
 
+### `Gyos.setCspNonce(source)`
+
+Configure the nonce used when the CSP build recreates scripts received through MPA Boost. The argument is a string, a callback returning a string, or `undefined` to clear the configured nonce. Returns `void`.
+
+```js
+Gyos.setCspNonce(document.querySelector('meta[name="csp-nonce"]')?.content);
+
+// Resolve it when each script is created instead.
+Gyos.setCspNonce(() => window.appSecurity.cspNonce);
+```
+
+The CDN CSP auto bundle captures the nonce from its own `<script>` element. Custom npm bundles should configure it explicitly when boosted responses can contain scripts. This API does not enable CSP mode by itself; import `gyosjs/csp` or `gyosjs/csp/auto`. See [Content Security Policy](./content-security-policy.md).
+
 ### `Gyos.version`
 
 The current package version as a string.
@@ -1477,7 +1492,7 @@ Boost responses must remain same-origin, return `text/html` or `application/xhtm
 
 ### Public TypeScript types
 
-The package root exports `Signal`, `SignalOptions`, `Computed`, `Scope`, `ScopeFactory`, `ScopeDefinition`, `ComponentContext`, `WatchCallback`, `WatchOptions`, `Directive`, `DirectiveBinding`, `RevealOptions`, `PipeFn`, `ValidatorFn`, `ValidationContext`, `HydrationStrategy`, `TransitionConfig`, and `RouterOptions` as type-only exports.
+The package root exports `Signal`, `SignalOptions`, `Computed`, `Scope`, `ScopeFactory`, `ScopeDefinition`, `ComponentContext`, `WatchCallback`, `WatchOptions`, `Directive`, `DirectiveBinding`, `RevealOptions`, `PipeFn`, `ValidatorFn`, `ValidationContext`, `HydrationStrategy`, `TransitionConfig`, `RouterOptions`, and `CspNonceSource` as type-only exports.
 
 ### Router attributes you will use most
 

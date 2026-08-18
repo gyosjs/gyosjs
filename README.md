@@ -13,6 +13,7 @@ GyosJS is built for developers who like server-rendered HTML, traditional MPA ar
 - Upgrade link and form navigation with `g-boost` instead of rewriting the app as a SPA.
 - Keep specific UI islands alive across navigations with `g-persist`.
 - Use it with a CDN or install it from npm.
+- Choose an optional strict-CSP build when the site cannot allow `unsafe-eval` or inline runtime styles.
 
 ## When It Fits
 
@@ -33,7 +34,7 @@ GyosJS is not trying to replace a full SPA framework. If your app is primarily c
 Use the browser auto-init build when you want HTML-first usage with minimal setup.
 
 ```html
-<script src="https://cdn.jsdelivr.net/npm/gyosjs@0.2.4/dist/gyos.auto.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gyosjs@0.3.0/dist/gyos.auto.min.js"></script>
 ```
 
 That build attaches `window.Gyos`, starts the router when `g-boost` exists, injects transition styles, and mounts scopes when the page is ready.
@@ -66,6 +67,8 @@ Or use the auto entrypoint:
 ```js
 import 'gyosjs/auto';
 ```
+
+Strict CSP deployments use `gyosjs/csp` or `gyosjs/csp/auto` with the static `gyosjs/styles.css` export. CSP mode keeps the same directives and router but intentionally supports a smaller expression language. See [Content Security Policy](./docs/en/content-security-policy.md).
 
 ## Minimal Example
 
@@ -107,6 +110,7 @@ With `g-boost`, same-origin links and forms can be intercepted and swapped into 
 - [Layouts, Scripts, and Lifecycle](./docs/en/layouts-scripts-lifecycle.md)
 - [Best Practices](./docs/en/best-practices.md)
 - [Distribution and Installation](./docs/en/distribution-and-installation.md)
+- [Content Security Policy](./docs/en/content-security-policy.md)
 - [Migration Guide](./docs/en/migrate-from-javascript.md)
 
 ## Examples In This Repo
