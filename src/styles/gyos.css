@@ -1,0 +1,73 @@
+/* GyosJS built-in transition utilities. Required by the CSP build. */
+.gyos-t-opacity-0 { opacity: 0; }
+.gyos-t-opacity-100 { opacity: 1; }
+
+.gyos-t-translate-y-0 { transform: translateY(0); }
+.gyos-t-translate-y--100 { transform: translateY(-100%); }
+.gyos-t-translate-y-100 { transform: translateY(100%); }
+.gyos-t-translate-x-0 { transform: translateX(0); }
+.gyos-t-translate-x--100 { transform: translateX(-100%); }
+.gyos-t-translate-x-100 { transform: translateX(100%); }
+
+.gyos-t-scale-0 { transform: scale(0); }
+.gyos-t-scale-50 { transform: scale(0.5); }
+.gyos-t-scale-100 { transform: scale(1); }
+
+@keyframes gyos-fade-in {
+	from { opacity: 0; }
+	to { opacity: 1; }
+}
+
+@keyframes gyos-fade-out {
+	from { opacity: 1; }
+	to { opacity: 0; }
+}
+
+@keyframes gyos-slide-down {
+	from { transform: translateY(-100%); opacity: 0; }
+	to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes gyos-slide-up {
+	from { transform: translateY(100%); opacity: 0; }
+	to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes gyos-scale-in {
+	from { transform: scale(0); opacity: 0; }
+	to { transform: scale(1); opacity: 1; }
+}
+
+@keyframes gyos-scale-out {
+	from { transform: scale(1); opacity: 1; }
+	to { transform: scale(0); opacity: 0; }
+}
+
+[g-cloak] { display: none !important; }
+
+.gyos-target-spinner {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 20px;
+	min-height: 60px;
+}
+
+.gyos-spinner-content {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	color: var(--gyos-spinner-color, #667eea);
+	font-size: 14px;
+}
+
+.gyos-spinner-icon {
+	width: 24px;
+	height: 24px;
+	animation: gyos-spin 1s linear infinite;
+}
+
+@keyframes gyos-spin {
+	0% { transform: rotate(0deg); }
+	100% { transform: rotate(360deg); }
+}

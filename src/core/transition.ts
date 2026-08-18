@@ -11,6 +11,8 @@
  * ```
  */
 
+import { expressionRuntimeMode } from '../runtime/evaluator';
+
 export interface TransitionConfig {
 	/** CSS animation name for enter (e.g., 'gyos-fade-in 250ms') */
 	enter?: string;
@@ -312,6 +314,7 @@ export function getTransitionConfig(source: HTMLElement | string): TransitionCon
  */
 export function applyTransitionStyles(): void {
 	if (typeof document === 'undefined') return;
+	if (expressionRuntimeMode() === 'csp') return;
 
 	const styleId = 'gyos-transitions';
 	if (document.getElementById(styleId)) return;

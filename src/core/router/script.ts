@@ -1,4 +1,7 @@
 // Cache executed scripts to prevent duplicate execution
+import { expressionRuntimeMode } from '../../runtime/evaluator';
+import { resolveCspNonce } from '../../runtime/csp-nonce';
+
 const executedScripts = new Set<string>();
 
 /**
@@ -108,6 +111,13 @@ async function executeScript(old: HTMLScriptElement, signal?: AbortSignal): Prom
 		old.remove();
 		return;
 	}
+	const activeNonce = resolveCspNonce();
+	if (expressionRuntimeMode() === 'csp' && !old.src && !activeNonce) {
+		console.warn('[GyosJS CSP] Skipped an inline MPA script because no active document nonce is configured.');
+		old.textContent = '';
+		return;
+	}
+
 	const executionKey = getScriptExecutionKey(old);
 	// Check if script should execute
 	if (!shouldExecuteScript(old)) {
@@ -118,6 +128,8 @@ async function executeScript(old: HTMLScriptElement, signal?: AbortSignal): Prom
 
 	const newScript = document.createElement('script');
 	Array.from(old.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value));
+	if (expressionRuntimeMode() === 'csp') newScript.removeAttribute('nonce');
+	if (activeNonce) newScript.setAttribute('nonce', activeNonce);
 	newScript.textContent = old.hasAttribute('g-script-wrap')
 		? wrapScriptExecution(old.textContent)
 		: old.textContent;

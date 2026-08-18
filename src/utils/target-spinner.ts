@@ -2,6 +2,7 @@
  * Target Spinner Utility
  * Creates and manages inline spinner for target elements during navigation
  */
+import { expressionRuntimeMode } from '../runtime/evaluator';
 
 /**
  * Create inline spinner element for target loading
@@ -18,7 +19,7 @@ function createTargetSpinner(): HTMLElement {
 	`;
 	
 	// Inject styles if not already present
-	if (!document.getElementById('gyos-target-spinner-styles')) {
+	if (expressionRuntimeMode() === 'standard' && !document.getElementById('gyos-target-spinner-styles')) {
 		const style = document.createElement('style');
 		style.id = 'gyos-target-spinner-styles';
 		style.textContent = `
