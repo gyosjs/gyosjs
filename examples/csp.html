@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>GyosJS strict CSP fixture</title>
+	<link rel="stylesheet" href="/gyos-dist/gyos.css">
+</head>
+<body g-boost>
+	<main id="csp-app" g-outlet g-scope="{ count: 0, show: true, name: '', submitted: false, items: ['alpha', 'beta'] }">
+		<h1>Strict CSP</h1>
+		<button id="increment" type="button" @click="count++">Increment</button>
+		<output id="count">{count}</output>
+
+		<button id="toggle" type="button" @click="show = !show">Toggle</button>
+		<p id="transition-panel" g-show="show" g-transition.100="fade">Transition content</p>
+
+		<ul id="items">
+			<li *for="item in items">{item}</li>
+		</ul>
+
+		<form id="csp-form" g-form="contactForm">
+			<input name="name" g-model.trim="name" g-validate="required">
+			<span id="name-error" g-errors="name"></span>
+			<button type="submit">Submit</button>
+		</form>
+		<button id="check-form" type="button" @click="submitted = contactForm.$valid()">Check form</button>
+		<output id="submitted">{submitted ? 'submitted' : 'waiting'}</output>
+
+		<a id="csp-next" href="/csp-next.html">Next CSP page</a>
+	</main>
+	<script nonce="gyos-e2e" src="/gyos-dist/gyos.csp.auto.min.js"></script>
+</body>
+</html>

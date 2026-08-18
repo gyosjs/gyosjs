@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>GyosJS CSP navigation result</title>
+	<link rel="stylesheet" href="/gyos-dist/gyos.css">
+</head>
+<body g-boost>
+	<main id="csp-app" g-outlet g-scope="{ message: 'boosted' }">
+		<h1 id="csp-result">{message}</h1>
+		<script nonce="response-nonce" g-script-once>
+			window.__gyosCspNavigated = (window.__gyosCspNavigated || 0) + 1;
+		</script>
+	</main>
+</body>
+</html>

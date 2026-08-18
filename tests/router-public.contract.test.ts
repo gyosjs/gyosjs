@@ -49,6 +49,8 @@ import {
 	onBeforeNavigate,
 	startRouter
 } from '../src/core/router/router';
+import { setExpressionRuntime } from '../src/runtime/evaluator';
+import { standardExpressionRuntime } from '../src/runtime/standard-evaluator';
 
 function absoluteUrl(path: string): string {
 	return new URL(path, window.location.href).toString();
@@ -77,6 +79,7 @@ function click(element: Element): MouseEvent {
 
 describe('Router documented public contracts', () => {
 	beforeEach(() => {
+		setExpressionRuntime(standardExpressionRuntime);
 		__routerTest.resetRouterState();
 		vi.clearAllMocks();
 		document.head.innerHTML = '<title>Current</title>';

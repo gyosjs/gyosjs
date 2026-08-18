@@ -36,7 +36,7 @@ describe('documented public API contracts', () => {
 			'mount', 'mountAll', 'mountedScopes', 'mountTree', 'nextTick', 'off', 'on',
 			'onAfterNavigate', 'onBeforeNavigate', 'once', 'pipe', 'portalCreate',
 			'portalDestroy', 'provide', 'ready', 'registerTransition', 'removeStore', 'scope',
-			'shallow', 'signal', 'startRouter', 'store', 'throttle', 'unref', 'untrack',
+			'setCspNonce', 'shallow', 'signal', 'startRouter', 'store', 'throttle', 'unref', 'untrack',
 			'useAsync', 'useCounter', 'useDebounce', 'useFetch', 'useInterval',
 			'useLocalStorage', 'useMediaQuery', 'useMouse', 'useThrottle', 'useTimeout',
 			'useToggle', 'useWindowSize', 'validate', 'validator'
