@@ -6,6 +6,24 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-08-18
+
+### Added
+
+- Optional strict-CSP distributions are available through `gyosjs/csp`, `gyosjs/csp/auto`, and the corresponding ESM, UMD, and minified CDN files without `Function()` or `eval()`.
+- `gyosjs/styles.css` and `dist/gyos.css` provide built-in transition, cloak, and target-spinner styles without runtime `<style>` injection.
+- `Gyos.setCspNonce()` configures the active document nonce used for scripts recreated by MPA Boost.
+- CSP unit, browser, package-consumer, and static distribution checks cover the restricted expression runtime and strict response headers.
+
+### Changed
+
+- Expression evaluation now uses an internal runtime adapter so the standard build keeps full JavaScript expression behavior while the CSP build uses a cached AST interpreter.
+- MPA Boost replaces fetched script nonces with the active document nonce in CSP mode and skips nonce-less inline scripts when no active nonce is configured.
+
+### Security
+
+- CSP expressions do not resolve implicit browser globals and block access through `constructor`, `prototype`, and `__proto__`. CSP mode remains an application-code compatibility layer, not a sandbox; `g-html` still requires trusted or sanitized HTML.
+
 ## [0.2.4] - 2026-08-15
 
 ### Fixed
@@ -102,7 +120,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 - This is an experimental `0.x` release. Router, morphing, expression evaluation, and browser edge cases should be evaluated against an application's requirements before production adoption.
 
-[Unreleased]: https://github.com/gyosjs/gyosjs/compare/v0.2.4...HEAD
+[Unreleased]: https://github.com/gyosjs/gyosjs/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/gyosjs/gyosjs/compare/v0.2.4...v0.3.0
 [0.2.4]: https://github.com/gyosjs/gyosjs/compare/v0.2.3...v0.2.4
 [0.2.3]: https://github.com/gyosjs/gyosjs/compare/v0.2.2...v0.2.3
 [0.2.2]: https://github.com/gyosjs/gyosjs/compare/v0.2.1...v0.2.2
