@@ -9,10 +9,10 @@ The CSP build is opt-in. Use it only when the application's policy requires it a
 Load the static runtime CSS and the CSP auto-init bundle. Give the script the same nonce allowed by the response header.
 
 ```html
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gyosjs@0.3.0/dist/gyos.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gyosjs@0.3.1/dist/gyos.css">
 <script
   nonce="{{ csp_nonce }}"
-  src="https://cdn.jsdelivr.net/npm/gyosjs@0.3.0/dist/gyos.csp.auto.min.js"
+  src="https://cdn.jsdelivr.net/npm/gyosjs@0.3.1/dist/gyos.csp.auto.min.js"
 ></script>
 ```
 
@@ -98,6 +98,23 @@ The following are intentionally unsupported in HTML expressions:
 
 Unsupported syntax reports a console error prefixed with `[GyosJS CSP]` and does not execute.
 
+### Transition names are literals
+
+`g-transition` does not evaluate an unwrapped value. Built-in and registered names therefore work without quotes and without CSP identifier errors:
+
+```html
+<div g-show="open" g-transition="fade">Fades</div>
+<div *if="menuOpen" g-transition="slide-down">Slides</div>
+```
+
+Use braces only when the transition name is dynamic:
+
+```html
+<div g-scope="{ effect: 'scale', open: true }">
+  <div g-show="open" g-transition="{effect}">Uses the current effect</div>
+</div>
+```
+
 ## Put Complex Logic in Named Scopes
 
 The restrictions apply to expressions parsed from markup. JavaScript modules allowed by the application's CSP can still register normal named scopes with methods, getters, browser APIs, and any application logic.
@@ -133,11 +150,16 @@ This is the recommended CSP pattern: keep markup expressions small and move bran
 
 Fetched HTML is not governed by its original response CSP after Gyos inserts nodes into the current document. For that reason, GyosJS never trusts a nonce copied from a fetched page.
 
-When the router recreates a script:
+The nonce trusted by the active document does not change during a Boost navigation. A fetched response may contain a newly generated nonce, but that nonce belongs to a different response policy and is not valid under the policy already enforcing the live page.
 
-- Gyos replaces an incoming script nonce with the active document nonce.
+Before parsing and committing a boosted response, Gyos snapshots the active nonce and uses it consistently:
+
+- Incoming inline styles are normalized before parsing so a fresh response nonce cannot produce a transient CSP violation.
+- Recreated scripts, inline styles, and stylesheet links receive the active document nonce instead of the fetched nonce.
+- The live `<meta name="csp-nonce">` keeps the active nonce for the lifetime of that document.
+- Head style and stylesheet identities ignore nonce differences, preventing duplicate nodes when only the response nonce changed.
 - External scripts can still run according to the active page policy.
-- An inline script is skipped in CSP mode when no active nonce is configured.
+- Inline scripts and styles are skipped in CSP mode when no active nonce is configured.
 - A skipped `g-script-once` script is not cached as executed, so it can run after nonce configuration is corrected.
 
 The CSP CDN auto build captures its own nonce. With npm or a custom bundle name, call `Gyos.setCspNonce(value)` or provide a callback that returns the current response nonce.
@@ -146,7 +168,7 @@ The CSP CDN auto build captures its own nonce. With npm or a custom bundle name,
 Gyos.setCspNonce(() => window.appSecurity.cspNonce);
 ```
 
-The callback form is useful if the application replaces nonce metadata during a full page response.
+The callback is resolved before each head update. During Boost navigation, Gyos preserves the active metadata value rather than replacing it with the fetched response nonce. A normal full-page load starts a new document and captures that response's new nonce as usual.
 
 ## Security Boundaries
 

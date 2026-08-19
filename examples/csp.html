@@ -3,8 +3,11 @@
 <head>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="csp-nonce" content="gyos-e2e">
+	<link rel="icon" href="data:,">
 	<title>GyosJS strict CSP fixture</title>
-	<link rel="stylesheet" href="/gyos-dist/gyos.css">
+	<link rel="stylesheet" href="/gyos-dist/gyos.css" nonce="gyos-e2e">
+	<style nonce="gyos-e2e">#csp-app { color: rgb(1, 2, 3); }</style>
 </head>
 <body g-boost>
 	<main id="csp-app" g-outlet g-scope="{ count: 0, show: true, name: '', submitted: false, items: ['alpha', 'beta'] }">

@@ -6,6 +6,14 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-08-19
+
+### Fixed
+
+- `g-transition="fade"` and other plain transition names are treated as literals in both runtimes; dynamic transition names now use explicit `{expression}` syntax without CSP undefined-identifier noise.
+- MPA Boost reconciles fetched style, stylesheet-link, script, and nonce metadata with the active document nonce, deduplicates head assets across per-response nonce changes, and skips unsafe inline styles when no active nonce is available.
+- CSP navigation normalizes inline style nonces before detached parsing, preventing transient `style-src-elem` violations when each server response generates a fresh nonce.
+
 ## [0.3.0] - 2026-08-18
 
 ### Added
@@ -120,7 +128,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 - This is an experimental `0.x` release. Router, morphing, expression evaluation, and browser edge cases should be evaluated against an application's requirements before production adoption.
 
-[Unreleased]: https://github.com/gyosjs/gyosjs/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/gyosjs/gyosjs/compare/v0.3.1...HEAD
+[0.3.1]: https://github.com/gyosjs/gyosjs/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/gyosjs/gyosjs/compare/v0.2.4...v0.3.0
 [0.2.4]: https://github.com/gyosjs/gyosjs/compare/v0.2.3...v0.2.4
 [0.2.3]: https://github.com/gyosjs/gyosjs/compare/v0.2.2...v0.2.3

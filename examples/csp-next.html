@@ -3,13 +3,17 @@
 <head>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="csp-nonce" content="response-nonce-one">
+	<link rel="icon" href="data:,">
 	<title>GyosJS CSP navigation result</title>
-	<link rel="stylesheet" href="/gyos-dist/gyos.css">
+	<link rel="stylesheet" href="/gyos-dist/gyos.css" nonce="response-nonce-one">
+	<style id="csp-page-style" nonce="response-nonce-one">#csp-result { color: rgb(12, 34, 56); }</style>
 </head>
 <body g-boost>
 	<main id="csp-app" g-outlet g-scope="{ message: 'boosted' }">
 		<h1 id="csp-result">{message}</h1>
-		<script nonce="response-nonce" g-script-once>
+		<a id="csp-final" href="/csp-final.html">Final CSP page</a>
+		<script nonce="response-nonce-one" g-script-once>
 			window.__gyosCspNavigated = (window.__gyosCspNavigated || 0) + 1;
 		</script>
 	</main>

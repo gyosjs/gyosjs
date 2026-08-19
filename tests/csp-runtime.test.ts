@@ -3,6 +3,7 @@ import { applyTransitionStyles } from '../src/core/transition';
 import { cspExpressionRuntime } from '../src/runtime/csp-evaluator';
 import { setExpressionRuntime } from '../src/runtime/evaluator';
 import { standardExpressionRuntime } from '../src/runtime/standard-evaluator';
+import { parseTransitionName } from '../src/template/structurals/transition-helpers';
 import { hideTargetSpinner, showTargetSpinner } from '../src/utils/target-spinner';
 
 describe('CSP runtime styles', () => {
@@ -27,5 +28,15 @@ describe('CSP runtime styles', () => {
 		expect(spinner.className).toBe('gyos-target-spinner');
 
 		hideTargetSpinner(spinner);
+	});
+
+	it('treats plain transition names as literals and evaluates only explicit expressions', () => {
+		const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+		expect(parseTransitionName('fade', {})).toBe('fade');
+		expect(parseTransitionName('slide-down', {})).toBe('slide-down');
+		expect(parseTransitionName("'scale'", {})).toBe('scale');
+		expect(parseTransitionName('{transitionName}', { transitionName: 'zoom' })).toBe('zoom');
+		expect(consoleError).not.toHaveBeenCalled();
 	});
 });

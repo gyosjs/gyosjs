@@ -16,6 +16,7 @@ import { performSwap } from './swap';
 import { handleScroll, saveScrollPosition } from './scroll';
 import { diffNodes } from './diff-nodes';
 import { shouldDeferToFormValidation } from '../../form/form-submission';
+import { prepareNavigationHtml } from './csp-html';
 
 export interface RouterOptions {
 	showProgress?: boolean; // Show progress bar during navigation (default: true)
@@ -140,7 +141,10 @@ function stripInertFallbackContent(root: ParentNode): void {
 }
 
 function parseNavigationDocument(html: string): Document {
-	const doc = new DOMParser().parseFromString(html, 'text/html');
+	// Chromium applies the active page CSP while DOMParser creates response
+	// styles. Reconcile their nonce before parsing to avoid transient violations;
+	// diffNodes repeats the check before insertion into the live document.
+	const doc = new DOMParser().parseFromString(prepareNavigationHtml(html), 'text/html');
 	// DOMParser disables scripting and parses noscript children as active markup.
 	// A boosted page runs with scripting enabled, so those fallbacks must stay inert.
 	stripInertFallbackContent(doc);

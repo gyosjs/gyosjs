@@ -564,6 +564,16 @@ Apply transitions to structural changes and `g-show` visibility changes.
 <div g-show="open" g-transition="scale">Still exists while hidden</div>
 ```
 
+The attribute value is a literal transition name by default. Wrap an expression in braces when the name comes from scope state:
+
+```html
+<div g-scope="{ transitionName: 'slide-down', open: true }">
+  <div g-show="open" g-transition="{transitionName}">Dynamic transition</div>
+</div>
+```
+
+`g-transition="transitionName"` means the literal name `transitionName`; it does not read that scope property. This explicit distinction is the same in the standard and CSP builds.
+
 Add a duration modifier in milliseconds when one instance needs different timing:
 
 ```html
@@ -1334,6 +1344,8 @@ Use them declaratively:
 <div *if="open" g-transition="fade">Hello</div>
 <div g-show="open" g-transition.200="slide-down">Menu</div>
 ```
+
+Plain values are literal names. For a dynamic name, use an explicit expression such as `g-transition="{transitionName}"`.
 
 Built-in transition helper classes use a `gyos-t-` prefix internally, so they do not redefine common application or Tailwind utilities such as `.opacity-0` and `.scale-100`.
 

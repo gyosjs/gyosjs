@@ -136,13 +136,13 @@ With the `*if` block, you can easily control the display of content based on con
 
         <p *case="state.loading">Loading...</p>
 
-        <p *case="state.success" g-transition="transition">
+        <p *case="state.success" g-transition="{transition}">
             Data loaded successfully!</p>
         
-        <p *case="state.error" g-transition="transition">
+        <p *case="state.error" g-transition="{transition}">
             An error occurred while loading data.</p>
         
-        <p *default g-transition="transition">Unknown status.</p>
+        <p *default g-transition="{transition}">Unknown status.</p>
     </div>
 </div>
 ```
@@ -578,15 +578,17 @@ This boundary applies to component and template initialization, not to the globa
 ```html
 <div g-scope="{ showBox: false, transitionType: 'fade' }">
     <button @click="showBox = !showBox">Toggle Box</button>
-    <div *if="showBox" g-transition="transitionType" 
+    <div *if="showBox" g-transition="{transitionType}"
         style="width: 200px; height: 100px; background: lightblue;">
         This box will fade in and out.</div>
 </div>
 ```
 
 **In which:**
-* `g-transition="transitionType"` applies transition effects based on the value of `transitionType`.
+* `g-transition="{transitionType}"` evaluates `transitionType` and applies the transition name it returns.
 * you can dynamically change the transition effect by changing the value of `transitionType`.
+
+An unwrapped value is always a literal transition name. Use `g-transition="fade"` for a fixed name and braces only when the name comes from scope state.
 
 ---
 

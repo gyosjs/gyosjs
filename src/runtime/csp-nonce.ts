@@ -2,7 +2,7 @@ export type CspNonceSource = string | (() => string | null | undefined);
 
 let nonceSource: CspNonceSource | undefined;
 
-/** Configure the nonce used when Gyos recreates scripts during MPA navigation. */
+/** Configure the active document nonce used for scripts and styles during MPA navigation. */
 export function setCspNonce(source: CspNonceSource | undefined): void {
 	nonceSource = source;
 }

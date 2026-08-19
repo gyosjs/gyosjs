@@ -170,13 +170,13 @@
     <!-- useFetch -->
     <div class="card" g-scope="FetchDemo" style="min-height: 200px;display: flex; flex-direction: column;">
       <h2>useFetch</h2>
-      <div g-transition="'slide-up'" *if="loading" class="fit loading">
+      <div g-transition="slide-up" *if="loading" class="fit loading">
         Loading...
       </div>
-      <div g-transition="'slide-up'" *if="error" class="fit error">
+      <div g-transition="slide-up" *if="error" class="fit error">
         Error: {error.message}
       </div>
-      <div g-transition="'slide-up'" *if="!loading && !error" class="fit">
+      <div g-transition="slide-up" *if="!loading && !error" class="fit">
         <p><strong>User:</strong> {data.name}</p>
         <p><strong>Email:</strong> {data.email}</p>
         <p><strong>City:</strong> {data.address.city}</p>

@@ -4,7 +4,7 @@ import { defineConfig } from 'vite';
 const cspHeader = [
   "default-src 'self'",
   "script-src 'nonce-gyos-e2e' 'strict-dynamic'",
-  "style-src 'self'",
+  "style-src 'self' 'nonce-gyos-e2e'",
   "img-src 'self' data:",
   "connect-src 'self'",
   "object-src 'none'",
@@ -16,7 +16,7 @@ const strictCspFixtures = {
   configureServer(server) {
     server.middlewares.use((request, response, next) => {
       const pathname = request.url?.split('?', 1)[0];
-      if (pathname === '/csp.html' || pathname === '/csp-next.html') {
+      if (pathname === '/csp.html' || pathname === '/csp-next.html' || pathname === '/csp-final.html') {
         response.setHeader('Content-Security-Policy', cspHeader);
 		response.setHeader('Content-Type', 'text/html; charset=utf-8');
 		response.end(readFileSync(new URL(`./examples${pathname}`, import.meta.url)));

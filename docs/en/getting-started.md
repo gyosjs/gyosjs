@@ -11,7 +11,7 @@ GyosJS supports two normal starting points.
 Use this when you want the quickest path for traditional MPA projects.
 
 ```html
-<script src="https://cdn.jsdelivr.net/npm/gyosjs@0.3.0/dist/gyos.auto.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gyosjs@0.3.1/dist/gyos.auto.min.js"></script>
 ```
 
 The auto build:

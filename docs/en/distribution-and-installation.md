@@ -9,7 +9,7 @@ This page explains how GyosJS is packaged for real use: CDN, npm, core versus au
 Use:
 
 ```html
-<script src="https://cdn.jsdelivr.net/npm/gyosjs@0.3.0/dist/gyos.auto.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gyosjs@0.3.1/dist/gyos.auto.min.js"></script>
 ```
 
 Choose this when:
@@ -46,8 +46,8 @@ Both npm entrypoints are browser-only. Import them from browser bundles or clien
 Use the CSP distribution when `script-src` cannot include `unsafe-eval`:
 
 ```html
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gyosjs@0.3.0/dist/gyos.css">
-<script nonce="{{ csp_nonce }}" src="https://cdn.jsdelivr.net/npm/gyosjs@0.3.0/dist/gyos.csp.auto.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gyosjs@0.3.1/dist/gyos.css">
+<script nonce="{{ csp_nonce }}" src="https://cdn.jsdelivr.net/npm/gyosjs@0.3.1/dist/gyos.csp.auto.min.js"></script>
 ```
 
 Or with npm:
@@ -94,7 +94,7 @@ For production, prefer version-pinned URLs instead of floating `latest`.
 Example:
 
 ```html
-<script src="https://cdn.jsdelivr.net/npm/gyosjs@0.3.0/dist/gyos.auto.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gyosjs@0.3.1/dist/gyos.auto.min.js"></script>
 ```
 
 When you upgrade GyosJS, change the version deliberately.

@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="csp-nonce" content="response-nonce-two" />
+    <link rel="icon" href="data:," />
+    <title>GyosJS second CSP navigation result</title>
+    <link
+      rel="stylesheet"
+      href="/gyos-dist/gyos.css"
+      nonce="response-nonce-two"
+    />
+    <style id="csp-page-style" nonce="response-nonce-two">
+      #csp-final-result {
+        color: rgb(78, 90, 123);
+      }
+    </style>
+  </head>
+  <body g-boost>
+    <main id="csp-app" g-outlet g-scope="{ message: 'boosted twice' }">
+      <h1 id="csp-final-result">{message}</h1>
+      <script nonce="response-nonce-two" g-script-once>
+        window.__gyosCspFinalNavigated = true;
+      </script>
+    </main>
+  </body>
+</html>

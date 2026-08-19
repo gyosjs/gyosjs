@@ -11,33 +11,28 @@ import { evaluateExpression } from '../expression';
  * Handles:
  * 1. Literal string: "fade" or "slide-down"
  * 2. Expression with {}: "{transition}"
- * 3. Expression without {}: "transition" (evaluate as variable)
+ * 3. Quoted literal kept for backwards compatibility: "'fade'"
  * 
  * @param attrValue - The g-transition attribute value
  * @param scope - Current scope for expression evaluation
  * @returns The transition name (string)
  */
 export function parseTransitionName(attrValue: string, scope: any): string {
-    if (attrValue.includes('{') && attrValue.includes('}')) {
-        // Extract expression from {} and evaluate it
-        const match = attrValue.match(/\{([^}]+)\}/);
-        if (match) {
-            return evaluateExpression(match[1].trim(), scope);
-        }
+    const value = attrValue.trim();
+    const expression = /^\{([\s\S]+)\}$/.exec(value);
+    if (expression) {
+        const evaluated = evaluateExpression(expression[1].trim(), scope);
+        return evaluated == null ? '' : String(evaluated);
     }
 
-    // Try to evaluate as expression first (variable name)
-    // If it fails or returns undefined, use as literal string
-    try {
-        const evaluated = evaluateExpression(attrValue, scope);
-        if (evaluated !== undefined && evaluated !== null) {
-            return evaluated;
-        }
-    } catch (e) {
-        // If evaluation fails, use value as literal string (built-in transition name)
+    if (value.length >= 2 && (
+        (value.startsWith("'") && value.endsWith("'"))
+        || (value.startsWith('"') && value.endsWith('"'))
+    )) {
+        return value.slice(1, -1);
     }
 
-    return attrValue;
+    return value;
 }
 
 /**
