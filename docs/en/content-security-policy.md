@@ -174,6 +174,8 @@ The callback is resolved before each head update. During Boost navigation, Gyos 
 
 The CSP interpreter is a compatibility mechanism, not a sandbox. Template expressions are application code and must never be assembled from user-controlled strings. Scope methods are trusted JavaScript and can do anything allowed to the application bundle.
 
+`Gyos.setCspNonce()` only controls scripts, inline styles, and stylesheet links that Gyos creates or recreates. Gyos does not observe and rewrite nodes injected independently by third-party libraries. If an editor or widget creates its own `<style>` element, pass the active nonce through that library's CSP API; for example, configure the nonce injection option exposed by Tiptap rather than expecting Gyos to patch the element afterward.
+
 `g-html` remains a raw HTML sink. Only pass trusted or correctly sanitized HTML. GyosJS 0.3 does not implement Trusted Types integration, so an application that enforces `require-trusted-types-for 'script'` must handle that policy separately.
 
 Bound URLs, boosted responses, Markdown, and server output still require normal application security controls. CSP reduces the impact of some injection failures; it does not replace output encoding, sanitization, origin checks, CSRF protection, or server authorization.

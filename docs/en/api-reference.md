@@ -1414,16 +1414,18 @@ Return a leading-edge wrapper that calls `fn` at most once per delay window. Cal
 
 ### `Gyos.setCspNonce(source)`
 
-Configure the nonce used when the CSP build recreates scripts received through MPA Boost. The argument is a string, a callback returning a string, or `undefined` to clear the configured nonce. Returns `void`.
+Configure the active document nonce used when the CSP build recreates Gyos-managed scripts, inline styles, and stylesheet links during MPA Boost. The argument is a string, a callback returning a string, or `undefined` to clear the configured nonce. Returns `void`.
 
 ```js
 Gyos.setCspNonce(document.querySelector('meta[name="csp-nonce"]')?.content);
 
-// Resolve it when each script is created instead.
+// Resolve it before each managed head update instead.
 Gyos.setCspNonce(() => window.appSecurity.cspNonce);
 ```
 
-The CDN CSP auto bundle captures the nonce from its own `<script>` element. Custom npm bundles should configure it explicitly when boosted responses can contain scripts. This API does not enable CSP mode by itself; import `gyosjs/csp` or `gyosjs/csp/auto`. See [Content Security Policy](./content-security-policy.md).
+The CDN CSP auto bundle captures the nonce from its own `<script>` element. Custom npm bundles should configure it explicitly when boosted responses can contain managed head content. This API does not enable CSP mode by itself; import `gyosjs/csp` or `gyosjs/csp/auto`.
+
+`Gyos.setCspNonce()` does not configure third-party libraries. A library that injects its own `<style>` or `<script>` nodes must receive the nonce through its own API, such as the nonce injection option provided by an editor like Tiptap. See [Content Security Policy](./content-security-policy.md).
 
 ### `Gyos.version`
 
