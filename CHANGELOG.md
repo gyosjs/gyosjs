@@ -6,6 +6,13 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.3.2] - 2026-08-26
+
+### Fixed
+
+- CSP runtime no longer evaluates nested structural expressions inside dormant `*pending`, `*then`, or `*catch` branches before their `*await` alias scope exists.
+- Await aliases now work with nested `*if` and `*for` expressions without requiring placeholder values in the parent scope.
+
 ## [0.3.1] - 2026-08-19
 
 ### Fixed
@@ -128,7 +135,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 - This is an experimental `0.x` release. Router, morphing, expression evaluation, and browser edge cases should be evaluated against an application's requirements before production adoption.
 
-[Unreleased]: https://github.com/gyosjs/gyosjs/compare/v0.3.1...HEAD
+[Unreleased]: https://github.com/gyosjs/gyosjs/compare/v0.3.2...HEAD
+[0.3.2]: https://github.com/gyosjs/gyosjs/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/gyosjs/gyosjs/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/gyosjs/gyosjs/compare/v0.2.4...v0.3.0
 [0.2.4]: https://github.com/gyosjs/gyosjs/compare/v0.2.3...v0.2.4
