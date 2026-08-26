@@ -48,6 +48,10 @@ function processStructuralDirectives(elements: HTMLElement[], scope: any): void 
     const root = elements[0];
 
     elements.forEach(el => {
+        // Await branches are detached and parsed only after their alias scope exists.
+        // Do not evaluate nested structural expressions during the parent scan.
+        if (isAwaitBranchDescendant(el)) return;
+
         const hasIf = el.hasAttribute('*if');
         const hasFor = el.hasAttribute('*for');
         const hasSwitch = el.hasAttribute('*switch');
@@ -90,6 +94,26 @@ function processStructuralDirectives(elements: HTMLElement[], scope: any): void 
             processAwaitDirective(element, scope);
         }
     });
+}
+
+function isAwaitBranchDescendant(element: HTMLElement): boolean {
+    let child = element;
+    let parent = element.parentElement;
+
+    while (parent && parent !== document.body) {
+        if (parent.hasAttribute('*await') && (
+            child.hasAttribute('*pending') ||
+            child.hasAttribute('*then') ||
+            child.hasAttribute('*catch')
+        )) {
+            return true;
+        }
+
+        child = parent;
+        parent = parent.parentElement;
+    }
+
+    return false;
 }
 
 const elementBelongsToAnotherScope = (el: HTMLElement, scope: any): boolean => {
