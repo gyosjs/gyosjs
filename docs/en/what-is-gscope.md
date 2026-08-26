@@ -152,6 +152,17 @@ For more complex logic, you should declare the scope in a script to separate HTM
 </script>
 ```
 
+When a named scope is registered with a factory, the factory receives the GyosJS component context for the current mount, not the DOM element. The context exposes `$refs`, `$watch`, `$effect`, `$emit`, `$on`, `inject`, and `provide`. Server-rendered `gd-*` values are merged into the object returned by the factory before it becomes reactive.
+
+```js
+Gyos.scope('BookingWizard', (context) => ({
+  date: '',
+  onMount() {
+    this.date = context.$refs.calendar?.value ?? '';
+  }
+}));
+```
+
 This approach helps to:
 
 * write clearer code

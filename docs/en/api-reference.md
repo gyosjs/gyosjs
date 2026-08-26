@@ -108,6 +108,17 @@ Gyos.scope('ProductForm', () => ({
 
 The factory runs once per mount. `gd-*` values from that element are applied to the returned object before it becomes reactive, so server-rendered values can initialize each route independently.
 
+The factory argument is the component context, not the mounted `HTMLElement`. It exposes `$refs`, `$watch`, `$effect`, `$emit`, `$on`, `inject`, and `provide`; do not read `dataset`, `classList`, or other DOM properties from it. If the scope needs DOM access, use a `g-ref` reference.
+
+```js
+Gyos.scope('BookingWizard', (context) => ({
+  date: context.$refs.calendar?.value ?? '',
+  submit() {
+    context.$emit('booking:submit', { date: this.date });
+  }
+}));
+```
+
 ### `Gyos.scope(element, definition)`
 
 You can also register a scope directly on a specific element.
@@ -451,6 +462,8 @@ Notes:
 
 Use this for Promise-based UI states.
 
+The `*pending`, `*then`, and `*catch` elements are dormant templates until `*await` selects one. An alias declared by `*then` or `*catch` exists only inside its rendered branch. It is therefore safe to use the alias in nested interpolation, bindings, and structural directives without declaring a placeholder value in the parent scope.
+
 ```html
 <div g-scope="AsyncBox">
   <button @click="load">Load</button>
@@ -462,6 +475,21 @@ Use this for Promise-based UI states.
     </div>
     <p *catch="err">Error: {err.message}</p>
   </div>
+</div>
+```
+
+In this example, `result` is available only after the promise resolves, and `err` is available only after it rejects:
+
+```html
+<div *await="slotsPromise">
+  <p *pending>Loading slots...</p>
+  <div *then="availableSlots">
+    <p *if="availableSlots.length === 0">No slots available.</p>
+    <ul *if="availableSlots.length > 0">
+      <li *for="slot in availableSlots">{slot.label}</li>
+    </ul>
+  </div>
+  <p *catch="loadError">Could not load slots: {loadError.message}</p>
 </div>
 ```
 

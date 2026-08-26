@@ -146,6 +146,27 @@ Gyos.scope('PriceEditor', () => ({
 
 This is the recommended CSP pattern: keep markup expressions small and move branching, callbacks, browser globals, and reusable work into named scope methods.
 
+### Async branch aliases
+
+`*await` branches are parsed when they are rendered, not while the parent template is mounting. In CSP mode, an alias such as `availableSlots` or `loadError` is consequently available to all expressions inside its active `*then` or `*catch` branch, including nested `*if` and `*for` directives:
+
+```html
+<div g-scope="SlotsPanel">
+  <div *await="slotsPromise">
+    <p *pending>Loading slots...</p>
+    <div *then="availableSlots">
+      <p *if="availableSlots.length === 0">No slots available.</p>
+      <ul *if="availableSlots.length > 0">
+        <li *for="slot in availableSlots">{slot.label}</li>
+      </ul>
+    </div>
+    <p *catch="loadError">{loadError.message}</p>
+  </div>
+</div>
+```
+
+Do not seed the parent scope with empty `availableSlots` or `loadError` values just to make these branch expressions parse. A missing identifier outside an active await branch remains a CSP expression error and should be corrected.
+
 ## MPA Boost and Nonces
 
 Fetched HTML is not governed by its original response CSP after Gyos inserts nodes into the current document. For that reason, GyosJS never trusts a nonce copied from a fetched page.
