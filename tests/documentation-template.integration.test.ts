@@ -734,6 +734,36 @@ describe('documentation template contracts', () => {
 		expect(document.querySelector('.result')!.textContent).toBe('Latest');
 	});
 
+	it('makes await aliases available to nested structural directives', async () => {
+		const name = `AwaitNestedDocs${++scopeId}`;
+		document.body.innerHTML = `
+			<div id="root" g-scope="${name}">
+				<div *await="slotsPromise">
+					<p *pending>Loading</p>
+					<div *then="availableSlots">
+						<p class="empty" *if="availableSlots.length === 0">Empty</p>
+						<ul *if="availableSlots.length > 0">
+							<li *for="slot in availableSlots" g-key="slot.id">{slot.label}</li>
+						</ul>
+					</div>
+					<p *catch="loadError">{loadError.message}</p>
+				</div>
+			</div>
+		`;
+		Gyos.scope(name, {
+			slotsPromise: Promise.resolve([
+			{ id: 1, label: 'Morning' },
+			{ id: 2, label: 'Afternoon' }
+		])
+		});
+
+		Gyos.mountAll();
+		await vi.waitFor(() => expect(document.querySelectorAll('li')).toHaveLength(2));
+
+		expect(document.querySelector('.empty')).toBeNull();
+		expect(Array.from(document.querySelectorAll('li'), element => element.textContent)).toEqual(['Morning', 'Afternoon']);
+	});
+
 	it('runs the documented debounced search with a function-style computed list', async () => {
 		vi.useFakeTimers();
 		const name = `SearchDocs${++scopeId}`;
