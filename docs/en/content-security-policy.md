@@ -9,10 +9,10 @@ The CSP build is opt-in. Use it only when the application's policy requires it a
 Load the static runtime CSS and the CSP auto-init bundle. Give the script the same nonce allowed by the response header.
 
 ```html
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gyosjs@0.3.1/dist/gyos.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gyosjs@0.4.0/dist/gyos.css">
 <script
   nonce="{{ csp_nonce }}"
-  src="https://cdn.jsdelivr.net/npm/gyosjs@0.3.1/dist/gyos.csp.auto.min.js"
+  src="https://cdn.jsdelivr.net/npm/gyosjs@0.4.0/dist/gyos.csp.auto.min.js"
 ></script>
 ```
 
@@ -168,6 +168,12 @@ This is the recommended CSP pattern: keep markup expressions small and move bran
 Do not seed the parent scope with empty `availableSlots` or `loadError` values just to make these branch expressions parse. A missing identifier outside an active await branch remains a CSP expression error and should be corrected.
 
 ## MPA Boost and Nonces
+
+Boost does not apply incoming `<base href>` elements or resolve assets against them: detached HTML cannot determine whether the active CSP permits that base. Such GET responses fall back to native navigation so the browser enforces `base-uri`. An already-sent POST is not replayed; it ends with `outcome: 'invalid-response'` and keeps the current DOM. Use root-relative asset URLs in boosted responses, or mark known base-dependent forms `g-no-boost` before submission.
+
+From 0.4, shared script/link URLs are compared after resolution against each page's base URL, so relative versus absolute spelling does not cause duplicate SDK execution. `g-head-persist="sdk-key"` retains an explicitly owned head node across navigation. It does not authorize new code under CSP. Continue passing the active nonce to third-party libraries that inject styles themselves.
+
+Complete full-outlet navigation also synchronizes `html.lang` and `html.dir`; runtime attributes such as `data-theme` are retained. Use `onBeforeSwap` for external widget teardown, and `onNavigationEnd` to handle non-committed failures. The navigation signal is separate from widget lifetime. See [Boosted Form Lifecycle](./boost-form-lifecycle.md) for Laravel-style validation and cleanup patterns.
 
 Fetched HTML is not governed by its original response CSP after Gyos inserts nodes into the current document. For that reason, GyosJS never trusts a nonce copied from a fetched page.
 

@@ -1,5 +1,17 @@
 # MPA Boost Deep Dive
 
+## New in 0.4
+
+### `g-boost-errors`
+
+A direct HTML validation response can be rendered with `<form g-boost-errors="422">`. List only statuses your endpoint intentionally renders as a useful outlet/fragment, separated by spaces or commas. Gyos still rejects cross-origin, non-HTML and attachment responses. Accepted error HTML keeps URL/history unchanged, is not cached as a successful snapshot, and reports `http-error` with `committed: true`. HTTP 419/429/500 remain failures unless listed explicitly. Sent POSTs are never automatically replayed.
+
+### `g-head-persist`
+
+Use a unique non-empty key on a head script, style, link or meta that must survive server head reconciliation. The existing node wins over incoming nodes with the same key until the app removes it or a full reload occurs. This is useful for SDKs appended at runtime. It does not bypass CSP, unload SDK state or replace body `g-persist`. Shared script/link URLs are normalized for identity while meaningful query/security attributes remain distinct.
+
+Hook registrations now return unsubscribe. `onBeforeSwap` is the cleanup point for a response that is about to replace content; `onNavigationEnd` reports every final outcome, including requests that retain the old DOM. See the [API context tables](./api-reference.md#router-hooks) and [form lifecycle recipes](./boost-form-lifecycle.md).
+
 GyosJS MPA boost is an attribute-driven router for server-rendered HTML. It lets you keep a normal multi-page architecture while upgrading links and forms into smoother, partial, state-aware navigation.
 
 This page is written for people using GyosJS in real apps. The goal is not to explain router internals for contributors. The goal is to help you answer practical questions:
@@ -116,6 +128,8 @@ This means standard browser expectations are preserved:
 - external links still perform a full navigation
 
 ### Form submissions
+
+GyosJS 0.4 includes the clicked submitter's name/value and reads action/method/target attributes without DOM named-property clobbering. Button `formaction`, `formmethod` and `formtarget` override the form. Native new-tab, cross-origin, dialog, image-coordinate and text/plain submissions stay native. Form request lifecycle and validation recovery are covered in [Boosted Form Lifecycle](./boost-form-lifecycle.md).
 
 Forms are boosted when:
 
@@ -412,6 +426,8 @@ This is ideal for:
 - lightweight long-lived tools
 
 ### `g-current-head`
+
+Complete HTML full-outlet replacements also sync `html.lang`/`dir`, including snapshot Back/Forward. Missing values remove those attributes. Fragment responses, smaller targets and additive updates preserve them; `g-current-head` preserves them as well. Other HTML attributes and body attributes outside the outlet retain application ownership.
 
 Keeps the current `<head>` unchanged when the selected target is the first global `[g-outlet]`.
 

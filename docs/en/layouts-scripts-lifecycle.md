@@ -394,6 +394,8 @@ If `/posts.html` has a different title, description, stylesheet, or page-level s
 
 ### `g-current-head`
 
+For complete HTML responses, a destructive full-outlet swap also adopts `html.lang` and `html.dir`; absent attributes are removed. `g-current-head` preserves these alongside head metadata. Partial targets and fragment-only or additive updates retain document language. Other HTML attributes stay untouched, and body attributes only follow outlet-root rules when body itself is the outlet.
+
 Use `g-current-head` when you are swapping the first global outlet but intentionally want to retain the current document head. For example, an embedded preview can change the outlet without adopting the preview document's metadata:
 
 ```html
@@ -677,6 +679,25 @@ Poor candidates:
 
 ## Navigation Lifecycle
 
+### Shared SDKs and runtime head nodes
+
+Head resources use resolved URL identity. A shared script declared as `/sdk.js` on one page and the equivalent absolute URL on another keeps its node, even if still loading. Existing resources use the live document base; incoming resources use the response URL. Query, type, integrity and crossorigin differences remain significant. Incoming `<base href>` requires native navigation to enforce CSP `base-uri`; see the [CSP guide](./content-security-policy.md#mpa-boost-and-nonces).
+
+For a script inserted by your application that is absent from the next server response, opt in to ownership explicitly:
+
+```js
+const sdk = document.createElement('script');
+sdk.src = '/analytics-sdk.js';
+sdk.async = true;
+sdk.setAttribute('g-head-persist', 'analytics');
+// Under CSP, apply your active nonce if your policy requires it.
+document.head.appendChild(sdk);
+```
+
+The non-empty key keeps the live head node through navigation and history; incoming nodes with that key do not replace it. A retained provider does not hold navigation open while it loads. New scripts still follow normal load/error handling. Avoid applying this marker to page titles, canonical URLs or descriptions. Removing a script tag does not undo SDK globals/listeners; own that cleanup separately. The marker does not relax CSP, and third-party inline styles still need the SDK's nonce option.
+
+### Lifecycle layers
+
 There are two lifecycle layers that matter to users of GyosJS:
 
 1. router-level navigation hooks
@@ -685,6 +706,8 @@ There are two lifecycle layers that matter to users of GyosJS:
 Use each for the right job.
 
 ### Router-level hooks
+
+Since 0.4, every router hook registration returns unsubscribe. Use `onBeforeNavigate` for request indicators, `onBeforeSwap` for external widget disposal once a response is accepted, `onAfterNavigate` to mount after the swap pipeline, and `onNavigationEnd` to handle every final outcome. Rejected responses never run before-swap cleanup. Callbacks receive navigation context; see the [API tables](./api-reference.md#router-hooks) and [form/widget recipe](./boost-form-lifecycle.md).
 
 GyosJS exposes:
 

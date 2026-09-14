@@ -1482,7 +1482,7 @@ Current router notes that matter for users:
 - it resolves targets from `g-target`, nearest outlet ancestor, or the global outlet
 - an `inner` swap on the first global outlet also synchronizes that outlet node's attributes, including `g-scope` and classes
 - it supports snapshots, persist islands, partial swaps, and script handling
-- failed requests fall back to hard browser navigation without first unmounting the current target
+- rejected GET requests can fall back to native navigation; sent mutation requests are never replayed automatically
 - when navigations overlap, only the latest navigation may update the DOM
 
 ### Router hooks
@@ -1509,7 +1509,48 @@ Gyos.onAfterNavigate((url) => {
 
 The hook does not wait for the View Transition animation to finish.
 
-Both hook registration functions return `void`; the current public API does not provide hook removal. Register long-lived application hooks once during startup.
+All router hook registrations return an idempotent unsubscribe function. The existing before/after hooks also receive a second argument with navigation context.
+
+```js
+const stop = Gyos.onBeforeSwap((url, context) => {
+  // The response is ready. Dispose external widgets owned by context.target.
+});
+
+const stopOutcome = Gyos.onNavigationEnd((context) => {
+  if (!context.committed && context.outcome === 'http-error') {
+    console.log('Page retained; server returned', context.status);
+  }
+});
+
+// Call these when the integration itself is removed.
+stop();
+stopOutcome();
+```
+
+| Hook | Callback | When it runs |
+| --- | --- | --- |
+| `onBeforeNavigate` | `(url, context) => void` | At request/snapshot start; do not dispose live page resources here. |
+| `onBeforeSwap` | `(url, context) => void` | Once the response is accepted, immediately before swap lifecycle starts. Not called for rejected responses. |
+| `onAfterNavigate` | `(url, context) => void` | After the successful swap pipeline, including opted-in HTTP error HTML. |
+| `onNavigationEnd` | `(context) => void` | Once per started navigation, after router cleanup, including failure, abort and native fallback. |
+
+`context` is a per-callback snapshot. Mutating its fields does not control navigation; callback return values and promises are not awaited. Keep callbacks synchronous and catch errors inside any asynchronous work you start.
+
+| Context field | Type and meaning |
+| --- | --- |
+| `from`, `url` | Strings: previously displayed URL and destination URL; `url` reflects the response redirect when available. |
+| `method` | Uppercase request method, such as `GET` or `POST`. |
+| `trigger`, `target`, `form` | Trigger `Element`, affected `HTMLElement`, original `HTMLFormElement`, or `null`. The original form may be detached after a swap. Target is resolved after the before-navigation hook. |
+| `popstate` | Boolean; true for browser Back/Forward. |
+| `signal` | Navigation `AbortSignal`, aborted when superseded. It is not the lifetime signal of the displayed page. |
+| `status` | HTTP status number or `null` for snapshots, local failure, or no received response. |
+| `committed` | Boolean; whether new DOM has been applied. An abort during page scripts may have `committed: true`. |
+| `fallback` | Boolean; whether Gyos requested native navigation. It does not confirm that the browser completed it. |
+| `outcome` | `null` while pending; `success`, `http-error`, `network-error`, `aborted`, `invalid-response`, `fallback`, or `error` at completion. |
+
+`http-error` with `committed: true` means an explicitly accepted error page was rendered. `invalid-response` means an unusable response, such as an attachment or non-HTML content. `error` means the navigation pipeline threw. Native fallback for a failed GET preserves the failure outcome and sets `fallback: true`. Read both outcome and committed state before restoring external widgets or showing notifications.
+
+These hooks are notifications, not cancellable guards. Cancel the original click/submit event with `preventDefault()` to stop boost. No hook pair fires for a native-only form or an event cancelled before interception. See [Boosted Form Lifecycle](./boost-form-lifecycle.md) for validation and recovery examples.
 
 ### Router target resolution
 
@@ -1534,7 +1575,7 @@ Boost responses must remain same-origin, return `text/html` or `application/xhtm
 
 ### Public TypeScript types
 
-The package root exports `Signal`, `SignalOptions`, `Computed`, `Scope`, `ScopeFactory`, `ScopeDefinition`, `ComponentContext`, `WatchCallback`, `WatchOptions`, `Directive`, `DirectiveBinding`, `RevealOptions`, `PipeFn`, `ValidatorFn`, `ValidationContext`, `HydrationStrategy`, `TransitionConfig`, `RouterOptions`, and `CspNonceSource` as type-only exports.
+The package root exports `Signal`, `SignalOptions`, `Computed`, `Scope`, `ScopeFactory`, `ScopeDefinition`, `ComponentContext`, `WatchCallback`, `WatchOptions`, `Directive`, `DirectiveBinding`, `RevealOptions`, `PipeFn`, `ValidatorFn`, `ValidationContext`, `HydrationStrategy`, `TransitionConfig`, `RouterOptions`, `NavigationContext`, `NavigationOutcome`, `BoostFormEventDetail`, and `CspNonceSource` as type-only exports.
 
 ### Router attributes you will use most
 
@@ -1554,6 +1595,31 @@ The package root exports `Signal`, `SignalOptions`, `Computed`, `Scope`, `ScopeF
 - `g-router-link`: use any element as a router trigger and provide its URL
 - `g-router-method`: set `GET`, `POST`, `PUT`, `PATCH`, or `DELETE` for `g-router-link`
 - `g-router-params`: evaluate an object expression in the current scope and send it as query params or JSON
+- `g-boost-errors="422"`: render explicitly listed HTTP error statuses as HTML; keep the current URL and report `http-error`
+- `g-head-persist="analytics"`: retain a keyed head node across navigation; the existing node wins until removed by the app or a full reload
+
+### `g-boost-errors`
+
+Place a comma- or whitespace-separated list of exact HTTP statuses (400 through 599) on the form or router trigger. Empty values and unlisted statuses keep the default failure behavior. The response must still be same-origin HTML without an attachment disposition.
+
+```html
+<form action="/products" method="post" g-boost g-boost-errors="422">
+  <input name="title" required>
+  <button name="action" value="save">Save</button>
+</form>
+```
+
+The server should return the intended outlet or partial target containing the errors and submitted values. Gyos does not convert JSON errors into HTML. Accepted error HTML is not snapshot-cached and does not push history, even with `g-change-state`. Scope mount and the after-navigation hook still run; outcome remains `http-error`. Expired sessions (419), rate limits (429) and server errors are separate cases; opt in only when the server returns useful HTML for that case. A non-GET request is never automatically replayed after it has been sent.
+
+### `g-head-persist`
+
+Use a unique non-empty key on a `script`, `style`, `link` or `meta` in `head`. The live node survives even if the next response omits it. If a response repeats the key, the current node and its attributes win, including when the incoming URL differs. Use a full reload to adopt a different SDK version, or deliberately remove the old node and manage SDK teardown in your application.
+
+```html
+<script async src="/analytics-sdk.js" g-head-persist="analytics"></script>
+```
+
+For dynamically inserted SDK nodes, set the attribute before appending to `document.head`. This marker does not bypass CSP or unload a library when removed. A retained pending provider is not reinserted or awaited by navigation. A newly inserted provider follows the normal script load/error lifecycle. Per-page metadata without this marker continues to update and disappear normally. Body persistence remains `g-persist`.
 
 ### Swap lifecycle
 
@@ -1575,7 +1641,9 @@ Same-document hash links stay under native browser control.
 
 ### Full outlet versus partial target
 
-A full-outlet navigation may update the title, supported head nodes, and body scripts outside the outlet. A `g-target` navigation to a smaller region does not touch the document head or global body scripts. Scripts inside the incoming target still follow `g-script-once` and `g-script-wrap` rules.
+A full-outlet navigation may update the title, supported head nodes, and body scripts outside the outlet. A destructive full-outlet swap from a complete HTML document also synchronizes `html.lang` and `html.dir`, including snapshot history. Missing attributes are removed. Fragment-only responses, additive swaps and partial targets leave these attributes alone; `g-current-head` also preserves them. Other HTML attributes such as `data-theme` stay client-owned. Body attributes are not globally copied; when body itself is `g-outlet`, its existing outlet-root attribute rules apply.
+
+A `g-target` navigation to a smaller region does not touch the document head or global body scripts. Scripts inside the incoming target still follow `g-script-once` and `g-script-wrap` rules. Shared relative and absolute resource URLs are compared using the existing document base and incoming response URL. Query strings and script execution/security attributes remain significant. Responses containing `<base href>` use native GET navigation so the browser enforces `base-uri`; an already-sent POST is not replayed and leaves the current DOM mounted with `outcome: 'invalid-response'`. Use root-relative asset URLs instead of an incoming base element for boosted pages.
 
 For the full behavioral guide, read:
 
