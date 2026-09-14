@@ -6,6 +6,30 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-09-14
+
+### Added
+
+- Router hooks return unsubscribe and receive typed navigation context. `onBeforeSwap` runs once a response is accepted; `onNavigationEnd` reports success, HTTP/network failure, abort, invalid response and fallback with DOM commit state.
+- Boosted forms emit paired `gyos:form-start` / `gyos:form-end` document events and suppress duplicate pending submissions.
+- `g-boost-errors="422"` opts into rendering selected HTML error statuses without replaying a mutation, caching an error snapshot or changing history.
+- `g-head-persist="key"` retains explicitly owned head nodes, including pending runtime SDK scripts, through boost and history.
+
+### Fixed
+
+- Form requests include the submitter and honor action/method/target overrides without controls named `action` or `method` clobbering DOM properties. Explicit URL encoding is supported; native targets, cross-origin, dialog, image and text/plain flows remain native.
+- Shared relative/absolute head resource URLs keep their node and do not re-execute pending scripts. The live document base, incoming response URL, query strings and execution/security attributes remain significant.
+- Responses containing `<base href>` fall back to native GET navigation so the browser enforces CSP `base-uri`. Already-sent POSTs are not replayed and keep the current DOM with an `invalid-response` outcome. Prefer root-relative assets for boosted responses.
+- Full HTML outlet replacement and snapshot history synchronize `html.lang` and `html.dir` without overwriting client-owned HTML attributes or changing document language on partial/additive updates.
+- The router progress bar reconnects after body-outlet swaps and removes stale snapshot clones.
+
+### Migration
+
+- Move external widget teardown from request-start `onBeforeNavigate` to `onBeforeSwap` or scope cleanup. Existing one-argument before/after callbacks still work.
+- Inspect both `outcome` and `committed`; a rendered 422 is still an HTTP error, and an aborted page script may follow an applied DOM swap.
+- `g-current-head` also preserves document language/direction. Shared body class/data ownership is unchanged except for existing body-outlet root synchronization.
+- SDK nodes retained by `g-head-persist` keep their original attributes. Reload to adopt a changed provider URL/version. The marker does not relax CSP or unload SDK globals.
+
 ## [0.3.2] - 2026-08-26
 
 ### Fixed
@@ -135,7 +159,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 - This is an experimental `0.x` release. Router, morphing, expression evaluation, and browser edge cases should be evaluated against an application's requirements before production adoption.
 
-[Unreleased]: https://github.com/gyosjs/gyosjs/compare/v0.3.2...HEAD
+[Unreleased]: https://github.com/gyosjs/gyosjs/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/gyosjs/gyosjs/compare/v0.3.2...v0.4.0
 [0.3.2]: https://github.com/gyosjs/gyosjs/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/gyosjs/gyosjs/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/gyosjs/gyosjs/compare/v0.2.4...v0.3.0

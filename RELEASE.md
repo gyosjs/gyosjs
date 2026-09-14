@@ -6,7 +6,7 @@ This file is the operational checklist for publishing the canonical public repos
 
 Choose the next version according to the maintenance policy: backward-compatible fixes stay in the current patch line; new or intentionally breaking contracts require a minor release while GyosJS is `0.x`.
 
-- synchronize `package.json` and `Gyos.version` in `src/index.ts`
+- synchronize `package.json`, `package-lock.json` and `Gyos.version` in `src/public-api.ts`
 - move release notes out of `Unreleased` in `CHANGELOG.md`
 - add the dated release heading and comparison links
 - update pinned CDN examples in the README, core docs, and website docs
