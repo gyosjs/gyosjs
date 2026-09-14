@@ -24,6 +24,8 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - name: Audit dependencies
+        run: npm audit --audit-level=high
       - run: npx playwright install --with-deps chromium firefox webkit
       - name: Verify requested version
         run: npm run version:check -- "${{ inputs.version }}"
