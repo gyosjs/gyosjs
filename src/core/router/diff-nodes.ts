@@ -5,6 +5,21 @@ import { resolveCspNonce } from '../../runtime/csp-nonce';
 interface DiffContext {
 	csp: boolean;
 	activeNonce?: string;
+	baseUrl?: string;
+}
+
+// A retained relative URL still identifies the resource loaded on its original
+// page, even after pushState changes document.baseURI.
+const resourceUrls = new WeakMap<Element, { source: string; url: string }>();
+
+export function rememberResourceUrls(root: ParentNode, baseUrl: string): void {
+	root.querySelectorAll('script[src], link[href]').forEach(node => {
+		const attribute = node.tagName === 'SCRIPT' ? 'src' : 'href';
+		const source = node.getAttribute(attribute)!;
+		if (resourceUrls.get(node)?.source === source) return;
+		try { resourceUrls.set(node, { source, url: new URL(source, baseUrl).href }); }
+		catch { /* Invalid resource URLs retain their literal identity. */ }
+	});
 }
 
 function isNonceMeta(el: Element): boolean {
@@ -25,7 +40,18 @@ function serializeAttributes(el: Element, context: DiffContext): string {
 	Array.from(el.attributes).forEach(attr => {
 		if (context.csp && usesCspNonce(el) && attr.name.toLowerCase() === 'nonce') return;
 		if (context.csp && isNonceMeta(el) && attr.name.toLowerCase() === 'content') return;
-		attributes.set(attr.name, attr.value);
+		let value = attr.value;
+		if ((el.tagName === 'SCRIPT' && attr.name === 'src') || (el.tagName === 'LINK' && attr.name === 'href')) {
+			const cached = resourceUrls.get(el);
+			if (cached?.source === value) value = cached.url;
+			else {
+				try {
+					value = new URL(value, context.baseUrl || el.baseURI).href;
+					resourceUrls.set(el, { source: attr.value, url: value });
+				} catch { /* Keep invalid URLs distinct. */ }
+			}
+		}
+		attributes.set(attr.name, value);
 	});
 	if (context.csp && usesCspNonce(el) && context.activeNonce) {
 		attributes.set('nonce', context.activeNonce);
@@ -94,21 +120,24 @@ export async function diffNodes(
 	currentNodes: Element[],
 	nextNodes: Element[],
 	container: HTMLElement = document.head,
-	signal?: AbortSignal
+	signal?: AbortSignal,
+	currentBaseUrl = document.baseURI
 ): Promise<void> {
 	const csp = expressionRuntimeMode() === 'csp';
 	const context: DiffContext = {
 		csp,
 		activeNonce: csp ? resolveCspNonce() : undefined
 	};
-	const current = keyedNodes(currentNodes, context);
+	const current = keyedNodes(currentNodes, { ...context, baseUrl: currentBaseUrl });
 	const next = keyedNodes(nextNodes, context);
+	const persistentKey = (node: Element) => container === document.head ? node.getAttribute('g-head-persist') : null;
+	const persistent = new Set(currentNodes.map(persistentKey).filter(Boolean));
 	const currentKeys = new Set(current.map(item => item.key));
 	const nextKeys = new Set(next.map(item => item.key));
 
 	// Remove nodes that are not in the new head
 	current.forEach(({ key, node }) => {
-		if (!nextKeys.has(key)) {
+		if (!nextKeys.has(key) && !persistentKey(node)) {
 			node.remove();
 		}
 	});
@@ -116,6 +145,7 @@ export async function diffNodes(
 	// Add nodes that are missing
 	for (const { key, node } of next) {
 		if (signal?.aborted) return;
+		if (persistent.has(persistentKey(node))) continue;
 		if (!currentKeys.has(key)) {
 			if (!canInsertNode(node, context)) {
 				warnSkippedNode(node);

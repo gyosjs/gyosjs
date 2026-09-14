@@ -30,6 +30,39 @@ describe('router head diff', () => {
 		expect(document.head.querySelectorAll('style')).toHaveLength(1);
 	});
 
+	it('keeps equivalent relative resources across page bases without awaiting pending scripts', async () => {
+		document.head.innerHTML = '<script async src="provider.js"></script><link rel="stylesheet" href="theme.css">';
+		const current = Array.from(document.head.children);
+		const next = new DOMParser().parseFromString('<head><script async src="https://site.test/a/provider.js"></script><link rel="stylesheet" href="https://site.test/a/theme.css"></head>', 'text/html');
+		await diffNodes(current, Array.from(next.head.children), document.head, undefined, 'https://site.test/a/start');
+		expect(Array.from(document.head.children)).toEqual(current);
+		await diffNodes(current, Array.from(next.head.children), document.head, undefined, 'https://site.test/b/next');
+		expect(Array.from(document.head.children)).toEqual(current);
+	});
+
+	it.each(['src="/provider.js?v=2"', 'src="/provider.js" type="module"', 'src="/provider.js" integrity="sha384-new"', 'src="/provider.js" crossorigin="anonymous"'])('distinguishes changed script attributes: %s', async attrs => {
+		document.head.innerHTML = '<script src="/provider.js"></script>';
+		const old = document.head.firstElementChild!;
+		const next = new DOMParser().parseFromString(`<head><script ${attrs}></script></head>`, 'text/html');
+		const promise = diffNodes([old], Array.from(next.head.children));
+		const inserted = document.head.querySelector('script')!;
+		expect(inserted).not.toBe(old);
+		inserted.dispatchEvent(new Event('load'));
+		await promise;
+	});
+
+	it('retains opted-in head nodes by key, while ordinary page metadata still changes', async () => {
+		document.head.innerHTML = '<script g-head-persist="analytics" src="/sdk.js"></script><style g-head-persist="widget">.widget{color:red}</style><meta name="description" content="old">';
+		const retained = Array.from(document.head.children).slice(0, 2);
+		const next = new DOMParser().parseFromString('<head><meta name="description" content="new"><script g-head-persist="analytics" src="/sdk.js?v=2"></script></head>', 'text/html');
+		await diffNodes(Array.from(document.head.children), Array.from(next.head.children));
+		expect(document.head.querySelector('script')).toBe(retained[0]);
+		expect(document.head.querySelector('style')).toBe(retained[1]);
+		expect(document.head.querySelector('meta')?.content).toBe('new');
+		await diffNodes(Array.from(document.head.children), []);
+		expect(Array.from(document.head.children)).toEqual(retained);
+	});
+
 	it('replaces an attribute-less style when its content changes', async () => {
 		document.head.innerHTML = '<style>body { color: red; }</style>';
 		const existing = document.head.querySelector('style')!;
