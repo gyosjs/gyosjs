@@ -7,6 +7,7 @@ const routerScripts = vi.hoisted(() => ({
 	executeScriptsInNodes: vi.fn()
 }));
 const progressBar = vi.hoisted(() => ({
+	reconnect: vi.fn(),
 	start: vi.fn(),
 	complete: vi.fn(),
 	hide: vi.fn(),
@@ -31,7 +32,7 @@ const scopeRegistry = vi.hoisted(() => ({
 	unmountScope: vi.fn(),
 	getScopeFromElement: vi.fn(() => ({}))
 }));
-const diffFns = vi.hoisted(() => ({ diffNodes: vi.fn() }));
+const diffFns = vi.hoisted(() => ({ diffNodes: vi.fn(), rememberResourceUrls: vi.fn() }));
 
 vi.mock('../src/core/component', () => mounts);
 vi.mock('../src/core/router/script', () => routerScripts);

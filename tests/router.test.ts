@@ -8,6 +8,7 @@ const routerScripts = vi.hoisted(() => ({
 	executeScriptsInNodes: vi.fn()
 }));
 const progressBar = vi.hoisted(() => ({
+	reconnect: vi.fn(),
 	start: vi.fn(),
 	complete: vi.fn(),
 	hide: vi.fn(),
@@ -34,6 +35,7 @@ const scopeRegistry = vi.hoisted(() => ({
 	getScopeFromElement: vi.fn(() => ({}))
 }));
 const diffFns = vi.hoisted(() => ({
+	rememberResourceUrls: vi.fn(),
 	diffNodes: vi.fn()
 }));
 
@@ -63,6 +65,101 @@ const buildResponse = (html: string, url = '/response', redirected = false) =>
 	} as Response);
 
 describe('router', () => {
+	it('honors button action and method overrides while Enter uses the form defaults', async () => {
+		document.body.innerHTML = '<div g-outlet><form g-boost action="/default" method="post"><input name="method" value="clobber"><button name="action" value="preview" formaction="/preview" formmethod="get">Preview</button></form></div>';
+		const form = document.querySelector('form')!;
+		global.fetch = vi.fn().mockResolvedValue({ status: 422, ok: false, headers: new Headers() });
+		startRouter();
+		const end = vi.fn();
+		document.addEventListener('gyos:form-end', end);
+		try {
+			form.dispatchEvent(new SubmitEvent('submit', { bubbles: true, cancelable: true, submitter: form.querySelector('button') }));
+			await vi.waitFor(() => expect(end).toHaveBeenCalledTimes(1));
+			let [url, init] = vi.mocked(global.fetch).mock.calls[0];
+			expect(new URL(String(url)).pathname).toBe('/preview');
+			expect(new URL(String(url)).searchParams.get('action')).toBe('preview');
+			expect(init!.method).toBe('GET');
+			form.dispatchEvent(new SubmitEvent('submit', { bubbles: true, cancelable: true }));
+			await vi.waitFor(() => expect(end).toHaveBeenCalledTimes(2));
+			[url, init] = vi.mocked(global.fetch).mock.calls[1];
+			expect(new URL(String(url)).pathname).toBe('/default');
+			expect(init!.method).toBe('POST');
+			expect((init!.body as FormData).has('action')).toBe(false);
+		} finally { document.removeEventListener('gyos:form-end', end); }
+	});
+
+	it('deduplicates in-flight submissions and reports network failure once', async () => {
+		document.body.innerHTML = '<div g-outlet><form g-boost action="/save" method="post"><input name="title" value="Unsaved"></form></div>';
+		const form = document.querySelector('form')!;
+		const start = vi.fn(), end = vi.fn();
+		document.addEventListener('gyos:form-start', start, { once: true });
+		document.addEventListener('gyos:form-end', end, { once: true });
+		let fail!: (reason: Error) => void;
+		global.fetch = vi.fn().mockImplementation(() => new Promise((_, reject) => { fail = reject; }));
+		startRouter();
+		for (let i = 0; i < 2; i++) form.dispatchEvent(new SubmitEvent('submit', { bubbles: true, cancelable: true }));
+		await vi.waitFor(() => expect(global.fetch).toHaveBeenCalledOnce());
+		fail(new TypeError('Offline'));
+		await vi.waitFor(() => expect(end).toHaveBeenCalledOnce());
+		expect(start).toHaveBeenCalledOnce();
+		expect(end.mock.calls[0][0].detail).toMatchObject({ outcome: 'network-error', status: null });
+		expect(form.isConnected).toBe(true);
+		expect(global.fetch).toHaveBeenCalledOnce();
+	});
+
+	it('ends a cancelled form request with an aborted outcome', async () => {
+		document.body.innerHTML = '<div g-outlet><form g-boost action="/save" method="post"></form></div>';
+		const end = vi.fn();
+		document.addEventListener('gyos:form-end', end, { once: true });
+		global.fetch = vi.fn().mockImplementationOnce((_url, init) => new Promise((_, reject) => {
+			init.signal.addEventListener('abort', () => reject(new DOMException('Cancelled', 'AbortError')));
+		})).mockImplementationOnce(() => buildResponse('<div g-outlet>Next</div>'));
+		startRouter();
+		document.querySelector('form')!.dispatchEvent(new SubmitEvent('submit', { bubbles: true, cancelable: true }));
+		await vi.waitFor(() => expect(global.fetch).toHaveBeenCalledOnce());
+		await (__routerTest as any).navigate({ url: '/next', method: 'GET' });
+		await vi.waitFor(() => expect(end).toHaveBeenCalledOnce());
+		expect(end.mock.calls[0][0].detail).toMatchObject({ outcome: 'aborted', status: null });
+	});
+	it('includes the submitter, avoids action clobbering, and emits one lifecycle pair', async () => {
+		document.body.innerHTML = '<div g-outlet><form g-boost action="/save" method="post"><input name="action" value="legacy"><button name="decision" value="publish">Publish</button></form></div>';
+		const form = document.querySelector('form')!;
+		const start = vi.fn(), end = vi.fn();
+		document.addEventListener('gyos:form-start', start, { once: true });
+		document.addEventListener('gyos:form-end', end, { once: true });
+		global.fetch = vi.fn().mockImplementation(() => buildResponse('<div g-outlet>Saved</div>'));
+		startRouter();
+		form.dispatchEvent(new SubmitEvent('submit', { bubbles: true, cancelable: true, submitter: form.querySelector('button') }));
+		await vi.waitFor(() => expect(end).toHaveBeenCalledTimes(1));
+		expect(start).toHaveBeenCalledTimes(1);
+		const [url, init] = vi.mocked(global.fetch).mock.calls[0];
+		expect(String(url)).toContain('/save');
+		expect((init!.body as FormData).get('decision')).toBe('publish');
+		expect((end.mock.calls[0][0] as CustomEvent).detail).toMatchObject({ form, outcome: 'success', status: 200 });
+	});
+
+	it('leaves a submitter targeting a new tab to the browser', () => {
+		document.body.innerHTML = '<div g-outlet><form g-boost action="/save"><button formtarget="_blank">Preview</button></form></div>';
+		global.fetch = vi.fn();
+		startRouter();
+		const event = new SubmitEvent('submit', { bubbles: true, cancelable: true, submitter: document.querySelector('button') });
+		document.querySelector('form')!.dispatchEvent(event);
+		expect(event.defaultPrevented).toBe(false);
+		expect(global.fetch).not.toHaveBeenCalled();
+	});
+
+	it.each([409, 419, 422, 500])('reports HTTP %s without swapping or replaying a POST', async (status) => {
+		document.body.innerHTML = '<div g-outlet><form g-boost action="/save" method="post"><input value="Keep my draft"></form></div>';
+		const end = vi.fn();
+		document.addEventListener('gyos:form-end', end, { once: true });
+		global.fetch = vi.fn().mockResolvedValue({ status, ok: false, headers: new Headers() });
+		startRouter();
+		document.querySelector('form')!.dispatchEvent(new SubmitEvent('submit', { bubbles: true, cancelable: true }));
+		await vi.waitFor(() => expect(end).toHaveBeenCalledTimes(1));
+		expect((end.mock.calls[0][0] as CustomEvent).detail).toMatchObject({ outcome: 'http-error', status });
+		expect(document.querySelector('input')!.value).toBe('Keep my draft');
+		expect(global.fetch).toHaveBeenCalledTimes(1);
+	});
 	beforeEach(() => {
 		__routerTest.resetRouterState();
 		document.body.removeAttribute('g-boost');

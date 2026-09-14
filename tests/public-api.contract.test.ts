@@ -34,7 +34,7 @@ describe('documented public API contracts', () => {
 			'getGlobalContainer', 'getStoreNames', 'getTransitionConfig', 'getValidator',
 			'getValidatorNames', 'hasStore', 'inject', 'isComputed', 'isSignal', 'markRaw',
 			'mount', 'mountAll', 'mountedScopes', 'mountTree', 'nextTick', 'off', 'on',
-			'onAfterNavigate', 'onBeforeNavigate', 'once', 'pipe', 'portalCreate',
+			'onAfterNavigate', 'onBeforeNavigate', 'onBeforeSwap', 'onNavigationEnd', 'once', 'pipe', 'portalCreate',
 			'portalDestroy', 'provide', 'ready', 'registerTransition', 'removeStore', 'scope',
 			'setCspNonce', 'shallow', 'signal', 'startRouter', 'store', 'throttle', 'unref', 'untrack',
 			'useAsync', 'useCounter', 'useDebounce', 'useFetch', 'useInterval',

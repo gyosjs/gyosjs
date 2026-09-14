@@ -23,7 +23,8 @@ import {
 	useAsync
 } from './core/composables';
 import { applyTransitionStyles, registerTransition, getTransitionConfig } from './core/transition';
-import { onAfterNavigate, onBeforeNavigate, startRouter } from './core/router/router';
+import { onAfterNavigate, onBeforeNavigate, onBeforeSwap, onNavigationEnd, startRouter } from './core/router/router';
+export type { BoostFormEventDetail, NavigationContext, NavigationOutcome } from './core/router/router';
 import { debounce, nextTick, ready, throttle } from './utils/helpers';
 import { disposeEffects as cleanup } from './template/cleanup';
 import { markRaw, shallow } from './core/reactive';
@@ -112,6 +113,8 @@ export {
 	startRouter,
 	onBeforeNavigate,
 	onAfterNavigate,
+	onBeforeSwap,
+	onNavigationEnd,
 	portalCreate,
 	portalDestroy,
 	setCspNonce,
@@ -177,10 +180,12 @@ const Gyos = {
 	startRouter,
 	onBeforeNavigate,
 	onAfterNavigate,
+	onBeforeSwap,
+	onNavigationEnd,
 	portalCreate,
 	portalDestroy,
 	setCspNonce,
-	version: '0.3.2'
+	version: '0.4.0'
 };
 
 export default Gyos;

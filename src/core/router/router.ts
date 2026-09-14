@@ -14,7 +14,7 @@ import { cacheInitialPageScripts } from './script';
 import { detachPersist, mergePersistIntoLive } from './persist';
 import { performSwap } from './swap';
 import { handleScroll, saveScrollPosition } from './scroll';
-import { diffNodes } from './diff-nodes';
+import { diffNodes, rememberResourceUrls } from './diff-nodes';
 import { shouldDeferToFormValidation } from '../../form/form-submission';
 import { prepareNavigationHtml } from './csp-html';
 
@@ -22,12 +22,42 @@ export interface RouterOptions {
 	showProgress?: boolean; // Show progress bar during navigation (default: true)
 }
 
+export interface BoostFormEventDetail {
+	form: HTMLFormElement;
+	url: string;
+	status: number | null;
+	outcome: NavigationOutcome | null;
+	committed: boolean;
+	fallback: boolean;
+}
+const submittingForms = new WeakSet<HTMLFormElement>();
+
+export type NavigationOutcome = 'success' | 'http-error' | 'network-error' | 'aborted' | 'invalid-response' | 'fallback' | 'error';
+
+export interface NavigationContext {
+	from: string;
+	url: string;
+	method: string;
+	trigger: Element | null;
+	target: HTMLElement | null;
+	form: HTMLFormElement | null;
+	popstate: boolean;
+	signal: AbortSignal;
+	status: number | null;
+	committed: boolean;
+	fallback: boolean;
+	outcome: NavigationOutcome | null;
+}
+
+type NavigationHook = (url: string, context: NavigationContext) => void;
+
 interface NavigateOptions {
 	url: string;
 	method: string;
 	trigger?: Element | null;
 	form?: HTMLFormElement | null;
 	formData?: FormData | null;
+	formEncoding?: string;
 	jsonData?: Record<string, any> | null;
 	replace?: boolean;
 	changeState?: boolean;
@@ -58,6 +88,7 @@ interface GyosHistoryState {
 
 interface Snapshot {
 	html: string;
+	fullDocument: boolean;
 }
 
 const snapshots = new Map<string, Snapshot>();
@@ -87,16 +118,36 @@ let activeNavigation: NavigationTransaction | null = null;
 // Global progress bar instance
 let progressBar: ProgressBar | null = null;
 
-const beforeNavigate: any[] = [];
-const afterNavigate: any[] = [];
+const beforeNavigate: NavigationHook[] = [];
+const afterNavigate: NavigationHook[] = [];
+const beforeSwap: NavigationHook[] = [];
+const navigationEnd: NavigationHook[] = [];
 
-// Expose hooks to register before/after navigation callbacks
-export function onBeforeNavigate(callback: (url: string) => void): void {
-	beforeNavigate.push(callback);
+function registerNavigationHook(hooks: NavigationHook[], callback: NavigationHook): () => void {
+	// A wrapper gives each registration its own unsubscribe identity.
+	const entry: NavigationHook = (url, context) => callback(url, context);
+	hooks.push(entry);
+	return () => {
+		const index = hooks.indexOf(entry);
+		if (index !== -1) hooks.splice(index, 1);
+	};
 }
 
-export function onAfterNavigate(callback: (url: string) => void): void {
-	afterNavigate.push(callback);
+// Expose hooks to register before/after navigation callbacks
+export function onBeforeNavigate(callback: NavigationHook): () => void {
+	return registerNavigationHook(beforeNavigate, callback);
+}
+
+export function onAfterNavigate(callback: NavigationHook): () => void {
+	return registerNavigationHook(afterNavigate, callback);
+}
+
+export function onBeforeSwap(callback: NavigationHook): () => void {
+	return registerNavigationHook(beforeSwap, callback);
+}
+
+export function onNavigationEnd(callback: (context: NavigationContext) => void): () => void {
+	return registerNavigationHook(navigationEnd, (_url, context) => callback(context));
 }
 
 export function startRouter(options?: RouterOptions): void {
@@ -123,6 +174,7 @@ export function startRouter(options?: RouterOptions): void {
 
 	// Cache scripts from initial page to prevent re-execution on first navigation back
 	cacheInitialPageScripts();
+	rememberResourceUrls(document, document.baseURI);
 
 	routerStarted = true;
 	log('[GyosRouter] started');
@@ -187,9 +239,14 @@ function resolveTarget(
 	return outlet instanceof HTMLElement ? outlet : null;
 }
 
+function isFullDocument(html: string): boolean {
+	return /^\s*(?:<!--[^]*?-->\s*)*(?:<!doctype\s+html\b|<html(?:\s|>))/i.test(html);
+}
+
 function saveSnapshot(url: string, html: string): void {
 	// create HTMLElement by html string to remove scripts and get clean snapshot
 	const doc = parseNavigationDocument(html);
+	doc.querySelectorAll('#gyos-progress-bar').forEach(node => node.remove());
 
 	// Ignore hash for snapshot keys
 	if (url.includes('#')) url = url.split('#')[0];
@@ -198,7 +255,7 @@ function saveSnapshot(url: string, html: string): void {
 	Array.from(doc.scripts).forEach(s => {
 		if (s.hasAttribute('g-script-once')) s.textContent = '';
 	});
-	snapshots.set(url, { html: doc.documentElement.outerHTML });
+	snapshots.set(url, { html: doc.documentElement.outerHTML, fullDocument: isFullDocument(html) });
 	log('[GyosRouter] snapshot saved for', url);
 }
 
@@ -326,10 +383,10 @@ function consumeViewTransitionRejection(promise: Promise<unknown> | undefined): 
 	void promise?.catch(() => undefined);
 }
 
-function runNavigationHooks(callbacks: Array<(url: string) => void>, url: string): void {
-	callbacks.forEach(callback => {
+function runNavigationHooks(callbacks: NavigationHook[], url: string, context: NavigationContext): void {
+	[...callbacks].forEach(callback => {
 		try {
-			callback(url);
+			callback(url, { ...context });
 		} catch (error) {
 			console.error('[GyosRouter] navigation hook error', error);
 		}
@@ -370,7 +427,11 @@ function buildRequest(opts: NavigateOptions): { finalUrl: string; init: RequestI
 		if (isGet) {
 			url = mergeFormDataIntoUrl(url, opts.formData);
 		} else {
-			init.body = opts.formData;
+			if (opts.formEncoding === 'application/x-www-form-urlencoded') {
+				const encoded = new URLSearchParams();
+				opts.formData.forEach((value, name) => encoded.append(name, typeof value === 'string' ? value : value.name));
+				init.body = encoded;
+			} else init.body = opts.formData;
 		}
 	} else if (opts.jsonData) {
 		const appendParam = (key: string, value: any) => {
@@ -414,19 +475,20 @@ function preload(url: string): void {
 	});
 }
 
-async function updateHead(fromDoc: Document, signal?: AbortSignal): Promise<void> {
+async function updateHead(fromDoc: Document, signal?: AbortSignal, currentBaseUrl?: string): Promise<void> {
 	const allowedSelector = 'meta, link, style:not(#gyos-transitions), script';
 	const currentNodes = Array.from(document.head.querySelectorAll(allowedSelector));
 	const nextNodes = Array.from(fromDoc.head.querySelectorAll(allowedSelector));
 
-	await diffNodes(currentNodes, nextNodes, document.head, signal);
+	await diffNodes(currentNodes, nextNodes, document.head, signal, currentBaseUrl);
 }
 
 async function scriptNotInOutletTarget(
 	fromDoc: Document,
 	target: HTMLElement,
 	source: HTMLElement,
-	signal?: AbortSignal
+	signal?: AbortSignal,
+	currentBaseUrl?: string
 ): Promise<void>
 {
 	// scripts in current document and it not in target outlet
@@ -435,13 +497,14 @@ async function scriptNotInOutletTarget(
 	const incomingScripts = Array.from(fromDoc.scripts).filter(s => !source.contains(s) && !fromDoc.head.contains(s));
 	
 	// Diff and update scripts not in outlet/target
-	await diffNodes(currentScripts, incomingScripts, document.body, signal);
+	await diffNodes(currentScripts, incomingScripts, document.body, signal, currentBaseUrl);
 }
 
 function resolveIncomingScriptUrls(root: ParentNode, baseUrl: string): void {
-	root.querySelectorAll<HTMLScriptElement>('script[src]').forEach(script => {
-		const source = script.getAttribute('src');
-		if (source) script.src = new URL(source, baseUrl).href;
+	root.querySelectorAll('script[src], link[href]').forEach(node => {
+		const attribute = node.tagName === 'SCRIPT' ? 'src' : 'href';
+		const source = node.getAttribute(attribute);
+		if (source) node.setAttribute(attribute, new URL(source, baseUrl).href);
 	});
 }
 
@@ -501,6 +564,22 @@ async function navigate(opts: NavigateOptions): Promise<void> {
 		resolveDone
 	};
 	activeNavigation = transaction;
+	const currentBaseUrl = document.baseURI;
+	rememberResourceUrls(document, currentBaseUrl);
+	const context: NavigationContext = {
+		from: currentUrl, url: opts.url, method: opts.method.toUpperCase(),
+		trigger: opts.trigger || null, target: null, form: opts.form || null,
+		popstate: opts.popstate === true, signal: transaction.controller.signal,
+		status: null, committed: false, fallback: false, outcome: null
+	};
+	const formEvent: BoostFormEventDetail | null = opts.form
+		? { form: opts.form, url: opts.url, status: null, outcome: null, committed: false, fallback: false }
+		: null;
+	const fallback = (url: string, requestSent: boolean) => {
+		context.fallback = context.method === 'GET' || (!requestSent && !!opts.form);
+		context.outcome ??= context.fallback ? 'fallback' : 'invalid-response';
+		fallbackFromBoost(opts, url, requestSent);
+	};
 
 	const hasTargetSpinner = opts.trigger?.hasAttribute('g-router-spin');
 
@@ -511,7 +590,9 @@ async function navigate(opts: NavigateOptions): Promise<void> {
 	};
 
 	try {
-		runNavigationHooks(beforeNavigate, opts.url);
+		if (formEvent) document.dispatchEvent(new CustomEvent('gyos:form-start', { detail: { ...formEvent } }));
+		runNavigationHooks(beforeNavigate, opts.url, context);
+		assertActiveNavigation(transaction);
 		progressBar?.start();
 
 		// popstate already points history at the destination entry. Keep the visible
@@ -521,8 +602,9 @@ async function navigate(opts: NavigateOptions): Promise<void> {
 
 		// Pick target element to swap
 		let target = resolveTarget(opts.trigger, opts.targetSelector, opts.targetOutletIndex);
+		context.target = target;
 		if (!target) {
-			if (isActiveNavigation(transaction)) fallbackFromBoost(opts, opts.url, false);
+			if (isActiveNavigation(transaction)) fallback(opts.url, false);
 			return;
 		}
 
@@ -549,6 +631,7 @@ async function navigate(opts: NavigateOptions): Promise<void> {
 		if (hasTargetSpinner) transaction.spinner = showTargetSpinner(target, swapMode);
 
 		const { finalUrl, init } = buildRequest(opts);
+		context.url = finalUrl;
 
 		// Add abort signal to request
 		init.signal = transaction.controller.signal;
@@ -574,7 +657,8 @@ async function navigate(opts: NavigateOptions): Promise<void> {
 					preloadControllers.delete(preloadKey);
 					if ((error as Error).name === 'AbortError') throw error;
 					assertActiveNavigation(transaction);
-					window.location.href = finalUrl;
+					context.outcome = 'network-error';
+					fallback(finalUrl, true);
 					return;
 				}
 				preloadCache.delete(preloadKey); // consume cache
@@ -598,29 +682,46 @@ async function navigate(opts: NavigateOptions): Promise<void> {
 						log('[GyosRouter] Navigation cancelled');
 						return;
 					}
-					if (isActiveNavigation(transaction)) fallbackFromBoost(opts, finalUrl, true);
+					context.outcome = 'network-error';
+					if (isActiveNavigation(transaction)) fallback(finalUrl, true);
 					return;
 				}
 			}
 			assertActiveNavigation(transaction);
 
-			// If response not ok, fallback to full navigation
-			if (!response || !response.ok || !isNavigableHtmlResponse(response)) {
-				if (isActiveNavigation(transaction)) fallbackFromBoost(opts, finalUrl, true);
+			context.status = response?.status ?? null;
+			context.url = response?.url || finalUrl;
+			const acceptedErrors = (opts.trigger?.getAttribute('g-boost-errors') || '').split(/[\s,]+/);
+			const renderHttpError = !!response && response.status >= 400 && response.status <= 599
+				&& acceptedErrors.includes(String(response.status));
+			if (response && !response.ok) context.outcome = 'http-error';
+			if (!response || (!response.ok && !renderHttpError) || !isNavigableHtmlResponse(response)) {
+				context.outcome ??= 'invalid-response';
+				if (isActiveNavigation(transaction)) fallback(finalUrl, true);
 				return;
 			}
 
 			html = await response.text();
 			assertActiveNavigation(transaction);
-			if (!opts.popstate && target.hasAttribute('g-snapshot')) {
-				saveSnapshot(canonicalUrl(response.url || finalUrl), html);
-			}
 		}
 
 		// Parse HTML
 		const doc = html
 			? parseNavigationDocument(html)
 			: document.implementation.createHTMLDocument();
+		// Detached parsing cannot tell whether the live CSP permits an incoming base.
+		// Let native navigation enforce base-uri instead of authorizing its URLs ourselves.
+		if (doc.querySelector('base[href]') || opts.historyFragment?.querySelector('base[href]')) {
+			context.outcome = 'invalid-response';
+			fallback(response?.url || finalUrl, true);
+			return;
+		}
+		if (response?.ok && !opts.popstate && target.hasAttribute('g-snapshot')) {
+			saveSnapshot(canonicalUrl(response.url || finalUrl), html!);
+		}
+		const syncDocumentAttributes = isFullOutletNavigation && destructiveSwap && !currentHead
+			&& !opts.historyFragment && (opts.popstate && snapshots.has(urlWithoutHash)
+				? snapshots.get(urlWithoutHash)!.fullDocument : isFullDocument(html || ''));
 
 		// Pick source fragment
 		const src = opts.historyFragment || pickSourceFragment(doc, target, targetOutletIndex);
@@ -634,18 +735,21 @@ async function navigate(opts: NavigateOptions): Promise<void> {
 			targetUrl += finalUrl.substring(finalUrl.indexOf('#'));
 		}
 		resolveIncomingScriptUrls(doc, targetUrl);
+		context.url = targetUrl;
 		if (opts.historyFragment) resolveIncomingScriptUrls(src, targetUrl);
 
 		const triggerChangesState = opts.trigger?.hasAttribute('g-change-state') || false;
 		const keepsCurrentState = opts.trigger?.hasAttribute('g-current-state') || false;
 		const redirectedSubmission = opts.method.toUpperCase() !== 'GET' && response?.redirected === true;
-		const changesState = !keepsCurrentState && (
+		const changesState = context.outcome !== 'http-error' && !keepsCurrentState && (
 			opts.changeState === true || triggerChangesState || redirectedSubmission
 		);
 
 		const performUpdate = async () => {
 			assertActiveNavigation(transaction);
 			transaction.committing = true;
+			runNavigationHooks(beforeSwap, targetUrl, context);
+			assertActiveNavigation(transaction);
 			// Update progress to rand 80 - 90% before swap
 			progressBar?.setProgress(Math.random() * 10 + 80);
 			const outgoingHistoryFragment = changesState && !opts.replace && !isFullOutletNavigation
@@ -718,22 +822,33 @@ async function navigate(opts: NavigateOptions): Promise<void> {
 					signal: transaction.controller.signal,
 						beforeScripts: async () => {
 						if (!isFullOutletNavigation || currentHead) return;
+						if (syncDocumentAttributes) {
+							for (const name of ['lang', 'dir']) {
+								const value = doc.documentElement.getAttribute(name);
+								if (value === null) document.documentElement.removeAttribute(name);
+								else document.documentElement.setAttribute(name, value);
+								}
+						}
 						const incomingTitle = doc.querySelector('title');
 						if (incomingTitle) {
 							document.title = incomingTitle.textContent || document.title;
 						}
-						await updateHead(doc, transaction.controller.signal);
+						await updateHead(doc, transaction.controller.signal, currentBaseUrl);
 						assertActiveNavigation(transaction);
 						},
 						onCommitted: (committedTarget, roots) => {
 							target = committedTarget;
+							context.target = committedTarget;
+							context.committed = true;
+							progressBar?.reconnect();
 							committedRoots = roots;
 						}
 					});
+				context.committed = true;
 				assertActiveNavigation(transaction);
 
 				if (isFullOutletNavigation) {
-					await scriptNotInOutletTarget(doc, target, src, transaction.controller.signal);
+					await scriptNotInOutletTarget(doc, target, src, transaction.controller.signal, currentBaseUrl);
 					assertActiveNavigation(transaction);
 				}
 			} finally {
@@ -767,13 +882,14 @@ async function navigate(opts: NavigateOptions): Promise<void> {
 		}
 
 		assertActiveNavigation(transaction);
-		if (removeTriggerAfterCommit && opts.trigger instanceof HTMLElement && opts.trigger.isConnected) {
+		if (removeTriggerAfterCommit && context.outcome !== 'http-error' && opts.trigger instanceof HTMLElement && opts.trigger.isConnected) {
 			disposeEffects(opts.trigger);
 			opts.trigger.remove();
 		}
 		if (hasTargetSpinner) hideTargetSpinner(transaction.spinner);
 		transaction.spinner = null;
-		runNavigationHooks(afterNavigate, targetUrl);
+		context.outcome ??= 'success';
+		runNavigationHooks(afterNavigate, targetUrl, context);
 		log('[GyosRouter] navigated to', targetUrl);
 		currentUrl = changesState
 			? canonicalUrl(targetUrl, true)
@@ -788,10 +904,13 @@ async function navigate(opts: NavigateOptions): Promise<void> {
 			return;
 		}
 		if (isActiveNavigation(transaction)) {
+			context.outcome ??= 'error';
 			console.error('[GyosRouter] navigation error', error);
-			fallbackFromBoost(opts, opts.url, true);
+			fallback(opts.url, true);
 		}
 	} finally {
+		if (transaction.controller.signal.aborted) context.outcome = 'aborted';
+		context.outcome ??= 'aborted';
 		if (transaction.interval) clearInterval(transaction.interval);
 		if (transaction.spinner) hideTargetSpinner(transaction.spinner);
 		if (activeNavigation?.id === transaction.id) {
@@ -799,6 +918,14 @@ async function navigate(opts: NavigateOptions): Promise<void> {
 			progressBar?.complete();
 		}
 		transaction.resolveDone();
+		if (formEvent) submittingForms.delete(formEvent.form);
+		runNavigationHooks(navigationEnd, context.url, context);
+		if (formEvent) {
+			const { url, status, outcome, committed, fallback } = context;
+			document.dispatchEvent(new CustomEvent('gyos:form-end', {
+				detail: { ...formEvent, url, status, outcome, committed, fallback }
+			}));
+		}
 	}
 }
 
@@ -904,18 +1031,25 @@ function onSubmit(event: Event): void {
 	if (!(form.hasAttribute('g-boost') || hasGlobalBoost())) return;
 	if (shouldDeferToFormValidation(form)) return;
 
+	const submitter = (event as SubmitEvent).submitter;
+	const override = (name: string) => submitter?.getAttribute(`form${name}`) ?? form.getAttribute(name);
+	const target = override('target') ?? document.querySelector('base[target]')?.getAttribute('target');
+	const declaredMethod = (override('method') || 'GET').toUpperCase();
+	const method = ['GET', 'POST', 'DIALOG'].includes(declaredMethod) ? declaredMethod : 'GET';
+	const formEncoding = override('enctype')?.toLowerCase();
+	if ((target && target.toLowerCase() !== '_self') || method === 'DIALOG' || formEncoding === 'text/plain') return;
+	if (!resolveTarget(form)) return;
+	// Image submitters carry click coordinates which SubmitEvent does not expose.
+	if (submitter instanceof HTMLInputElement && submitter.type === 'image') return;
+	let url: URL;
+	try { url = new URL(override('action') || window.location.href, document.baseURI); }
+	catch { return; }
+	if (url.origin !== window.location.origin) return;
 	event.preventDefault();
-
-	const action = form.action || window.location.href;
-	const method = (form.method || 'GET').toUpperCase();
-	const url = new URL(action, window.location.href);
-	if (url.origin !== window.location.origin) {
-		window.location.href = url.toString();
-		return;
-	}
-
-	const formData = new FormData(form);
-	navigate({ url: url.toString(), method, trigger: form, form, formData, changeState: method === 'GET' });
+	if (submittingForms.has(form)) return;
+	const formData = new FormData(form, submitter as HTMLButtonElement | HTMLInputElement | null);
+	submittingForms.add(form);
+	void navigate({ url: url.toString(), method, trigger: form, form, formData, formEncoding, changeState: method === 'GET' });
 }
 
 function onPopState(event: PopStateEvent): void {
@@ -983,6 +1117,8 @@ function resetRouterState(): void {
 	currentHistoryEntryId = (history.state as GyosHistoryState | null)?.gyosEntryId || null;
 	beforeNavigate.length = 0;
 	afterNavigate.length = 0;
+	beforeSwap.length = 0;
+	navigationEnd.length = 0;
 }
 
 // Expose minimal internals for tests (not part of public API)
