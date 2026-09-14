@@ -19,6 +19,15 @@ export class ProgressBar {
         return this.currentProgress;
     }
 
+    reconnect(): void {
+        if (!this.element || !this.progressBarEnabled || !document.body) return;
+        // Snapshots may contain a clone of the runtime bar. Keep this instance.
+        document.querySelectorAll('#gyos-progress-bar').forEach(node => {
+            if (node !== this.element) node.remove();
+        });
+        if (!this.element.isConnected) document.body.appendChild(this.element);
+    }
+
     private createBar(): void {
         if (typeof document === 'undefined') return;
 
@@ -42,10 +51,10 @@ export class ProgressBar {
         // Insert into DOM when ready
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', () => {
-                document.body.insertAdjacentElement('beforeend', this.element!);
-            });
+                this.reconnect();
+            }, { once: true });
         } else {
-            document.body.insertAdjacentElement('beforeend', this.element!);
+            this.reconnect();
         }
     }
 
@@ -72,6 +81,7 @@ export class ProgressBar {
 
     setProgress(percent: number): void {
         if (!this.element || !this.progressBarEnabled) return;
+		this.reconnect();
 
         // Clamp between 0-100
         percent = Math.min(100, Math.max(0, percent));

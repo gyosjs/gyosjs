@@ -75,8 +75,8 @@ export async function performSwap(
 		result = target;
 	}
 
-	await options.beforeScripts?.();
 	options.onCommitted?.(result, normalized === 'append' || normalized === 'prepend' ? incomingChildren : [result]);
+	await options.beforeScripts?.();
 
 	// Additive swaps must not re-run scripts that already existed in the target.
 	if (normalized === 'append' || normalized === 'prepend') {
