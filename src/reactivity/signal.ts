@@ -30,7 +30,45 @@ import { DEBUG, DEBUG_VERBOSE } from "../utils/helpers";
 /**
  * Current effect being tracked
  */
-let currentEffect: (() => void) | null = null;
+type Observer = (() => void) & {
+	__dependencies?: Set<Set<Observer>>;
+	__versions?: Map<ReactiveSource, number>;
+	__invalidate?: boolean;
+};
+
+interface ReactiveSource {
+	subscribers: Set<Observer>;
+	version: number;
+	refresh?: () => void;
+}
+
+let currentEffect: Observer | null = null;
+
+function track(source: ReactiveSource): void {
+	if (!currentEffect) return;
+	source.subscribers.add(currentEffect);
+	currentEffect.__dependencies?.add(source.subscribers);
+	currentEffect.__versions?.set(source, source.version);
+}
+
+function dependenciesChanged(versions: Map<ReactiveSource, number>): boolean {
+	return untrack(() => {
+		for (const [source, version] of versions) {
+			source.refresh?.();
+			if (source.version !== version) return true;
+		}
+		return false;
+	});
+}
+
+// Invalidate derived caches synchronously; only user effects are deferred.
+function notifySubscribers(subscribers: Set<Observer>): void {
+	for (const sub of Array.from(subscribers)) {
+		if (sub.__invalidate) sub();
+		else if (isBatching) batchedEffects.add(sub);
+		else queueEffect(sub);
+	}
+}
 
 // Simple counter for debug-friendly IDs
 let signalIdCounter = 0;
@@ -75,6 +113,8 @@ function flushEffectQueue() {
 	});
 
 	isFlushingQueue = false;
+	// A plain subscribe callback can enqueue more work without entering effect().
+	if (effectQueue.size > 0) queueMicrotask(flushEffectQueue);
 }
 
 /**
@@ -135,20 +175,16 @@ export function signal<T>(initialValue: T, debugOrOptions?: string | SignalOptio
 	const equals = typeof debugOrOptions === 'object' && debugOrOptions?.equals ? debugOrOptions.equals : Object.is;
 	const debugId = ++signalIdCounter;
 	let value = initialValue;
-	const subscribers = new Set<() => void>();
+	const subscribers = new Set<Observer>();
+	const source: ReactiveSource = { subscribers, version: 0 };
 	let warnedSubscribers = false;
 
 	const read = () => {
 		// Track dependency
 		if (currentEffect) {
-			// IMPORTANT: Only add if not already subscribed (prevent duplicates)
-			if (!subscribers.has(currentEffect)) {
-				subscribers.add(currentEffect);
-
-				// Store the subscribers Set in the effect's dependencies for cleanup
-				if ((currentEffect as any).__dependencies) {
-					(currentEffect as any).__dependencies.add(subscribers);
-				}
+			const wasSubscribed = subscribers.has(currentEffect);
+			track(source);
+			if (!wasSubscribed) {
 
 				if (DEBUG_VERBOSE()) {
 					console.log('[Signal]', formatDebugLabel(debugId, debugLabel), 'Added subscriber, total:', subscribers.size);
@@ -169,6 +205,7 @@ export function signal<T>(initialValue: T, debugOrOptions?: string | SignalOptio
 		// For objects/arrays, check if it's actually the same reference
 		// Deep equality is expensive, let user handle it
 		value = newValue;
+		source.version++;
 
 		DEBUG_VERBOSE() && console.log('[Signal]', formatDebugLabel(debugId, debugLabel), 'Value changed to:', newValue);
 
@@ -178,12 +215,7 @@ export function signal<T>(initialValue: T, debugOrOptions?: string | SignalOptio
 	const notify = () => {
 		DEBUG_VERBOSE() && console.log('[Signal]', formatDebugLabel(debugId, debugLabel), 'Notifying', subscribers.size, 'subscribers');
 
-		if (isBatching) {
-			subscribers.forEach(sub => batchedEffects.add(sub));
-		} else {
-			// Always queue effects to prevent cascading updates
-			subscribers.forEach(sub => queueEffect(sub));
-		}
+		notifySubscribers(subscribers);
 	};
 
 	// Create callable signal (like Angular/SolidJS)
@@ -219,8 +251,15 @@ export function signal<T>(initialValue: T, debugOrOptions?: string | SignalOptio
 		},
 		subscribe: {
 			value: function (fn: () => void) {
-				subscribers.add(fn);
-				return () => subscribers.delete(fn);
+				let active = true;
+				const callback = () => { if (active) untrack(fn); };
+				subscribers.add(callback);
+				return () => {
+					active = false;
+					subscribers.delete(callback);
+					effectQueue.delete(callback);
+					batchedEffects.delete(callback);
+				};
 			},
 			enumerable: true,
 			configurable: true
@@ -282,53 +321,57 @@ export function computed<T>(fn: () => T): Computed<T> {
 	let value: T;
 	let isDirty = true;
 	let isFirstRun = true;
-	const subscribers = new Set<() => void>();
-	let cleanup: (() => void) | undefined;
+	let computing = false;
+	const subscribers = new Set<Observer>();
+	const dependencies = new Set<Set<Observer>>();
+	const versions = new Map<ReactiveSource, number>();
+	const source: ReactiveSource = { subscribers, version: 0, refresh: () => compute() };
+	const invalidate: Observer = () => {
+		// A later batched write must also move already queued consumers into
+		// the batch, even when an earlier ordinary write dirtied this cache.
+		if (isDirty && !isBatching) return;
+		isDirty = true;
+		notifySubscribers(subscribers);
+	};
+	invalidate.__invalidate = true;
+	invalidate.__dependencies = dependencies;
+	invalidate.__versions = versions;
 
 	const compute = () => {
 		if (!isDirty && !isFirstRun) return;
-
-		// Cleanup previous dependencies
-		if (cleanup) cleanup();
-
-		// Track dependencies in an effect
-		cleanup = effect(() => {
-			try {
-				const newValue = fn();
-
-				// Only update if changed
-				if (isFirstRun || value !== newValue) {
-					value = newValue;
-					isFirstRun = false;
-					isDirty = false;
-
-					// Notify subscribers
-					if (!isBatching) {
-						subscribers.forEach(sub => queueEffect(sub));
-					} else {
-						subscribers.forEach(sub => batchedEffects.add(sub));
-					}
-				}
-			} catch (error) {
-				console.error('[Computed] Error in computation:', error);
-				throw error;
+		if (computing) throw new Error('[Computed] Circular dependency');
+		computing = true;
+		const previousEffect = currentEffect;
+		try {
+			// A dirty upstream computed may still resolve to its previous value.
+			if (!isFirstRun && !dependenciesChanged(versions)) {
+				isDirty = false;
+				return;
 			}
-		});
-
-		isDirty = false;
+			dependencies.forEach(dependency => dependency.delete(invalidate));
+			dependencies.clear();
+			versions.clear();
+			currentEffect = invalidate;
+			const nextValue = fn();
+			if (isFirstRun || !Object.is(value, nextValue)) {
+				value = nextValue;
+				source.version++;
+			}
+			isFirstRun = false;
+			isDirty = false;
+		} catch (error) {
+			// Preserve error isolation and the last successful value.
+			console.error('[Computed] Error in computation:', error);
+			isDirty = false;
+		} finally {
+			currentEffect = previousEffect;
+			computing = false;
+		}
 	};
 
 	const read = () => {
-		if (isDirty || isFirstRun) compute();
-
-		// Track dependency
-		if (currentEffect && !subscribers.has(currentEffect)) {
-			subscribers.add(currentEffect);
-			if ((currentEffect as any).__dependencies) {
-				(currentEffect as any).__dependencies.add(subscribers);
-			}
-		}
-
+		compute();
+		track(source);
 		return value;
 	};
 
@@ -354,8 +397,13 @@ export function computed<T>(fn: () => T): Computed<T> {
 		},
 		subscribe: {
 			value: function (fn: () => void) {
-				subscribers.add(fn);
-				return () => subscribers.delete(fn);
+				// Establish dependencies even if subscribe() is the first access.
+				let first = true;
+				return effect(() => {
+					read();
+					if (!first) untrack(fn);
+					first = false;
+				});
 			},
 			enumerable: true,
 			configurable: true
@@ -408,11 +456,14 @@ export function computed<T>(fn: () => T): Computed<T> {
  */
 export function effect(fn: () => void | (() => void)): () => void {
 	let cleanup: (() => void) | undefined;
-	let dependencies = new Set<Set<() => void>>();
+	const dependencies = new Set<Set<Observer>>();
+	const versions = new Map<ReactiveSource, number>();
 	let active = true;
+	let initialized = false;
 
-	const execute = () => {
+	const execute: Observer = () => {
 		if (!active) return;
+		if (initialized && !dependenciesChanged(versions)) return;
 
 		// Prevent recursive execution - if already running, skip
 		if (runningEffects.has(execute)) {
@@ -432,11 +483,14 @@ export function effect(fn: () => void | (() => void)): () => void {
 		DEBUG() && console.log('[Effect] Cleaned up dependencies, count:', dependencies.size);
 
 		dependencies.clear();
+		versions.clear();
 
 		// Clean up previous run
 		if (cleanup) {
+			const previousCleanup = cleanup;
+			cleanup = undefined;
 			try {
-				cleanup();
+				untrack(previousCleanup);
 			} catch (error) {
 				console.error('[Effect] Error in cleanup:', error);
 			}
@@ -447,7 +501,8 @@ export function effect(fn: () => void | (() => void)): () => void {
 		currentEffect = execute;
 
 		// Store dependencies for cleanup
-		(execute as any).__dependencies = dependencies;
+		execute.__dependencies = dependencies;
+		execute.__versions = versions;
 
 		try {
 			const nextCleanup = fn();
@@ -456,6 +511,7 @@ export function effect(fn: () => void | (() => void)): () => void {
 			console.error('[Effect] Error in effect:', error);
 			// Don't throw - allow other effects to continue
 		} finally {
+			initialized = true;
 			currentEffect = prevEffect;
 			effectDepth--;
 			runningEffects.delete(execute);
@@ -474,16 +530,19 @@ export function effect(fn: () => void | (() => void)): () => void {
 	return () => {
 		if (!active) return;
 		active = false;
+		effectQueue.delete(execute);
+		batchedEffects.delete(execute);
 
 		// Remove from all dependencies
 		dependencies.forEach(depSet => {
 			depSet.delete(execute);
 		});
 		dependencies.clear();
+		versions.clear();
 
 		if (cleanup) {
 			try {
-				cleanup();
+				untrack(cleanup);
 			} catch (error) {
 				console.error('[Effect] Error in final cleanup:', error);
 			}
@@ -544,6 +603,8 @@ export function batch(fn: () => void): void {
 		const effects = Array.from(batchedEffects);
 		batchedEffects.clear();
 		effects.forEach(effect => {
+			// This batch also settles any earlier queued write to this observer.
+			effectQueue.delete(effect);
 			try {
 				effect();
 			} catch (error) {

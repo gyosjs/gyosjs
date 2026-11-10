@@ -6,6 +6,24 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-11-11
+
+### Fixed
+
+- Cached computed values refresh on the next read immediately after a dependency write, including inside a batch. Chained and diamond dependencies no longer expose mixed old/new values to effects.
+- Computed evaluation stays lazy after the first read. Unchanged derived results suppress downstream work using `Object.is`, including correct NaN and signed-zero handling.
+- Computed subscriptions establish dependencies before the first explicit read. Unsubscribing cancels pending signal/computed callbacks, and a pending write followed by a batch no longer runs the same effect twice for the final state.
+- Subscription and cleanup callbacks do not accidentally add dependencies to an enclosing effect. Writes from plain subscribers continue to flush in subsequent microtasks.
+
+### Maintenance
+
+- Browser CI pins Ubuntu 24.04 for Playwright 1.55.1. Vite/Vitest and transitive dependency patches remove high/critical development-tool audit findings; constructor mocks support Vitest 4.
+- Full tests use Node.js 22; Node.js 18.20 still verifies library builds and package consumption.
+
+### Compatibility
+
+- Initial effects remain synchronous, ordinary effect updates remain microtask-coalesced, and the outermost batch still flushes affected effects synchronously. Computed callbacks must be pure; code must not rely on stale reads or unobserved background recalculation. Existing error isolation is retained. No new public API is introduced.
+
 ## [0.4.0] - 2026-09-14
 
 ### Added
@@ -159,7 +177,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 - This is an experimental `0.x` release. Router, morphing, expression evaluation, and browser edge cases should be evaluated against an application's requirements before production adoption.
 
-[Unreleased]: https://github.com/gyosjs/gyosjs/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/gyosjs/gyosjs/compare/v0.4.1...HEAD
+[0.4.1]: https://github.com/gyosjs/gyosjs/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/gyosjs/gyosjs/compare/v0.3.2...v0.4.0
 [0.3.2]: https://github.com/gyosjs/gyosjs/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/gyosjs/gyosjs/compare/v0.3.0...v0.3.1

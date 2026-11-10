@@ -204,11 +204,10 @@ console.log(fullName());
 // Log: "Calculating fullName"
 // Log: "Alice Smith"
 
-firstName('Bob'); // Update firstName
-// Log: "Calculating fullName"
+firstName('Bob'); // Invalidate the cache; no computation yet
 
 console.log(fullName());
-// Log: "Bob Smith" not "Calculating fullName" again
+// Log: "Calculating fullName", then "Bob Smith" (no await needed)
 
 // batch update
 Gyos.batch(() => {
@@ -221,9 +220,11 @@ console.log(fullName()); // "Charlie Brown"
 In which:
 * `firstName` and `lastName` are signals that can be read/written
 * `fullName` is a computed value that depends on both
-* when `firstName` or `lastName` changes → `fullName` automatically updates
-* in a batch update, `fullName` is only recalculated once after all signals have been updated
-* without using batch, `fullName` would be recalculated twice when `firstName` and `lastName` change separately (the log "Calculating fullName" appears twice)
+* changes invalidate `fullName` immediately; its next read computes the current value and caches it
+* a computed with no active consumer does not recalculate until it is read, even after a microtask
+* ordinary effect notifications are coalesced in a microtask; the outermost `batch()` flushes its affected effects synchronously
+* reading inside a batch returns the value for writes made so far; additional writes can require another calculation
+* computed-only consumers skip unchanged results; keep computed callbacks pure and put side effects in `effect()`
 
 > Computed values are very useful for separating calculation logic from raw data, helping keep code clean and maintainable.
 
