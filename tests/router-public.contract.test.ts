@@ -14,7 +14,7 @@ const progressBar = vi.hoisted(() => ({
 	setProgress: vi.fn(),
 	getCurrentProgress: vi.fn().mockReturnValue(0)
 }));
-const progressFactory = vi.hoisted(() => ({ create: vi.fn(() => progressBar) }));
+const progressFactory = vi.hoisted(() => ({ create: vi.fn(function () { return progressBar; }) }));
 const targetSpinner = vi.hoisted(() => ({
 	showTargetSpinner: vi.fn(() => document.createElement('div')),
 	hideTargetSpinner: vi.fn()

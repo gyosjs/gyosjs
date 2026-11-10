@@ -22,7 +22,7 @@ npm run release:check
 npm run docs:mirror:check -- <gyosjs-website-root>
 ```
 
-Node.js 18.19 is the minimum supported maintenance runtime. Public CI uses Node.js 22 as its primary runtime and runs a separate non-browser check on Node.js 18.20.
+Use Node.js 22 for maintenance and the full test suite. Node.js 18.19 remains the minimum library build/consumer runtime; public CI runs `check:package` on Node.js 18.20 after installing development dependencies on Node.js 22. Unit tests run on Node.js 22 because Vitest 4 requires Node.js 20+.
 
 ## 2. Sync The Public Repository
 

@@ -9,7 +9,8 @@ This document defines how the GyosJS runtime, public source, documentation, refe
 - New contracts or intentional breaking behavior require a minor release such as `0.2.0` and migration notes.
 - The latest public release receives normal and security fixes. Older releases are patched only when a backport is both important and low risk.
 - The browser test target is the current Playwright Chromium, Firefox, and WebKit engines. View Transitions and other optional browser APIs remain progressive enhancements.
-- Node.js 18.19 is the minimum maintenance/build runtime. Node.js 22 is the primary CI runtime. Published entrypoints are browser-only and are not SSR-safe Node.js modules.
+- Node.js 18.19 is the minimum library build/consumer runtime. Use Node.js 22 for dependency installation and the full maintenance/test suite (Vitest 4 requires Node.js 20+). CI also runs `check:package` on Node.js 18.20 to verify build and consumer compatibility. Published entrypoints are browser-only and are not SSR-safe Node.js modules.
+- Browser workflows pin Ubuntu 24.04 to match Playwright 1.55.1. Upgrade the runner image together with Playwright after verifying the browser matrix.
 
 ## Sources Of Truth
 

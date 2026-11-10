@@ -42,7 +42,7 @@ const diffFns = vi.hoisted(() => ({
 vi.mock('../src/core/component', () => mounts);
 vi.mock('../src/core/router/script', () => routerScripts);
 vi.mock('../src/utils/progress-bar', () => ({
-	ProgressBar: vi.fn(() => progressBar)
+	ProgressBar: vi.fn(function () { return progressBar; })
 }));
 vi.mock('../src/utils/target-spinner', () => targetSpinner);
 vi.mock('../src/core/router/persist', () => persist);

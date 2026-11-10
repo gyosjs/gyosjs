@@ -121,6 +121,8 @@ With `g-boost`, same-origin links and forms can be intercepted and swapped into 
 
 ## Development
 
+Use Node.js 22 for dependency installation and tests. Library builds and package consumption remain checked on Node.js 18.20 with `npm run check:package`.
+
 ```bash
 npm install
 npm run build
