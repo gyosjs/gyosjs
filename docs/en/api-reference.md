@@ -1120,6 +1120,10 @@ const doubled = Gyos.computed(() => count.value * 2);
 
 A computed value is read-only. Read it with `doubled()` or `doubled.value`, use `doubled.peek` for a non-tracking read, and use `doubled.subscribe(fn)` to receive changes. `subscribe()` returns an unsubscribe function.
 
+Computed reads are synchronous: after `count(3)`, `doubled()` returns `6` immediately, including inside a batch. Dependency writes invalidate the cache immediately; evaluation is deferred until a read or a subscribed consumer needs the result. Repeated reads reuse the cached value. Computed callbacks must be pure.
+
+`subscribe()` establishes dependencies even before the first explicit read, without calling the subscriber immediately. Effects and subscribers that depend only on a computed value do not rerun when its result is unchanged (`Object.is`). Unsubscribing also cancels a queued callback. A failed computation logs the error and retains its last successful value; a later dependency change can retry it.
+
 ### `Gyos.effect(fn)`
 
 Run a side effect that tracks the signals it reads.
@@ -1146,6 +1150,8 @@ stop();
 ### `Gyos.batch(fn)`
 
 Batch multiple signal writes:
+
+Effects run once immediately when created. Ordinary writes schedule subsequent runs in a microtask. `batch()` keeps these notifications until the outermost batch ends, then runs the affected effects synchronously. Reading a computed value inside the batch still sees all writes made so far. An effect reading both a source and its computed derivatives sees a consistent combination. A pending write followed by a batch does not cause a duplicate run for the same final state.
 
 ```js
 Gyos.batch(() => {

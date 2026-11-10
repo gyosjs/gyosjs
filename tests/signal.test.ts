@@ -19,18 +19,21 @@ describe('signal reactivity', () => {
 
 	it('computes derived values lazily and caches until invalidated', () => {
 		const base = signal(2);
-		const doubled = computed(() => base.value * 2);
-		const spy = vi.fn(() => doubled.value);
+		const calculate = vi.fn(() => base.value * 2);
+		const doubled = computed(calculate);
 
 		base.value = 3;
 		
 		expect(doubled.value).toBe(6);
 
 		// First read computes
-		expect(spy()).toBe(6);
+		expect(doubled()).toBe(6);
 		// Cached until dependency changes
-		expect(spy()).toBe(6);
-		expect(spy).toHaveBeenCalledTimes(2); // two reads, one compute
+		expect(doubled()).toBe(6);
+		expect(calculate).toHaveBeenCalledTimes(1);
+		base(4);
+		expect(doubled()).toBe(8);
+		expect(calculate).toHaveBeenCalledTimes(2);
 	});
 
 	it('cleans up effect subscriptions on unsubscribe', () => {
