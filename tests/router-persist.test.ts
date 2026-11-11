@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
+import Gyos from '../src/index';
 import {
 	detachPersist,
 	mergePersistIntoLive,
@@ -6,6 +7,33 @@ import {
 } from '../src/core/router/persist';
 
 describe('router persisted islands', () => {
+	it('keeps an unmatched body island registered through an intermediate page', () => {
+		document.body.innerHTML = '<section id="player" g-persist="player">State</section>';
+		const player = document.getElementById('player')!;
+		detachPersist(document.body);
+		document.body.innerHTML = '<main>Page without player</main>';
+		expect(player.isConnected).toBe(true);
+		mergePersistIntoLive(document.body);
+		detachPersist(document.body);
+		document.body.innerHTML = '<main><section g-persist="player">Placeholder</section></main>';
+		mergePersistIntoLive(document.body);
+		expect(document.querySelector('main')!.firstElementChild).toBe(player);
+		expect(player.textContent).toBe('State');
+	});
+
+	it('does not dispose a parked scope when a page script mounts another scope', () => {
+		document.body.innerHTML = '<section id="player" g-persist="player" g-scope="{ count: 7 }"><span>{count}</span></section>';
+		Gyos.mountAll();
+		const player = document.getElementById('player')!;
+		const state = Gyos.mountedScopes().get(player);
+		detachPersist(document.body);
+		document.body.innerHTML = '<main g-scope><div g-persist="player"></div></main>';
+		Gyos.mountAll();
+		expect(Gyos.mountedScopes().get(player)).toBe(state);
+		mergePersistIntoLive(document.body);
+		expect(document.querySelector('main')!.firstElementChild).toBe(player);
+		Gyos.cleanup();
+	});
 	beforeEach(() => {
 		resetPersistState();
 		document.body.innerHTML = '';

@@ -25,6 +25,17 @@ function intersect(observer: ObserverHarness, target: Element, isIntersecting: b
 }
 
 describe('g-reveal', () => {
+	it('warns once for unscoped reveal in debug mode, but respects ignored and scoped content', () => {
+		const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+		(window as any).GYOS_DEBUG = true;
+		try {
+			document.body.innerHTML = '<p id="orphan" g-reveal>Visible</p><div g-ignore><p g-reveal>Ignored</p></div><div g-scope><p g-reveal>Scoped</p></div>';
+			Gyos.mountAll(); Gyos.mountAll();
+			expect(warn).toHaveBeenCalledTimes(1);
+			expect(warn.mock.calls[0][0]).toContain('no owning scope');
+			expect(warn.mock.calls[0][1]).toBe(document.getElementById('orphan'));
+		} finally { (window as any).GYOS_DEBUG = false; }
+	});
 	beforeEach(() => {
 		for (const element of Array.from(Gyos.mountedScopes().keys())) Gyos.cleanup(element);
 		document.body.innerHTML = '';

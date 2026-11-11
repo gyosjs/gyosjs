@@ -1,5 +1,27 @@
 # API Reference
 
+## Programmatic GET navigation (0.5.0)
+
+`await Gyos.navigate(url, options)` uses the same boost pipeline as links. `await Gyos.refresh(options)` fetches the current URL again, bypassing preloads and preserving history and scroll by default. Named exports are also available from the standard and CSP entries.
+
+```js
+const result = await Gyos.navigate('/products', { history: 'replace' });
+await Gyos.refresh({ target: '#stock-list' });
+```
+
+| Option | Values / default |
+| --- | --- |
+| `history` | `push` (navigate default), `replace`, `none` (refresh default) |
+| `target` | CSS selector for an existing target; omitted uses the global outlet |
+| `swap` | `inner` (default), `replace`, `morph`, `append`, `prepend` |
+| `scroll` | `false` skips router scrolling; refresh defaults to false |
+| `currentHead` | Preserve current head on a full-outlet update |
+| `signal` | AbortSignal for this navigation, not the lifetime of the mounted page |
+
+Both methods require a `g-boost` layout and same-origin HTTP(S) URLs without embedded credentials. Invalid URLs or missing explicit targets reject before sending a request. They perform GET only. If your app guards unsaved work, check that guard before calling them; these methods do not dispatch link clicks.
+
+The promise resolves with `NavigationContext` after navigation-end hooks, including `outcome`, `status`, `committed` and `fallback`. Aborting a request can leave the current page intact; aborting after a DOM commit still finalizes persisted islands and scopes. Existing GET native fallback behavior applies to network/invalid-response failures, so the browser may leave the document. Hooks remain notifications and are not awaited. `scroll: false` cannot prevent the browser clamping scroll when content becomes shorter. Refresh does not opt into snapshots or replay a previous form submission.
+
 This page is the practical reference for building with GyosJS. It is written for application developers, not for contributors reading the internals first.
 
 If you are new to the project, read these pages before treating this as a complete reference:

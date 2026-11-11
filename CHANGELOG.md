@@ -6,6 +6,21 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-11-11
+
+### Added
+
+- Public `navigate(url, options)` and `refresh(options)` APIs for same-origin GET navigation, with history, target, swap, scroll and cancellation options. Each promise resolves with its own final navigation context after lifecycle hooks finish. Refresh bypasses preloaded responses.
+- Debug diagnostics identify `g-reveal` elements without an owning scope, excluding intentionally ignored subtrees.
+
+### Fixed
+
+- Persisted media stays connected while a body outlet is replaced and navigation waits for scripts, including interrupted commits. The parking host moves outside the swap target and returns before scope mounting.
+
+### Documentation
+
+- Explain rendered HTTP errors, idempotent widget mounting, asynchronous page lifetimes, and persistent audio layout choices. Navigation guards remain application-owned; the new APIs do not submit or replay mutations.
+
 ## [0.4.1] - 2026-11-11
 
 ### Fixed
@@ -177,7 +192,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 - This is an experimental `0.x` release. Router, morphing, expression evaluation, and browser edge cases should be evaluated against an application's requirements before production adoption.
 
-[Unreleased]: https://github.com/gyosjs/gyosjs/compare/v0.4.1...HEAD
+[Unreleased]: https://github.com/gyosjs/gyosjs/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/gyosjs/gyosjs/compare/v0.4.1...v0.5.0
 [0.4.1]: https://github.com/gyosjs/gyosjs/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/gyosjs/gyosjs/compare/v0.3.2...v0.4.0
 [0.3.2]: https://github.com/gyosjs/gyosjs/compare/v0.3.1...v0.3.2

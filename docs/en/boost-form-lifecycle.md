@@ -83,7 +83,7 @@ const stopBefore = Gyos.onBeforeSwap((url, context) => {
 const stopAfter = Gyos.onAfterNavigate(() => mountWidgets(document));
 const stopEnd = Gyos.onNavigationEnd(context => {
   // A script failure/abort can follow an already-applied DOM swap.
-  if (context.committed && context.outcome !== 'success') mountWidgets(document);
+  if (context.committed && context.outcome !== 'success' && context.outcome !== 'http-error') mountWidgets(document);
 });
 
 Gyos.ready(() => mountWidgets(document));
@@ -91,6 +91,23 @@ Gyos.ready(() => mountWidgets(document));
 ```
 
 `createChart` is your library adapter; it is not a Gyos API. Keep mounting idempotent, dispose SDK resources explicitly, and use a separate AbortController for each widget lifetime. The navigation signal is not a page lifetime signal. Router hooks do not await module imports, workers or your asynchronous setup. For browser BFCache, handle `pageshow` with `event.persisted` only when your adapter actually needs resuming.
+
+A rendered HTTP 422 already runs `onAfterNavigate`. Do not mount a second time from `onNavigationEnd` just because its outcome is `http-error`. An aborted commit can require recovery; keep that separate from an HTTP error that finished rendering normally.
+
+For page-owned asynchronous work, capture the current page controller before starting. Check `signal.aborted` after every awaited import/request before mounting DOM, restoring a player or clearing a draft. Pass that signal to fetch where possible. An aborted event listener does not cancel a promise you started earlier. If account changes require several storage operations, serialize those transitions and finish any started purge before applying the next account.
+
+```js
+let pageLifetime = new AbortController();
+async function mountEditor(root) {
+  const signal = pageLifetime.signal;
+  const { createEditor } = await import('./editor.js');
+  if (signal.aborted || !root.isConnected) return;
+  const editor = createEditor(root);
+  signal.addEventListener('abort', () => editor.destroy(), { once: true });
+}
+// In the accepted destructive-swap cleanup:
+// pageLifetime.abort(); pageLifetime = new AbortController();
+```
 
 ## Upgrading from 0.3.2
 
