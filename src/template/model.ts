@@ -132,7 +132,7 @@ export function processModel(element: HTMLElement, scope: any, root: HTMLElement
     // Set initial value (no pipes in v-model)
     const initialValue = evaluateExpression(expr, currentScope, false);
     if (inputElement.type === 'checkbox') {
-        inputElement.checked = !!initialValue;
+        inputElement.checked = !!unref(initialValue);
     } else if (inputElement.type === 'radio') {
         inputElement.checked = String(unref(initialValue)) === inputElement.value;
     } else {
@@ -178,7 +178,7 @@ export function processModel(element: HTMLElement, scope: any, root: HTMLElement
         // No pipes in v-model reactive updates
         const newValue = evaluateExpression(expr, currentScope, false);
         if (inputElement.type === 'checkbox') {
-            inputElement.checked = !!newValue;
+            inputElement.checked = !!unref(newValue);
         } else if (inputElement.type === 'radio') {
             inputElement.checked = String(unref(newValue)) === inputElement.value;
         } else if (inputElement.value !== newValue) {
