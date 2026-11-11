@@ -10,8 +10,11 @@ permissions:
 
 jobs:
   release-check:
-    # Keep the OS compatible with the pinned Playwright browsers.
     runs-on: ubuntu-24.04
+    # Match @playwright/test; includes browsers and OS dependencies without apt.
+    container:
+      image: mcr.microsoft.com/playwright:v1.55.1-noble
+      options: --init --ipc=host
     timeout-minutes: 20
 
     steps:
@@ -29,9 +32,6 @@ jobs:
 
       - name: Audit dependencies
         run: npm audit --audit-level=high
-
-      - name: Install Chromium
-        run: npx playwright install --with-deps chromium
 
       - name: Verify source and package
         run: npm run check
