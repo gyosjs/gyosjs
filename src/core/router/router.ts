@@ -67,9 +67,57 @@ interface NavigateOptions {
 	targetOutletIndex?: number | null;
 	swapMode?: string;
 	currentHead?: boolean;
+	signal?: AbortSignal;
+	scroll?: boolean;
+	fresh?: boolean;
+	strictTarget?: boolean;
+	onEnd?: (context: NavigationContext) => void;
 	historyFragment?: HTMLElement;
 	historyEntryId?: string | null;
 	scrollSourceEntryId?: string | null;
+}
+
+/** Options for an explicit same-origin GET navigation. */
+export interface NavigationOptions {
+	history?: 'push' | 'replace' | 'none';
+	target?: string;
+	swap?: 'inner' | 'replace' | 'morph' | 'append' | 'prepend';
+	scroll?: boolean;
+	currentHead?: boolean;
+	signal?: AbortSignal;
+}
+
+async function visit(url: string | URL, options: NavigationOptions, fresh: boolean): Promise<NavigationContext> {
+	const destination = new URL(url, document.baseURI);
+	if (!['http:', 'https:'].includes(destination.protocol) || destination.origin !== location.origin || destination.username || destination.password) {
+		throw new TypeError('Gyos.navigate requires a same-origin HTTP(S) URL without credentials.');
+	}
+	if (options.target !== undefined && !(document.querySelector(options.target) instanceof HTMLElement)) {
+		throw new TypeError('Gyos.navigate target does not exist.');
+	}
+	if (!document.querySelector('[g-boost]')) {
+		throw new TypeError('Gyos.navigate requires a g-boost layout.');
+	}
+	startRouter();
+	let result!: NavigationContext;
+	await navigateRequest({
+		url: destination.href, method: 'GET',
+		changeState: options.history !== 'none', replace: options.history === 'replace',
+		targetSelector: options.target, strictTarget: options.target !== undefined, swapMode: options.swap,
+		currentHead: options.currentHead, scroll: options.scroll, signal: options.signal, fresh,
+		onEnd: context => { result = context; }
+	});
+	return result;
+}
+
+/** Navigate through the boost pipeline. Resolves after navigation-end hooks. */
+export function navigate(url: string | URL, options: NavigationOptions = {}): Promise<NavigationContext> {
+	return visit(url, options, false);
+}
+
+/** Fetch the current URL again, preserving history and scroll by default. */
+export function refresh(options: NavigationOptions = {}): Promise<NavigationContext> {
+	return visit(location.href, { history: 'none', scroll: false, ...options }, true);
 }
 
 interface RouterHistoryState {
@@ -539,12 +587,19 @@ function fallbackFromBoost(opts: NavigateOptions, url: string, requestSent: bool
 	console.error(`[GyosRouter] ${method} navigation could not be boosted; the request will not be replayed.`);
 }
 
-async function navigate(opts: NavigateOptions): Promise<void> {
+async function navigateRequest(opts: NavigateOptions): Promise<void> {
+	const finishUnstarted = () => {
+		opts.onEnd?.({ from: currentUrl, url: opts.url, method: opts.method,
+			trigger: opts.trigger || null, target: null, form: null, popstate: false,
+			signal: opts.signal!, status: null, committed: false, fallback: false, outcome: 'aborted' });
+	};
+	if (opts.signal?.aborted) { finishUnstarted(); return; }
 	while (activeNavigation) {
 		const previous = activeNavigation;
 		if (previous.committing) {
 			log('[GyosRouter] Waiting for previous DOM commit');
-			await previous.done;
+			try { await (opts.signal ? waitForNavigation(previous.done, opts.signal) : previous.done); }
+			catch { finishUnstarted(); return; }
 			continue;
 		}
 		log('[GyosRouter] Cancelling previous navigation');
@@ -564,6 +619,9 @@ async function navigate(opts: NavigateOptions): Promise<void> {
 		resolveDone
 	};
 	activeNavigation = transaction;
+	const abort = () => cancelNavigation(transaction);
+	opts.signal?.addEventListener('abort', abort, { once: true });
+	if (opts.signal?.aborted) abort();
 	const currentBaseUrl = document.baseURI;
 	rememberResourceUrls(document, currentBaseUrl);
 	const context: NavigationContext = {
@@ -590,6 +648,7 @@ async function navigate(opts: NavigateOptions): Promise<void> {
 	};
 
 	try {
+		assertActiveNavigation(transaction);
 		if (formEvent) document.dispatchEvent(new CustomEvent('gyos:form-start', { detail: { ...formEvent } }));
 		runNavigationHooks(beforeNavigate, opts.url, context);
 		assertActiveNavigation(transaction);
@@ -602,6 +661,10 @@ async function navigate(opts: NavigateOptions): Promise<void> {
 
 		// Pick target element to swap
 		let target = resolveTarget(opts.trigger, opts.targetSelector, opts.targetOutletIndex);
+		if (opts.strictTarget && (!opts.targetSelector || !target?.matches(opts.targetSelector))) {
+			context.outcome = 'invalid-response';
+			return; // A queued explicit target disappeared; never broaden the swap.
+		}
 		context.target = target;
 		if (!target) {
 			if (isActiveNavigation(transaction)) fallback(opts.url, false);
@@ -647,7 +710,12 @@ async function navigate(opts: NavigateOptions): Promise<void> {
 		} else {
 			// Check preload cache if GET
 			const preloadKey = canonicalUrl(finalUrl, true);
-			if (opts.method.toUpperCase() === 'GET' && preloadCache.has(preloadKey)) {
+			if (opts.fresh) {
+				preloadControllers.get(preloadKey)?.abort();
+				preloadControllers.delete(preloadKey);
+				preloadCache.delete(preloadKey);
+			}
+			if (!opts.fresh && opts.method.toUpperCase() === 'GET' && preloadCache.has(preloadKey)) {
 				log('[GyosRouter] using preload cache for', finalUrl);
 				try {
 					response = await waitForNavigation(preloadCache.get(preloadKey)!, transaction.controller.signal);
@@ -858,7 +926,9 @@ async function navigate(opts: NavigateOptions): Promise<void> {
 			}
 
 			// Handle scroll after mount scopes
-			if (changesState) {
+			if (opts.scroll === false) {
+				// Explicit refresh/navigation policy keeps the current viewport.
+			} else if (changesState) {
 				handleScroll(targetUrl, opts.trigger);
 			} else if (opts.popstate) {
 				handleScroll(targetUrl, opts.trigger, opts.savedScroll);
@@ -917,6 +987,7 @@ async function navigate(opts: NavigateOptions): Promise<void> {
 			activeNavigation = null;
 			progressBar?.complete();
 		}
+		opts.signal?.removeEventListener('abort', abort);
 		transaction.resolveDone();
 		if (formEvent) submittingForms.delete(formEvent.form);
 		runNavigationHooks(navigationEnd, context.url, context);
@@ -926,6 +997,7 @@ async function navigate(opts: NavigateOptions): Promise<void> {
 				detail: { ...formEvent, url, status, outcome, committed, fallback }
 			}));
 		}
+		opts.onEnd?.({ ...context });
 	}
 }
 
@@ -959,7 +1031,7 @@ function onClickRouter(element: Element) : void {
 		, scope, false);
 
 		// The default changeState is false, as this is commonly used for: load more, infinite scroll, etc.
-		navigate({
+		navigateRequest({
 			url: parsedUrl.toString(), method, trigger: element, jsonData, changeState: false
 		});
 	} catch (error) {
@@ -1002,7 +1074,7 @@ function onClick(event: MouseEvent): void {
 
 	event.preventDefault();
 	// The default changeState is true, as this is commonly used for: navigation, etc.
-	navigate({ url: url.toString(), method: 'GET', trigger: link, changeState: true });
+	navigateRequest({ url: url.toString(), method: 'GET', trigger: link, changeState: true });
 }
 
 function onMouseOverCapture(event: MouseEvent): void {
@@ -1049,7 +1121,7 @@ function onSubmit(event: Event): void {
 	if (submittingForms.has(form)) return;
 	const formData = new FormData(form, submitter as HTMLButtonElement | HTMLInputElement | null);
 	submittingForms.add(form);
-	void navigate({ url: url.toString(), method, trigger: form, form, formData, formEncoding, changeState: method === 'GET' });
+	void navigateRequest({ url: url.toString(), method, trigger: form, form, formData, formEncoding, changeState: method === 'GET' });
 }
 
 function onPopState(event: PopStateEvent): void {
@@ -1070,13 +1142,13 @@ function onPopState(event: PopStateEvent): void {
 
 	event.preventDefault();
 	// The browser changes location before popstate fires. Stop any pending page
-	// script immediately, then let navigate() wait for its DOM finalizer.
+	// script immediately, then let navigateRequest() wait for its DOM finalizer.
 	if (activeNavigation?.committing) cancelNavigation(activeNavigation);
 	// The browser has already moved to the destination history entry. Keep the
 	// router's entry pointer aligned before any restored page script can navigate.
 	currentHistoryEntryId = destinationEntryId;
 	// No snapshot, do a normal navigation without changing history (changeState: false)
-	navigate({
+	navigateRequest({
 		url,
 		method: 'GET',
 		replace: true,
@@ -1123,7 +1195,7 @@ function resetRouterState(): void {
 
 // Expose minimal internals for tests (not part of public API)
 export const __routerTest = {
-	navigate,
+	navigate: navigateRequest,
 	saveSnapshot,
 	snapshots,
 	preloadCache,

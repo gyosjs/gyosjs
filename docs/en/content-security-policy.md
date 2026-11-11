@@ -9,10 +9,10 @@ The CSP build is opt-in. Use it only when the application's policy requires it a
 Load the static runtime CSS and the CSP auto-init bundle. Give the script the same nonce allowed by the response header.
 
 ```html
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gyosjs@0.4.1/dist/gyos.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gyosjs@0.5.0/dist/gyos.css">
 <script
   nonce="{{ csp_nonce }}"
-  src="https://cdn.jsdelivr.net/npm/gyosjs@0.4.1/dist/gyos.csp.auto.min.js"
+  src="https://cdn.jsdelivr.net/npm/gyosjs@0.5.0/dist/gyos.csp.auto.min.js"
 ></script>
 ```
 

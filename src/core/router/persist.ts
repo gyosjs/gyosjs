@@ -18,7 +18,8 @@ function getPersistKey(el: HTMLElement, generateIfMissing = false): string | nul
 	return key;
 }
 
-// Hidden parking lot keeps persisted nodes alive (e.g. audio keeps playing)
+// Keep the parking host outside body: body itself may be the swap target.
+// A disconnected parking host makes browsers pause otherwise persisted media.
 const persistParking: HTMLElement | null =
 	typeof document !== 'undefined'
 		? (() => {
@@ -28,11 +29,7 @@ const persistParking: HTMLElement | null =
 			park.style.top = '-99999px';
 			park.style.width = '0';
 			park.style.height = '0';
-			if (document.readyState === 'loading') {
-				document.addEventListener('DOMContentLoaded', () => document.body.appendChild(park));
-			} else {
-				document.body.appendChild(park);
-			}
+			document.documentElement.appendChild(park);
 			return park;
 		})()
 		: null;
@@ -44,8 +41,8 @@ function elementsIn(root: ParentNode): HTMLElement[] {
 }
 
 function ensureParkingIsConnected(): void {
-	if (persistParking && document.body && !persistParking.isConnected) {
-		document.body.appendChild(persistParking);
+	if (persistParking && persistParking.parentElement !== document.documentElement) {
+		document.documentElement.appendChild(persistParking);
 	}
 }
 
@@ -62,12 +59,17 @@ export function detachPersist(root: ParentNode = document): void {
 }
 
 export function mergePersistIntoLive(root: ParentNode): void {
+	// Return the host to the current body before scope mounting/cleanup inspects it.
+	if (persistParking && persistParking.parentElement !== document.body) {
+		document.body.appendChild(persistParking);
+	}
 	if (!persistEntries.size) return;
 
 	// If placeholders lack ids but we only have one persist entry, assign its key for convenience
 	if (persistEntries.size === 1) {
 		const loneKey = Array.from(persistEntries.keys())[0];
 		elementsIn(root).forEach(el => {
+			if (persistParking?.contains(el)) return;
 			if (!getPersistKey(el, false)) {
 				el.dataset.gyosPersistId = loneKey;
 			}
@@ -76,6 +78,7 @@ export function mergePersistIntoLive(root: ParentNode): void {
 
 	// Element placeholders
 	elementsIn(root).forEach(placeholder => {
+		if (persistParking?.contains(placeholder)) return;
 		const key = getPersistKey(placeholder, false);
 		if (!key) return;
 		const persisted = persistEntries.get(key);
@@ -92,6 +95,7 @@ export function mergePersistIntoLive(root: ParentNode): void {
 	const toReplace: Array<{ node: Comment; key: string }> = [];
 	while (walker.nextNode()) {
 		const comment = walker.currentNode as Comment;
+		if (persistParking?.contains(comment)) continue;
 		const match = comment.data.match(/g-persist[:=]\s*([A-Za-z0-9_\-:.]+)/);
 		if (match) {
 			toReplace.push({ node: comment, key: match[1] });

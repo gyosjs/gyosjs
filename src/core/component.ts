@@ -18,6 +18,19 @@ setMountFunction(mount);
  * Registry of all scopes
  */
 const scopeRegistry = new Map<string, ScopeDefinition>();
+const warnedReveals = new WeakSet<Element>();
+
+function diagnoseUnscopedReveals(root: ParentNode): void {
+	if (!DEBUG()) return;
+	const elements = [...root.querySelectorAll('[g-reveal]')];
+	if (root instanceof Element && root.hasAttribute('g-reveal')) elements.unshift(root);
+	for (const element of elements) {
+		if (warnedReveals.has(element) || isInIgnoredTree(element)
+			|| element.closest('[g-scope]') || getScopeFromElement(element as HTMLElement)) continue;
+		warnedReveals.add(element);
+		console.warn('[Gyos] g-reveal has no owning scope. Add g-scope to its container; global reveal CSS may otherwise hide this content.', element);
+	}
+}
 
 /**
  * Register a scope
@@ -72,6 +85,7 @@ export function mountAll(root?: HTMLElement | Iterable<HTMLElement>): void {
 
 	// Filter out elements inside structural directives - they will be mounted by structural processor
 	allElements.forEach(el => !hasStructuralParent(el) && mount(el as HTMLElement));
+	diagnoseUnscopedReveals(document.body);
 }
 
 export function mountTree(el: HTMLElement): void {
@@ -84,6 +98,7 @@ export function mountTree(el: HTMLElement): void {
 	// Child scopes own their subtree before an existing parent scope parses the insertion.
 	candidates.sort((a, b) => getDepth(b) - getDepth(a));
 	candidates.forEach(element => !hasStructuralParent(element) && mount(element));
+	diagnoseUnscopedReveals(el);
 
 	if (getMountedScope(el)) return;
 	const ownerScope = getScopeFromElement(el);
@@ -102,7 +117,7 @@ export function mount(el: HTMLElement): void {
 
 	// Check if element removed but still has g-scope (possible in some edge cases)
 	getAllMountedScopes().forEach((_, mountedEl) => {
-		if (!document.body.contains(mountedEl)) {
+		if (!mountedEl.isConnected) {
 			disposeEffects(mountedEl);
 		}
 	});

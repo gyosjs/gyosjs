@@ -633,6 +633,8 @@ That keeps the contract readable and stable across pages.
 
 ### Example: persisted audio player
 
+For a global audio player, prefer a dedicated page outlet with the player outside it. This keeps the media host in place and gives the application clear ownership of playback and account changes. `g-persist` is useful when an island must move between page placeholders. Since 0.5.0, its temporary parking host also survives body-outlet swaps while scripts are pending. Keeping node identity alone is not proof of uninterrupted playback: browser tests should assert `isConnected`, playback time and pause events during navigation, including script delays and cancellation. Gyos does not automatically resume paused audio or grant autoplay permission.
+
 Page A:
 
 ```html
