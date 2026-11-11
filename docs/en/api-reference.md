@@ -1024,6 +1024,34 @@ Nested properties are supported:
 <input g-model="items[0].title">
 ```
 
+### Signal fields in scopes
+
+> The signal-preservation fix is currently unreleased, after 0.5.1. On 0.5.1, use the accessor workaround below when exposing a callable signal to `g-model`.
+
+With the fix, a signal returned from a scope factory remains the original signal, including inside nested objects and arrays. Bind `g-model` to the signal field (`g-model="name"`), not a call (`name()`). Input updates the original signal; later writes from a closure update the input. Its `.value`, `.peek`, `update()` and subscription APIs remain accessible. Computed fields also retain their identity and read APIs, but are read-only and are not writable `g-model` targets. Replacing a signal/computed field makes dependent effects follow the new field.
+
+For apps pinned to 0.5.1, expose a getter/setter instead:
+
+```js
+Gyos.scope('SignalForm', () => {
+  const name = Gyos.signal('Alice');
+  return {
+    get nameModel() { return name(); },
+    set nameModel(value) { name(value); },
+    reset() { name('Alice'); }
+  };
+});
+```
+
+```html
+<div g-scope="SignalForm">
+  <input g-model="nameModel">
+  <button @click="reset()">Reset</button>
+</div>
+```
+
+Ordinary methods still receive the reactive scope as `this`. Separate nested `g-scope` components remain isolated; share a signal explicitly through their definitions or dependency injection when needed.
+
 ### Modifiers
 
 - `.debounce`

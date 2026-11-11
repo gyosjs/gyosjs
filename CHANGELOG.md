@@ -6,6 +6,11 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Fixed
+
+- Preserve callable signal and computed identity inside reactive scopes, nested objects and arrays. `g-model` writes to the original signal instead of replacing the scope field, and `.value`, `.peek` and signal methods remain available. Effects switch dependencies when a signal/computed field is replaced; ordinary scope methods keep their bound `this` behavior.
+- Unwrap nested boolean signals before setting a checkbox's checked state, so `g-model="form.accepted"` follows the signal value rather than treating the callable itself as truthy.
+
 ## [0.5.1] - 2026-11-11
 
 ### Changed

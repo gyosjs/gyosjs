@@ -1,4 +1,4 @@
-import { signal, hasCurrentEffect } from "../reactivity/signal";
+import { signal, hasCurrentEffect, isSignal, isComputed } from "../reactivity/signal";
 import { Signal } from "../types";
 import { DEBUG } from "../utils/helpers";
 
@@ -188,6 +188,15 @@ export function reactive<T extends object>(raw: T): T {
             const descriptor = Object.getOwnPropertyDescriptor(target, key);
             if (descriptor && descriptor.get) {
                 // It's a getter - just return value, getter will track its own dependencies
+                return value;
+            }
+
+            // Callable reactive values are data, not methods. Binding would drop
+            // their identity and metadata used by g-model and the public APIs.
+            if (isSignal(value) || isComputed(value)) {
+                // Track the field as well as reads of its value so replacing the
+                // signal/computed switches effects away from the old source.
+                if (hasCurrentEffect()) getFieldSignal(target, key, value).value;
                 return value;
             }
 
