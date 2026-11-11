@@ -6,6 +6,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.5.2] - 2026-11-12
+
 ### Fixed
 
 - Preserve callable signal and computed identity inside reactive scopes, nested objects and arrays. `g-model` writes to the original signal instead of replacing the scope field, and `.value`, `.peek` and signal methods remain available. Effects switch dependencies when a signal/computed field is replaced; ordinary scope methods keep their bound `this` behavior.
@@ -207,7 +209,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 - This is an experimental `0.x` release. Router, morphing, expression evaluation, and browser edge cases should be evaluated against an application's requirements before production adoption.
 
-[Unreleased]: https://github.com/gyosjs/gyosjs/compare/v0.5.1...HEAD
+[Unreleased]: https://github.com/gyosjs/gyosjs/compare/v0.5.2...HEAD
+[0.5.2]: https://github.com/gyosjs/gyosjs/compare/v0.5.1...v0.5.2
 [0.5.1]: https://github.com/gyosjs/gyosjs/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/gyosjs/gyosjs/compare/v0.4.1...v0.5.0
 [0.4.1]: https://github.com/gyosjs/gyosjs/compare/v0.4.0...v0.4.1

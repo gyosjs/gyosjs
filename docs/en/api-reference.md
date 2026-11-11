@@ -1026,7 +1026,7 @@ Nested properties are supported:
 
 ### Signal fields in scopes
 
-> The signal-preservation fix is currently unreleased, after 0.5.1. On 0.5.1, use the accessor workaround below when exposing a callable signal to `g-model`.
+> Fixed in 0.5.2. On 0.5.1, use the accessor workaround below when exposing a callable signal to `g-model`.
 
 With the fix, a signal returned from a scope factory remains the original signal, including inside nested objects and arrays. Bind `g-model` to the signal field (`g-model="name"`), not a call (`name()`). Input updates the original signal; later writes from a closure update the input. Its `.value`, `.peek`, `update()` and subscription APIs remain accessible. Computed fields also retain their identity and read APIs, but are read-only and are not writable `g-model` targets. Replacing a signal/computed field makes dependent effects follow the new field.
 
