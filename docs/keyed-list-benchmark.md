@@ -57,4 +57,4 @@ Validation completed against this candidate:
 - Core browser regressions: **123 passed / 6 skipped**, including 12 new keyed-list cases across Chromium, Firefox and WebKit. Skips are the existing Windows WebKit audio capability cases.
 - Bloomfall browser suite with the candidate runtime: **46 passed / 2 skipped**. The two skips are CDP-only touch cases on non-Chromium browsers.
 
-This is an unreleased internal optimization. No new API, npm publish or consumer version change is included.
+This internal optimization is included in the 0.5.1 release. The measurements above compare the original 0.5.0 baseline with the pre-release candidate; they are retained as historical evidence. No new API is introduced.
