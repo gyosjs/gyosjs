@@ -53,7 +53,7 @@ The two game runs measured input-to-next-rAF medians of 85.0 / 30.9 ms and p95s 
 
 Validation completed against this candidate:
 
-- `npm run check`: **315 tests across 32 files**, type checks, documentation validation, all bundle builds, packed-package smoke and CSP checks passed.
+- `npm run check`: unit/integration tests, type checks, documentation validation, all bundle builds, packed-package smoke and CSP checks passed. The final unit suite has **313 tests across 32 files**, after removing two duplicate test cases.
 - Core browser regressions: **123 passed / 6 skipped**, including 12 new keyed-list cases across Chromium, Firefox and WebKit. Skips are the existing Windows WebKit audio capability cases.
 - Bloomfall browser suite with the candidate runtime: **46 passed / 2 skipped**. The two skips are CDP-only touch cases on non-Chromium browsers.
 

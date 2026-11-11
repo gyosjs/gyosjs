@@ -50,35 +50,6 @@ describe('keyed placement', () => {
 		expect(rows.at(-1)!.nextSibling).toBe(marker);
 		expect(root.lastElementChild?.id).toBe('after');
 	});
-	it('keeps order and identity across every permutation of five rows', async () => {
-		const { items, root } = mount([0, 1, 2, 3, 4]);
-		const original = [...root.querySelectorAll<HTMLElement>('.row')];
-		function permutations(values: number[]): number[][] {
-			return values.length
-				? values.flatMap((value, i) => permutations(values.filter((_, j) => i !== j)).map((rest) => [value, ...rest]))
-				: [[]];
-		}
-		for (const next of permutations([0, 1, 2, 3, 4])) {
-			items(next.map((id) => ({ id, label: String(id) })));
-			await flush();
-			const rows = [...root.querySelectorAll<HTMLElement>('.row')];
-			expect(rows.map((el) => Number(el.dataset.id))).toEqual(next);
-			for (let i = 0; i < rows.length; i++) expect(rows[i]).toBe(original[next[i]]);
-		}
-	});
-	it('retains the legacy placement around foreign siblings and mixed inserts', async () => {
-		const { items, root } = mount([0, 1, 2, 3]);
-		const marker = document.createElement('i');
-		marker.textContent = 'foreign';
-		root.insertBefore(marker, root.querySelector('[data-id="2"]'));
-		items([3, 5, 1, 6, 0].map((id) => ({ id, label: String(id) })));
-		await flush();
-		expect([...root.querySelectorAll<HTMLElement>('.row')].map((el) => Number(el.dataset.id))).toEqual([3, 5, 1, 6, 0]);
-		const rows = [...root.querySelectorAll('.row')];
-		for (let i = 1; i < rows.length; i++) expect(rows[i - 1].nextSibling).toBe(rows[i]);
-		expect(rows.at(-1)!.nextSibling).toBe(marker);
-		expect(root.lastElementChild?.id).toBe('after');
-	});
 	it.each([
 		['same order', [0, 1, 2, 3, 4, 5], 0],
 		['adjacent swap', [0, 1, 3, 2, 4, 5], 1],
