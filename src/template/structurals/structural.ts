@@ -17,6 +17,7 @@ import { queueReactiveEffect } from '../effect-queue';
 import { signal, untrack } from '../../reactivity/signal';
 import { getScopeVersion } from '../../core/reactive';
 import { unmountChildScopes } from '../../core/scope-registry';
+import { placeKeyedRows } from './keyed-placement';
 
 let processFunction: ((element: HTMLElement, scope: any, fromStructural?: boolean) => void) | null = null;
 export function setProcessFunction(fn: (element: HTMLElement, scope: any, fromStructural?: boolean) => void): void {
@@ -228,6 +229,7 @@ function processForWithKeys(
 
 	// Add/reorder items immediately (parallel with remove animations)
 	let lastPlacedNode: Node = placeholder;
+	const rows: HTMLElement[] = [];
 	orderedKeys.forEach((key) => {
 		const newItemData = newItemsMap.get(key)!;
 		const { index } = newItemData;
@@ -286,13 +288,10 @@ function processForWithKeys(
 			}
 		}
 
-		// Place each managed row directly after the previous row. This does not
-		// depend on formatting whitespace or unrelated sibling nodes.
-		if (itemElement !== lastPlacedNode.nextSibling) {
-			placeholder.parentNode?.insertBefore(itemElement, lastPlacedNode.nextSibling);
-		}
+		rows.push(itemElement);
 		lastPlacedNode = itemElement;
 	});
+	placeKeyedRows(placeholder, rows);
 }
 
 /**

@@ -6,6 +6,14 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Changed
+
+- Keyed lists retain the longest already-ordered subsequence of contiguous rows, reducing DOM moves for swaps and rotations. Placement around leaving transition nodes and unrelated siblings retains the existing behavior.
+
+### Fixed
+
+- Restore a surviving focused control and its text selection when keyed placement moves its row, without remounting nested scopes or refocusing a removed row.
+
 ## [0.5.0] - 2026-11-11
 
 ### Added
