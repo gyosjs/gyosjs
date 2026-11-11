@@ -11,8 +11,11 @@ permissions:
 jobs:
   e2e:
     if: github.repository == 'gyosjs/gyosjs'
-    # Playwright 1.55.1 supports Ubuntu 24.04, not the rolling latest image.
     runs-on: ubuntu-24.04
+    # Match @playwright/test; includes all three browsers and OS dependencies.
+    container:
+      image: mcr.microsoft.com/playwright:v1.55.1-noble
+      options: --user 1001 --init --ipc=host
     timeout-minutes: 25
 
     steps:
@@ -22,7 +25,6 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npx playwright install --with-deps chromium firefox webkit
       - run: npm run build
       - run: npm run test:e2e:all
       - name: Upload browser traces

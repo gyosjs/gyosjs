@@ -14,8 +14,11 @@ permissions:
 jobs:
   verify:
     if: github.repository == 'gyosjs/gyosjs'
-    # Keep the OS compatible with the pinned Playwright browsers.
     runs-on: ubuntu-24.04
+    # Match @playwright/test; avoid fetching OS dependencies from apt at runtime.
+    container:
+      image: mcr.microsoft.com/playwright:v1.55.1-noble
+      options: --user 1001 --init --ipc=host
     timeout-minutes: 30
 
     steps:
@@ -27,7 +30,6 @@ jobs:
       - run: npm ci
       - name: Audit dependencies
         run: npm audit --audit-level=high
-      - run: npx playwright install --with-deps chromium firefox webkit
       - name: Verify requested version
         run: npm run version:check -- "${{ inputs.version }}"
       - name: Verify release candidate

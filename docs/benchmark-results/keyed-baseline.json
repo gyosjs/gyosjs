@@ -1,0 +1,90 @@
+{
+  "bundleSha256": "fc4ba62628c00c9d59ac100dda070924105f5780da8fb8465e49f3795839e236",
+  "measuredAt": "2026-11-11T13:47:07.663Z",
+  "bundle": "gyos.csp.auto.min.js",
+  "browser": "157.0.8103.39",
+  "node": "v22.18.0",
+  "platform": "win32 10.0.26300",
+  "cpu": "Intel(R) Core(TM) i5-10210U CPU @ 1.60GHz",
+  "workload": "64 keyed DOM rows; 20 fresh mounts per scenario; synchronous batch through microtask flush, excludes paint; no throttling",
+  "results": [
+    {
+      "scenario": "same-order",
+      "size": 64,
+      "iterations": 20,
+      "movesPerUpdate": [
+        0
+      ],
+      "medianMs": 1.7000000476837158,
+      "p95Ms": 3.299999952316284,
+      "valid": true
+    },
+    {
+      "scenario": "adjacent-swap",
+      "size": 64,
+      "iterations": 20,
+      "movesPerUpdate": [
+        1
+      ],
+      "medianMs": 1.600000023841858,
+      "p95Ms": 4.5,
+      "valid": true
+    },
+    {
+      "scenario": "distant-swap",
+      "size": 64,
+      "iterations": 20,
+      "movesPerUpdate": [
+        61
+      ],
+      "medianMs": 1.5,
+      "p95Ms": 4.799999952316284,
+      "valid": true
+    },
+    {
+      "scenario": "rotate-left",
+      "size": 64,
+      "iterations": 20,
+      "movesPerUpdate": [
+        63
+      ],
+      "medianMs": 1.600000023841858,
+      "p95Ms": 2.100000023841858,
+      "valid": true
+    },
+    {
+      "scenario": "reverse",
+      "size": 64,
+      "iterations": 20,
+      "movesPerUpdate": [
+        63
+      ],
+      "medianMs": 1.399999976158142,
+      "p95Ms": 7.100000023841858,
+      "valid": true
+    },
+    {
+      "scenario": "prepend",
+      "size": 64,
+      "iterations": 20,
+      "movesPerUpdate": [
+        0
+      ],
+      "medianMs": 1,
+      "p95Ms": 6.899999976158142,
+      "valid": true
+    },
+    {
+      "scenario": "remove",
+      "size": 64,
+      "iterations": 20,
+      "movesPerUpdate": [
+        0
+      ],
+      "medianMs": 1.100000023841858,
+      "p95Ms": 1.600000023841858,
+      "valid": true
+    }
+  ],
+  "errors": []
+}
