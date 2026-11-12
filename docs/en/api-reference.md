@@ -199,7 +199,7 @@ Gyos.cleanup();
 
 Cleanup runs tracked effect disposers, event and form listener cleanup, custom-directive cleanup, scope `onUnmount()`, and mounted-scope deregistration. It does not remove the target or discover arbitrary application timers and subscriptions; stop those in `onUnmount()` or a registered disposer.
 
-> **Unreleased:** cleanup also invalidates in-progress initial template parsing and initial scope observer callbacks. A disposed scope is not mounted again by the remainder of that parse. Calls to `$watch`/`$effect` through its old context do not start new observers; explicitly mounting again creates a new lifetime.
+> **Since 0.5.5:** cleanup also invalidates in-progress initial template parsing and initial scope observer callbacks. A disposed scope is not mounted again by the remainder of that parse. Calls to `$watch`/`$effect` through its old context do not start new observers; explicitly mounting again creates a new lifetime.
 
 ### `Gyos.mountedScopes()`
 
@@ -282,7 +282,7 @@ Gyos.scope('SearchBox', {
 
 `$watch` paths use dot notation, including array indices (`items.0.count`); bracket paths (`items[0].count`) are not parsed. Watching an array/object field without `deep` observes replacement. `{ deep: true }` clones and compares nested values, including array mutations; prefer a narrow path or `$effect` for large data.
 
-> **Unreleased:** deep snapshots preserve cycles/shared references in objects and arrays and compare `Map`/`Set` contents, including iteration order. Native `map.set()`, `set.add()` and `date.setTime()` do not trigger reactivity; replace the field (for example, `this.items = new Set([...this.items, next])`). This does not make arbitrary native/class instances deeply observable.
+> **Since 0.5.5:** deep snapshots preserve cycles/shared references in objects and arrays and compare `Map`/`Set` contents, including iteration order. Native `map.set()`, `set.add()` and `date.setTime()` do not trigger reactivity; replace the field (for example, `this.items = new Set([...this.items, next])`). This does not make arbitrary native/class instances deeply observable.
 
 > **Fixed in 0.5.3:** Version 0.5.2 cannot attach `$watch` or `$effect` in factory scopes, including calls through the factory context. Template reactivity is unaffected. On 0.5.2, use `Gyos.effect()` in `onMount` with explicit disposal in `onUnmount` if needed. With the fix, register scope observers after the factory returns, normally in `onMount`; they are bound to that mount and disposed by scope cleanup.
 
@@ -576,7 +576,7 @@ Create DOM references on `$refs`.
 
 Render once and skip future reactivity updates for that branch.
 
-> **Unreleased:** static roots and nested branches share the same initial-render path, including `*if`/`*for`/`*switch`, text, attribute bindings and `g-show`/`g-text`/`g-html`. Nested scopes render with their own state and retain their lifecycle hooks, but their templates stay static. The first `*await` request may settle; replacing the request does not start another render, and cleanup invalidates pending work. Template events, `g-model`, form bindings, custom directives and portals are not initialized inside the static boundary. Explicit application effects are not frozen by `g-static`.
+> **Since 0.5.5:** static roots and nested branches share the same initial-render path, including `*if`/`*for`/`*switch`, text, attribute bindings and `g-show`/`g-text`/`g-html`. Nested scopes render with their own state and retain their lifecycle hooks, but their templates stay static. The first `*await` request may settle; replacing the request does not start another render, and cleanup invalidates pending work. Template events, `g-model`, form bindings, custom directives and portals are not initialized inside the static boundary. Explicit application effects are not frozen by `g-static`.
 
 > The boundary includes a structural directive on the same element: `<p *for="item in items" g-static>{item}</p>` snapshots the initial list. Put `g-static` inside an outer reactive structural branch if that outer condition/list must keep updating. Keep `g-ignore` for content that must not receive an initial render at all. Neither boundary disables native browser behavior or MPA Boost; use `g-no-boost` separately when needed.
 
@@ -1184,7 +1184,7 @@ const doubled = Gyos.computed(() => count.value * 2);
 
 A computed value is read-only. Read it with `doubled()` or `doubled.value`, use `doubled.peek` for a non-tracking read, and use `doubled.subscribe(fn)` to receive changes. `subscribe()` returns an unsubscribe function.
 
-> **Unreleased:** a computed value without active consumers releases its upstream subscriptions, so a long-lived source no longer keeps an unused computed closure alive. Holding the computed yourself still keeps its cache/dependencies reachable. A later read refreshes the cache as needed, and a new effect/subscription resumes observation. No manual computed disposer is required; effect/subscription disposers still matter.
+> **Since 0.5.5:** a computed value without active consumers releases its upstream subscriptions, so a long-lived source no longer keeps an unused computed closure alive. Holding the computed yourself still keeps its cache/dependencies reachable. A later read refreshes the cache as needed, and a new effect/subscription resumes observation. No manual computed disposer is required; effect/subscription disposers still matter.
 
 Computed reads are synchronous: after `count(3)`, `doubled()` returns `6` immediately, including inside a batch. Dependency writes invalidate the cache immediately; evaluation is deferred until a read or a subscribed consumer needs the result. Repeated reads reuse the cached value. Computed callbacks must be pure.
 
@@ -1246,7 +1246,7 @@ Exclude an object from deep proxy conversion. The containing property remains re
 
 Make only the object's direct properties reactive. Nested objects remain raw.
 
-> **Unreleased — locked nested data:** frozen/locked object, array and function properties can be read without violating JavaScript Proxy invariants. A non-configurable, non-writable data property returns its exact stored value, so its raw child does not gain a deep reactive proxy. Replace the mutable containing field to notify readers. Sealed fields that remain writable stay reactive. Required keys/descriptors remain visible even when their names are reserved by GyosJS. Keep scope/store root definitions mutable and extensible; this fix supports restricted nested data, not freezing a live scope and its lifecycle bookkeeping.
+> **Since 0.5.5 — locked nested data:** frozen/locked object, array and function properties can be read without violating JavaScript Proxy invariants. A non-configurable, non-writable data property returns its exact stored value, so its raw child does not gain a deep reactive proxy. Replace the mutable containing field to notify readers. Sealed fields that remain writable stay reactive. Required keys/descriptors remain visible even when their names are reserved by GyosJS. Keep scope/store root definitions mutable and extensible; this fix supports restricted nested data, not freezing a live scope and its lifecycle bookkeeping.
 
 ---
 

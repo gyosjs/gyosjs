@@ -232,7 +232,7 @@ In which:
 * reading inside a batch returns the value for writes made so far; additional writes can require another calculation
 * computed-only consumers skip unchanged results; keep computed callbacks pure and put side effects in `effect()`
 
-> **Unreleased:** unused computed values also detach from their source subscriptions. Stopping the final consumer releases an entire unused computed chain; reading or subscribing again still works. Dispose effects/subscriptions when finished. This improves lifetime management without changing write/batch timing.
+> **Since 0.5.5:** unused computed values also detach from their source subscriptions. Stopping the final consumer releases an entire unused computed chain; reading or subscribing again still works. Dispose effects/subscriptions when finished. This improves lifetime management without changing write/batch timing.
 
 > Computed values are very useful for separating calculation logic from raw data, helping keep code clean and maintainable.
 
@@ -242,7 +242,7 @@ In which:
 
 Objects and arrays in GyosJS are also reactive. Nested deep inside are also signals.
 
-> **Unreleased — frozen nested data:** reading a locked object/array/function field preserves its exact value instead of wrapping it, as required by JavaScript. Such a raw child does not become deeply reactive; replace its mutable containing field to update consumers. Sealed writable fields still work reactively. Keep scope/store root definitions mutable and extensible for lifecycle/context setup.
+> **Since 0.5.5 — frozen nested data:** reading a locked object/array/function field preserves its exact value instead of wrapping it, as required by JavaScript. Such a raw child does not become deeply reactive; replace its mutable containing field to update consumers. Sealed writable fields still work reactively. Keep scope/store root definitions mutable and extensible for lifecycle/context setup.
 
 ```html
 <div g-scope="{user: { name: 'Alice', age: 20 }}" class="card">
