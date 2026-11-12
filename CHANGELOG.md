@@ -6,6 +6,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.5.4] - 2026-11-12
+
 ### Fixed
 
 - Keep array length/index readers current after implicit growth or truncation, and notify readers when a scope field switches to another store. Accept null-prototype data and fields named `hasOwnProperty`; deep watches distinguish Date values and changed undefined-valued keys.
@@ -25,7 +27,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ### Compatibility
 
-- Object/factory scope sharing and reactive scheduling remain unchanged. These fixes are not included in the published 0.5.3 package. No new release version has been selected.
+- Object/factory scope sharing and reactive scheduling remain unchanged. When composing async helpers with other lifecycle hooks, forward their onMount/onUnmount hooks explicitly.
 
 ## [0.5.3] - 2026-11-12
 
@@ -240,7 +242,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 - This is an experimental `0.x` release. Router, morphing, expression evaluation, and browser edge cases should be evaluated against an application's requirements before production adoption.
 
-[Unreleased]: https://github.com/gyosjs/gyosjs/compare/v0.5.3...HEAD
+[Unreleased]: https://github.com/gyosjs/gyosjs/compare/v0.5.4...HEAD
+[0.5.4]: https://github.com/gyosjs/gyosjs/compare/v0.5.3...v0.5.4
 [0.5.3]: https://github.com/gyosjs/gyosjs/compare/v0.5.2...v0.5.3
 [0.5.2]: https://github.com/gyosjs/gyosjs/compare/v0.5.1...v0.5.2
 [0.5.1]: https://github.com/gyosjs/gyosjs/compare/v0.5.0...v0.5.1

@@ -1387,7 +1387,7 @@ GyosJS includes small reusable composables:
 
 | Composable | Return contract |
 | --- | --- |
-| `Gyos.useFetch(url)` | `data: Signal<T \| null>`, `loading: Signal<boolean>`, `error: Signal<Error \| null>`, plus async `refetch()` and `onMount()`. `url` may be a string or a function returning a URL, `Response`, or promise of either. |
+| `Gyos.useFetch(url)` | `data: Signal<T \| null>`, `loading: Signal<boolean>`, `error: Signal<Error \| null>`, plus async `refetch()`, `onMount()` and `onUnmount()`. `url` may be a string or a function returning a URL, `Response`, or promise of either. |
 | `Gyos.useCounter(initialValue)` | Writable `count`, read-only `double`, and `increment(step?)`, `decrement(step?)`, `reset()`. |
 | `Gyos.useToggle(initialValue)` | One boolean signal exposed as both `state` and `value`, plus `toggle()`, `setTrue()`, `setFalse()`. |
 | `Gyos.useLocalStorage(key, defaultValue)` | Writable `state` that persists after writes, `remove()` to delete the storage key, and `onUnmount()` to stop persistence. |
@@ -1398,11 +1398,35 @@ GyosJS includes small reusable composables:
 | `Gyos.useMouse()` | `x` and `y` signals plus window-listener lifecycle hooks. |
 | `Gyos.useWindowSize()` | `width` and `height` signals plus window-listener lifecycle hooks. |
 | `Gyos.useMediaQuery(queries)` | `matches`, an object of boolean signals keyed like `queries`, plus lifecycle hooks. |
-| `Gyos.useAsync(asyncFn, immediate?)` | `data`, `loading`, `error` signals, async `execute()`, and `onMount()`. `immediate` defaults to `true`. |
+| `Gyos.useAsync(asyncFn, immediate?)` | `data`, `loading`, `error` signals, async `execute()`, `onMount()` and `onUnmount()`. `immediate` defaults to `true`. |
 
 These are useful when one piece of logic appears across multiple scopes, but they are not required for ordinary GyosJS usage.
 
-> **Unreleased audit change (after 0.5.3):** `useFetch` and `useAsync` also return `onUnmount()`. Only the latest execution publishes data, errors and loading; unmounting ignores pending results and disables execution until `onMount()` is called again. This does not abort the underlying request. A single spread composable exposes its hooks to the scope automatically. When composing several composables or adding your own hooks, call each hook explicitly so later object properties do not overwrite earlier hooks.
+> **Since 0.5.4:** `useFetch` and `useAsync` also return `onUnmount()`. Only the latest execution publishes data, errors and loading; unmounting ignores pending results and disables execution until `onMount()` is called again. This does not abort the underlying request. A single spread composable exposes its hooks to the scope automatically. When composing several composables or adding your own hooks, call each hook explicitly so later object properties do not overwrite earlier hooks.
+
+When combining fetching and polling, create both inside the factory and compose their hooks to stop the timer and ignore pending results on unmount.
+
+```js
+Gyos.scope('Users', () => {
+  const users = Gyos.useFetch('/api/users');
+  const polling = Gyos.useInterval(() => users.refetch(), 30000);
+
+  return {
+    data: users.data,
+    loading: users.loading,
+    error: users.error,
+    refetch: users.refetch,
+    onMount() {
+      polling.onMount();
+      return users.onMount();
+    },
+    onUnmount() {
+      polling.onUnmount();
+      users.onUnmount();
+    }
+  };
+});
+```
 
 ```js
 const search = Gyos.useDebounce('', 300);
@@ -1527,7 +1551,7 @@ The current package version as a string.
 
 ## Router APIs
 
-> **Unreleased audit: reactive partial history (after 0.5.3):** Back/Forward reconstructs mounted reactive partial targets from response HTML (a snapshot or a fresh GET), rather than replaying a DOM clone with consumed bindings. Static fragment caching remains available. This does not serialize arbitrary client state.
+> **Since 0.5.4: reactive partial history.** Back/Forward reconstructs mounted reactive partial targets from response HTML (a snapshot or a fresh GET), rather than replaying a DOM clone with consumed bindings. Static fragment caching remains available. This does not serialize arbitrary client state.
 
 ### `Gyos.startRouter(options?)`
 
