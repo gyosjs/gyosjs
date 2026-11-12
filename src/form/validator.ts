@@ -243,7 +243,7 @@ validator('maxLength', (value, length) => {
  * @example "min(18)"
  */
 validator('min', (value, min) => {
-	if (!value) return true;
+	if (value == null || value === '') return true;
 	const minVal = parseFloat(min);
 	return parseFloat(value) >= minVal || `Minimum value is ${minVal}`;
 });
@@ -254,7 +254,7 @@ validator('min', (value, min) => {
  * @example "max(100)"
  */
 validator('max', (value, max) => {
-	if (!value) return true;
+	if (value == null || value === '') return true;
 	const maxVal = parseFloat(max);
 	return parseFloat(value) <= maxVal || `Maximum value is ${maxVal}`;
 });
@@ -275,8 +275,8 @@ validator('number', (value) => {
  * @example "integer"
  */
 validator('integer', (value) => {
-	if (!value) return true;
-	return Number.isInteger(parseFloat(value)) || 'Must be an integer';
+	if (value == null || value === '') return true;
+	return (String(value).trim() !== '' && Number.isInteger(Number(value))) || 'Must be an integer';
 });
 
 /**
@@ -388,7 +388,7 @@ validator('date', (value) => {
 		return 'Invalid date format (use YYYY-MM-DD)';
 	}
 	const date = new Date(value);
-	return !isNaN(date.getTime()) || 'Invalid date';
+	return (!isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value) || 'Invalid date';
 });
 
 /**
@@ -473,7 +473,7 @@ validator('notIn', (value, ...forbiddenValues) => {
  * @example "between(18,65)"
  */
 validator('between', (value, min, max) => {
-	if (!value) return true;
+	if (value == null || value === '') return true;
 	const num = parseFloat(value);
 	const minVal = parseFloat(min);
 	const maxVal = parseFloat(max);

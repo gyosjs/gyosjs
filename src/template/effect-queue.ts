@@ -3,7 +3,7 @@ import { effect } from '../reactivity/signal';
 type EffectRunner = () => void | (() => void);
 
 type QueuedEffect = {
-    target: Element;
+    target: Node;
     runner: EffectRunner;
 };
 
@@ -13,7 +13,9 @@ function currentQueue(): QueuedEffect[] | undefined {
     return effectQueueStack[effectQueueStack.length - 1];
 }
 
-function attachDispose(target: Element, runner: EffectRunner): void {
+function attachDispose(target: Node, runner: EffectRunner): void {
+    // An earlier queued content binding can replace this subtree during flush.
+    if (!target.isConnected) return;
     const dispose = effect(runner);
     if (!(target as any).__gyos_effects__) {
         (target as any).__gyos_effects__ = [];
@@ -33,7 +35,7 @@ export function beginEffectCollection(): void {
  * Queue an effect to be registered after parsing finishes
  * Falls back to immediate registration if no active collection
  */
-export function queueReactiveEffect(target: Element, runner: EffectRunner): void {
+export function queueReactiveEffect(target: Node, runner: EffectRunner): void {
     const queue = currentQueue();
     if (!queue) {
         attachDispose(target, runner);

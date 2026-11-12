@@ -1402,6 +1402,8 @@ GyosJS includes small reusable composables:
 
 These are useful when one piece of logic appears across multiple scopes, but they are not required for ordinary GyosJS usage.
 
+> **Unreleased audit change (after 0.5.3):** `useFetch` and `useAsync` also return `onUnmount()`. Only the latest execution publishes data, errors and loading; unmounting ignores pending results and disables execution until `onMount()` is called again. This does not abort the underlying request. A single spread composable exposes its hooks to the scope automatically. When composing several composables or adding your own hooks, call each hook explicitly so later object properties do not overwrite earlier hooks.
+
 ```js
 const search = Gyos.useDebounce('', 300);
 
@@ -1524,6 +1526,8 @@ The current package version as a string.
 ---
 
 ## Router APIs
+
+> **Unreleased audit: reactive partial history (after 0.5.3):** Back/Forward reconstructs mounted reactive partial targets from response HTML (a snapshot or a fresh GET), rather than replaying a DOM clone with consumed bindings. Static fragment caching remains available. This does not serialize arbitrary client state.
 
 ### `Gyos.startRouter(options?)`
 

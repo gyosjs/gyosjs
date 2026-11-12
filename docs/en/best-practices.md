@@ -394,7 +394,7 @@ Full page structure:
                     <button
                         g-router-link="/catalog-more.html"
                         g-router-method="GET"
-                        g-router-params="{ page: page + 1 }"
+                        g-router-params="{ page: page }"
                         g-target="#results"
                         g-swap="append"
                         g-router-spin
@@ -506,7 +506,7 @@ Why this is a best practice:
     <button
         g-router-link="/posts-item.html"
         g-router-method="GET"
-        g-router-params="{ page: page + 1 }"
+        g-router-params="{ page: page }"
         g-target="#post-items"
         g-swap="prepend"
         g-router-spin
@@ -523,7 +523,7 @@ Why this is a best practice:
 - `prepend` matches the user experience being requested
 - existing list scopes remain mounted and only the incoming items mount
 - the page avoids a custom fetch-and-template layer
-- router capture evaluates `page + 1` before the bubbling `@click="page++"` advances local state
+- The element’s `@click="page++"` runs before the document router listener during bubbling. `g-router-params` therefore reads the incremented `page`, without adding one again. This example advances optimistically on click; applications must handle rollback/retry after failed requests.
 
 ### Choosing the swap mode
 
@@ -928,7 +928,7 @@ This section combines many of the practices above into one longer example. It is
                 <button
                     g-router-link="/docs/more-guides.html"
                     g-router-method="GET"
-                    g-router-params="{ page: page + 1 }"
+                    g-router-params="{ page: page }"
                     g-target="#search-results"
                     g-swap="append"
                     g-router-spin

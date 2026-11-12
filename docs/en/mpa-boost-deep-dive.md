@@ -144,7 +144,7 @@ Native boosted forms support the browser's effective form methods:
 
 That matches how the router demos use search forms and login/create forms.
 
-Use `g-router-link` with `g-router-method` for `PUT`, `PATCH`, or `DELETE`. Put `g-no-boost` on cross-origin forms; otherwise global boost converts the submission to a hard location change and cannot preserve POST data.
+Use `g-router-link` with `g-router-method` for `PUT`, `PATCH`, or `DELETE`. Cross-origin forms use native browser submission even under global boost; `g-no-boost` can make that intent explicit.
 
 ### Custom router triggers
 
@@ -191,8 +191,8 @@ GyosJS does not boost when:
 - the link or form is inside `[g-no-boost]`
 - the click uses modifier keys
 - no swap target can be resolved
-- the request fails and the router falls back to normal navigation
-- the response is not OK and the router falls back to normal navigation
+- a GET request fails and the router falls back to normal navigation; sent mutations are not replayed
+- a GET response is rejected and the router falls back to normal navigation; explicitly accepted `g-boost-errors` responses can render in place
 
 This is good. A boost router should not force every navigation through one path. It should upgrade the safe cases and leave the rest alone.
 
@@ -539,7 +539,7 @@ Use it when:
 
 This is the high-level lifecycle a boosted navigation follows today.
 
-### 1. The event is captured
+### 1. The router receives the event during bubbling
 
 GyosJS listens for:
 
@@ -911,7 +911,7 @@ This example demonstrates two valid strategies:
     <button
         g-router-link="/posts-item.html"
         g-router-method="GET"
-        g-router-params="{ page: page + 1, searchQuery }"
+        g-router-params="{ page: page, searchQuery }"
         @click="page++"
         g-target="#items"
         g-swap="prepend"
@@ -923,7 +923,7 @@ This example demonstrates two valid strategies:
 </div>
 ```
 
-Router clicks are captured before the scope's bubbling `@click` handler. The request therefore evaluates `page + 1`, while `@click="page++"` advances local state for the next request.
+The element’s `@click="page++"` runs before the document router listener during bubbling. `g-router-params` therefore reads the incremented `page`, without adding one again. This example advances optimistically on click; applications must handle rollback/retry after failed requests.
 
 This is a good example of where `g-router-link` is more expressive than a normal anchor.
 
@@ -1063,7 +1063,7 @@ For a non-`GET` submission, a redirect also changes browser history to that fina
 
 ### Request failures
 
-If fetch fails, GyosJS falls back to `window.location.href = finalUrl`.
+If a GET fetch fails, GyosJS falls back to `window.location.href = finalUrl`. Sent mutations are not replayed; their current DOM stays mounted and the navigation outcome reports the failure.
 
 This is important:
 
@@ -1073,7 +1073,7 @@ This is important:
 
 ### Non-OK responses
 
-If the response is missing or not OK, GyosJS also falls back to a normal full navigation.
+Rejected GET responses can fall back to a normal full navigation. An HTTP error explicitly accepted through `g-boost-errors` renders in place. Rejected non-GET responses keep the current DOM and are not replayed.
 
 ### Aborted navigations
 

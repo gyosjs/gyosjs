@@ -528,7 +528,7 @@ Use this pattern for:
     <button
         g-router-link="/articles/page.html"
         g-router-method="GET"
-        g-router-params="{ page: page + 1, tag }"
+        g-router-params="{ page: page, tag }"
         g-target="#feed-items"
         g-swap="append"
         g-router-spin
@@ -546,7 +546,7 @@ What to notice here:
 - `g-target` narrows the swap to one region
 - `append` is useful when the server returns the next page fragment
 - router-link style partial requests do not change browser history by default
-- router capture evaluates `page + 1` before the bubbling `@click="page++"` advances local state
+- The element’s `@click="page++"` runs before the document router listener during bubbling. `g-router-params` therefore reads the incremented `page`, without adding one again. This example advances optimistically on click; applications must handle rollback/retry after failed requests.
 
 This is a strong fit for:
 

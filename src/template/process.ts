@@ -84,6 +84,8 @@ function processStructuralDirectives(elements: HTMLElement[], scope: any): void 
 
     // Process each structural directive
     structuralElements.forEach(({ element, type }) => {
+        // Parent directives parse their clones, not the detached original tree.
+        if (!root.contains(element) || elementBelongsToAnotherScope(element, scope)) return;
         if (type === 'for') {
             processForDirective(element, scope);
         } else if (type === 'if') {
@@ -123,6 +125,10 @@ const elementBelongsToAnotherScope = (el: HTMLElement, scope: any): boolean => {
 
 export function processParse(element: HTMLElement, scope: any, fromStructural = false): void {
 	if (isInIgnoredTree(element)) return;
+    if (fromStructural && element.hasAttribute('g-scope') && mountFunction) {
+        mountFunction(element);
+        return;
+    }
     beginEffectCollection();
     const allElements: HTMLElement[] = [
 		element,
@@ -144,7 +150,7 @@ export function processParse(element: HTMLElement, scope: any, fromStructural = 
 		// Structural processing may replace an element and detach its original subtree.
 		if (!document.body.contains(el)) return;
         if (el.attributes.length === 0) return; // Skip if no attributes
-        if (elementBelongsToAnotherScope(el, scope) && !fromStructural) {
+        if (elementBelongsToAnotherScope(el, scope)) {
             // (fromStructural allows processing newly created elements inside structurals)
             return; // Skip if inside mounted scope
         }
@@ -154,9 +160,10 @@ export function processParse(element: HTMLElement, scope: any, fromStructural = 
         if (el.hasAttribute('g-static')) {
             // Pre-process g-static elements (mark and render them before reactive processing)
             processStaticElements(el, scope);
+            return;
         }
 
-        if (el.hasAttribute('g-form')) {
+        if (el.hasAttribute('g-form') || el.hasAttribute('g-validate') || el.hasAttribute('g-errors')) {
             // Process form validation (g-form, g-validate, g-errors)
             processFormValidation(el, scope);
         }

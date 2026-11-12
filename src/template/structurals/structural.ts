@@ -3,7 +3,7 @@
  * Single-pass parser for conditional and list rendering with transitions
  */
 import { evaluateExpression } from '../expression';
-import { disposeEffects } from '../cleanup';
+import { disposeEffects, disposeNode } from '../cleanup';
 import { attachParentScope } from '../scope-chain';
 import { transitionManager } from '../../core/transition';
 import {
@@ -47,6 +47,21 @@ function getCachedTemplate(template: HTMLElement): HTMLElement {
  */
 function setRootScope(element: HTMLElement, scope: any): void {
 	(element as any).__gyos_scope__ = scope;
+}
+
+function inheritScope(child: any, parent: any): any {
+	attachParentScope(child, parent);
+	for (const key in parent) {
+		if (!(key in child)) {
+			Object.defineProperty(child, key, {
+				get: () => parent[key],
+				set: value => { parent[key] = value; },
+				enumerable: true,
+				configurable: true,
+			});
+		}
+	}
+	return child;
 }
 
 /**
@@ -130,6 +145,8 @@ export function processForDirective(element: HTMLElement, currentScope: any): vo
 
 	const placeholder = document.createComment('*for');
 	element.parentNode?.replaceChild(placeholder, element);
+	const end = document.createComment('/*for');
+	placeholder.parentNode?.insertBefore(end, placeholder.nextSibling);
 
 	// Store previous items for key-based diffing
 	// WARNING: Use primitive keys (id, string, number) to avoid memory leaks
@@ -138,7 +155,7 @@ export function processForDirective(element: HTMLElement, currentScope: any): vo
 	let prevListRef: any = null;
 	let prevVersionValue: number | undefined = undefined;
 
-	queueReactiveEffect(element, () => {
+	queueReactiveEffect(placeholder, () => {
 		// Parse: "item in items" or "item, index in items"
 		const match = expr.match(/(.+?)\s+in\s+(.+)/);
 		if (!match) return;
@@ -167,7 +184,7 @@ export function processForDirective(element: HTMLElement, currentScope: any): vo
 				processForWithKeys(placeholder, template, list, itemVar, keyExpr!, currentScope, prevItemsMap);
 			} else {
 				// Simple re-render (no diffing)
-				processForSimple(placeholder, template, list, itemVar, currentScope);
+				processForSimple(placeholder, end, template, list, itemVar, currentScope);
 			}
 		});
 	});
@@ -299,6 +316,7 @@ function processForWithKeys(
  */
 function processForSimple(
 	placeholder: Comment,
+	end: Comment,
 	template: HTMLElement,
 	list: any[],
 	itemVar: string,
@@ -306,12 +324,14 @@ function processForSimple(
 ): void {
 	// Remove all existing items
 	let next = placeholder.nextSibling;
-	while (next && next.nodeType !== Node.COMMENT_NODE) {
+	while (next && next !== end) {
 		const toRemove = next;
 		next = next.nextSibling;
 		if (toRemove instanceof Element) {
 			unmountChildScopes(toRemove as HTMLElement);
 			disposeEffects(toRemove, true);
+		} else {
+			disposeNode(toRemove, true);
 		}
 	}
 
@@ -415,7 +435,7 @@ export function processIfChain(element: HTMLElement, currentScope: any): void {
 	let currentElement: HTMLElement | null = null;
 	let currentIndex: number = -1;
 
-	queueReactiveEffect(element, () => {
+	queueReactiveEffect(placeholder, () => {
 		// Find first truthy condition
 		let matchedIndex = -1;
 		for (let i = 0; i < templates.length; i++) {
@@ -556,14 +576,12 @@ export function processSwitchDirective(element: HTMLElement, currentScope: any):
 
 		// Find matching case
 		let matchedIndex = -1;
+		let defaultIndex = -1;
 		for (let i = 0; i < templates.length; i++) {
 			const { value } = templates[i];
 			if (value === null) {
-				// *default matches (only if no other case matched)
-				if (matchedIndex === -1) {
-					matchedIndex = i;
-				}
-				break;
+				if (defaultIndex === -1) defaultIndex = i;
+				continue;
 			}
 			const caseValue = evaluateExpression(value, currentScope, false);
 			if (switchValue === caseValue) {
@@ -571,6 +589,7 @@ export function processSwitchDirective(element: HTMLElement, currentScope: any):
 				break;
 			}
 		}
+		if (matchedIndex === -1) matchedIndex = defaultIndex;
 
 		// If same case, do nothing
 		if (matchedIndex === currentIndex) return;
@@ -700,6 +719,7 @@ export function processAwaitDirective(element: HTMLElement, currentScope: any): 
 
 	// Helper to render state
 	const renderState = (state: 'pending' | 'fulfilled' | 'rejected', data?: any) => {
+		currentState = state;
 		// Remove old element
 		if (currentElement) {
 			const elemToRemove = currentElement;
@@ -728,20 +748,19 @@ export function processAwaitDirective(element: HTMLElement, currentScope: any): 
 		} else if (state === 'fulfilled' && thenTemplate) {
 			template = thenTemplate.template;
 			// Create child scope with data if varName provided
-			if (thenTemplate.varName && data !== undefined) {
-				scope = { ...currentScope, [thenTemplate.varName]: data };
+			if (thenTemplate.varName) {
+				scope = inheritScope({ [thenTemplate.varName]: data }, currentScope);
 			}
 		} else if (state === 'rejected' && catchTemplate) {
 			template = catchTemplate.template;
 			// Create child scope with error if varName provided
-			if (catchTemplate.varName && data !== undefined) {
-				scope = { ...currentScope, [catchTemplate.varName]: data };
+			if (catchTemplate.varName) {
+				scope = inheritScope({ [catchTemplate.varName]: data }, currentScope);
 			}
 		}
 
 		if (template) {
 			currentElement = getCachedTemplate(template);
-			currentState = state;
 
 			setRootScope(currentElement, scope);
 
@@ -773,9 +792,6 @@ export function processAwaitDirective(element: HTMLElement, currentScope: any): 
 		}
 	};
 
-	// Initial state: pending
-	renderState('pending');
-
 	// Track promise expression
 	queueReactiveEffect(element, () => {
 		const promiseOrValue = evaluateExpression(awaitExpr, currentScope, false);
@@ -802,5 +818,7 @@ export function processAwaitDirective(element: HTMLElement, currentScope: any): 
 					renderState('rejected', error);
 				}
 			});
+		// Both reruns and disposal invalidate callbacks from this request.
+		return () => { requestVersion++; };
 	});
 }

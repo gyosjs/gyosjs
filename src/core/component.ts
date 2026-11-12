@@ -1,5 +1,5 @@
 import type { Scope, ScopeDefinition, ComponentContext, WatchOptions } from '../types';
-import { effect } from '../reactivity/signal';
+import { effect, untrack } from '../reactivity/signal';
 import { getInjector } from './di';
 import { parseTemplate } from '../template/parser';
 import { hydrationManager, getHydrationStrategy } from './hydration';
@@ -84,7 +84,7 @@ export function mountAll(root?: HTMLElement | Iterable<HTMLElement>): void {
 	allElements.sort((a, b) => getDepth(b) - getDepth(a));
 
 	// Filter out elements inside structural directives - they will be mounted by structural processor
-	allElements.forEach(el => !hasStructuralParent(el) && mount(el as HTMLElement));
+	allElements.forEach(el => !el.hasAttribute('*if') && !el.hasAttribute('*for') && !hasStructuralParent(el) && mount(el as HTMLElement));
 	diagnoseUnscopedReveals(document.body);
 }
 
@@ -97,7 +97,7 @@ export function mountTree(el: HTMLElement): void {
 
 	// Child scopes own their subtree before an existing parent scope parses the insertion.
 	candidates.sort((a, b) => getDepth(b) - getDepth(a));
-	candidates.forEach(element => !hasStructuralParent(element) && mount(element));
+	candidates.forEach(element => !element.hasAttribute('*if') && !element.hasAttribute('*for') && !hasStructuralParent(element) && mount(element));
 	diagnoseUnscopedReveals(el);
 
 	if (getMountedScope(el)) return;
@@ -128,9 +128,14 @@ export function mount(el: HTMLElement): void {
 /**
  * Parse inline scope definition from HTML attribute
  */
+function decodeMarkupExpression(value: string): string {
+	try { return decodeURIComponent(value); }
+	catch { return value; } // Plain expressions may contain a literal % or modulo.
+}
+
 function parseInlineScope(scopeStr: string): Scope | undefined {
 	// If scopeStr is encode urld, decode it first
-	scopeStr = decodeURIComponent(scopeStr);
+	scopeStr = decodeMarkupExpression(scopeStr);
 
 	try {
 		// Check if it's an inline object definition (starts with '{')
@@ -197,7 +202,7 @@ function parseAutoScope(el: HTMLElement): Scope {
 		// gm-method-name:args:arg2="expression"
 		if (attr.name.match(/^gm-.+/)) {
 			// If expr is encoded url, decode it first
-			const expr = decodeURIComponent(attr.value.trim());
+			const expr = decodeMarkupExpression(attr.value.trim());
 			if (forbidden.some(f => expr.includes(f))) {
 				DEBUG() && console.log("[GyosJS] Scope mount error: Forbidden expression:", expr);
 			}
@@ -315,17 +320,12 @@ function handleDefinition(el: HTMLElement, scopeAttr: string): ScopeDefinition {
  * Mount a specific scope
  */
 function mountScope(el: HTMLElement, scopeAttr: string): void {
-	const definition = handleDefinition(el, scopeAttr);
-
 	// Check if already mounted
 	if (getMountedScope(el)) {
 		return;
 	}
 
-	// Check if element is static (no reactivity)
-	if (el.hasAttribute('g-static')) {
-		return;
-	}
+	const definition = handleDefinition(el, scopeAttr);
 
 	// Check hydration strategy
 	const hydrationStrategy = getHydrationStrategy(el);
@@ -399,14 +399,20 @@ function mountScopeInternal(el: HTMLElement, definition: ScopeDefinition): void 
 	// Parse and bind template (portals will be processed inside *if)
 	// Pass onMount callback to be called after parsing (or after hydration triggers)
 	parseTemplate(el, instance, () => {
+		// The hook may inspect or clean up its own mount. Register before calling
+		// user code, and do not register again if the hook disposes the scope.
+		registerMountedScope(el, instance);
 		// Call lifecycle hook after template is parsed
 		if (instance.onMount) {
-			Promise.resolve(instance.onMount.call(instance)).catch(console.error);
+			try {
+				Promise.resolve(instance.onMount.call(instance)).catch(console.error);
+			} catch (error) {
+				console.error('[Component] Error in onMount:', error);
+			}
 		}
 	});
 
-	// Store instance
-	registerMountedScope(el, instance);
+	if (getMountedScope(el) !== instance) return;
 
 	// Cache instance if g-scope-persist is set (with interpolation support)
 	getPersistKey(el, persistKey => {
@@ -425,7 +431,7 @@ function createContext(el: HTMLElement, getInstance: () => any): ComponentContex
 
 	// Find all refs within this scope only
 	el.querySelectorAll('[g-ref]').forEach(refEl => {
-		if (isInIgnoredTree(refEl)) return;
+		if (isInIgnoredTree(refEl) || (refEl.closest('[g-scope]') || el) !== el) return;
 		const refName = refEl.getAttribute('g-ref');
 		if (refName && !hasUnsafePropertyPath(refName)) {
 			refs[refName] = refEl as HTMLElement;
@@ -483,6 +489,7 @@ function createContext(el: HTMLElement, getInstance: () => any): ComponentContex
 			const { immediate = false, deep = false, debounce = 0 } = options;
 
 			let timeoutId: any;
+			let active = true;
 
 			if (debounce > 0) {
 				// Wrap handler with debounce
@@ -490,7 +497,8 @@ function createContext(el: HTMLElement, getInstance: () => any): ComponentContex
 				handler = (...args: any[]) => {
 					clearTimeout(timeoutId);
 					timeoutId = setTimeout(() => {
-						originalHandler(...args);
+						timeoutId = undefined;
+						if (active) untrack(() => originalHandler.call(instance, ...args));
 					}, debounce);
 				};
 			}
@@ -523,7 +531,7 @@ function createContext(el: HTMLElement, getInstance: () => any): ComponentContex
 
 					// Call immediately if requested
 					if (immediate) {
-						handler.call(instance, clonedValue, undefined);
+						untrack(() => handler.call(instance, clonedValue, undefined));
 					}
 					return;
 				}
@@ -531,24 +539,31 @@ function createContext(el: HTMLElement, getInstance: () => any): ComponentContex
 				// Check if value actually changed
 				const changed = deep
 					? !deepEqual(oldValue, clonedValue)
-					: oldValue !== clonedValue;
+					: !Object.is(oldValue, clonedValue);
 
 				if (changed) {
-					handler.call(instance, clonedValue, oldValue);
+					untrack(() => handler.call(instance, clonedValue, oldValue));
 					oldValue = deep && typeof clonedValue === 'object'
 						? clone(clonedValue)
 						: clonedValue;
 				}
 			});
 
+			const stopWatching = () => {
+				active = false;
+				clearTimeout(timeoutId);
+				timeoutId = undefined;
+				watchEffect();
+			};
+
 			// Store cleanup for unmount
 			if (!instance.__gyos_effects__) {
 				instance.__gyos_effects__ = [];
 			}
-			instance.__gyos_effects__.push(watchEffect);
+			instance.__gyos_effects__.push(stopWatching);
 
 			// Return unwatch function
-			return watchEffect;
+			return stopWatching;
 		},
 
 		$effect: (fn: () => void | (() => void)) => {

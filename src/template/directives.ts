@@ -8,6 +8,7 @@ import { isInIgnoredTree, isInStaticParent } from '../utils/helpers';
 import { queueReactiveEffect } from './effect-queue';
 import { applyEnterTransition, applyLeaveTransition, parseTransitionConfig } from './structurals/transition-helpers';
 import { transitionManager } from '../core/transition';
+import { disposeNode } from './cleanup';
 
 /**
  * Process built-in and custom directives
@@ -69,6 +70,7 @@ export function processDirectives(element: HTMLElement, scope: any, root: HTMLEl
         const expr = element.getAttribute('g-html')!;
         queueReactiveEffect(element, () => {
             const value = evaluateExpression(expr, scope);
+            Array.from(element.childNodes).forEach(child => disposeNode(child));
             element.innerHTML = value;
         });
     }
@@ -78,6 +80,7 @@ export function processDirectives(element: HTMLElement, scope: any, root: HTMLEl
         const expr = element.getAttribute('g-text')!;
         queueReactiveEffect(element, () => {
             const value = evaluateExpression(expr, scope);
+            Array.from(element.childNodes).forEach(child => disposeNode(child));
             element.textContent = value;
         });
     }
@@ -159,7 +162,7 @@ export function processDirectives(element: HTMLElement, scope: any, root: HTMLEl
  * @param scope - Scope object for evaluation
  */
 export function processDirectivesStatic(el: HTMLElement, scope: any): void {
-    const directives = Array.from(el.querySelectorAll('[g-show], [g-html], [g-text]'))
+    const directives = [el, ...el.querySelectorAll('[g-show], [g-html], [g-text]')]
 		.filter(element => !isInIgnoredTree(element));
 
     directives.forEach(elem => {

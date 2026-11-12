@@ -105,14 +105,6 @@ export function evaluateExpression(
  * @returns Evaluated value
  */
 function evaluateSimpleExpression(expr: string, scope: any): any {
-    // Handle string literals
-    if (
-        (expr.startsWith("'") && expr.endsWith("'")) ||
-        (expr.startsWith('"') && expr.endsWith('"'))
-    ) {
-        return expr.slice(1, -1);
-    }
-
     // Handle numbers
     if (!isNaN(Number(expr))) {
         return Number(expr);

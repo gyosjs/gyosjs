@@ -107,8 +107,8 @@ export function off(event: string, handler?: Function): void {
  */
 export function once(event: string, handler: Function): () => void {
 	const wrapper = (...args: any[]) => {
-		handler(...args);
 		off(event, wrapper);
+		handler(...args);
 	};
 
 	return on(event, wrapper);

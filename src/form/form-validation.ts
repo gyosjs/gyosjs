@@ -273,8 +273,15 @@ export function processValidateDirective(el: HTMLElement): void {
     state.errors.value[modelAttr] = null;
     state.touched.value[modelAttr] = false;
 
-    // Validation function
-    const validateField = async () => {
+    let active = true;
+    let generation = 0;
+    let timeout: ReturnType<typeof setTimeout> | undefined;
+    let latestValidation: Promise<void> = Promise.resolve();
+    // Each control publishes only its newest result. validateAll also waits for
+    // a newer validation that superseded the request it originally started.
+    const runValidation = async () => {
+        if (!active) return;
+        const request = ++generation;
         const value = getControlValue(el, form);
 
         // Get form context for validators that need it (like 'same')
@@ -290,7 +297,18 @@ export function processValidateDirective(el: HTMLElement): void {
             }
         });
 
-        const error = await validate(value, rules, { form: formData, field: modelAttr });
+        let error: string | null;
+        try {
+            error = await validate(value, rules, { form: formData, field: modelAttr });
+        } catch (cause) {
+            console.error('[GyosJS] Field validation failed:', cause);
+            error = 'Validation failed. Please try again.';
+        }
+        if (!active) return;
+        if (request !== generation) { await latestValidation; return; }
+        // Input may have changed while its debounce timer has not fired yet.
+        // A submit must validate the current value before publishing approval.
+        if (value !== getControlValue(el, form)) { await validateField(); return; }
 
         // Update errors - only if changed
         const currentErrors = state.errors.value;
@@ -301,6 +319,12 @@ export function processValidateDirective(el: HTMLElement): void {
             state.errors.value = { ...currentErrors };
             updateFormState(state);
         }
+    };
+    const validateField = () => {
+        clearTimeout(timeout);
+        timeout = undefined;
+        latestValidation = runValidation();
+        return latestValidation;
     };
 
     // Register validator for validateAll
@@ -324,7 +348,6 @@ export function processValidateDirective(el: HTMLElement): void {
     el.addEventListener('blur', blurListener);
 
     // Validate on input (with debounce)
-    let timeout: any;
     const inputListener = () => {
         clearTimeout(timeout);
         timeout = setTimeout(() => {
@@ -337,6 +360,20 @@ export function processValidateDirective(el: HTMLElement): void {
         (el as any).__gyos_effects__ = [];
     }
     (el as any).__gyos_effects__.push(() => {
+        active = false;
+        generation++;
+        delete (el as any)[validationFieldKey];
+        const validators = formValidators.get(form);
+        const index = validators?.indexOf(validateField) ?? -1;
+        if (index !== -1) validators!.splice(index, 1);
+        const sharesField = Array.from(form.querySelectorAll('input, textarea, select'))
+            .some(control => (control as any)[validationFieldKey] === modelAttr);
+        if (!sharesField) {
+            const errors = { ...state.errors.peek }; delete errors[modelAttr];
+            const touched = { ...state.touched.peek }; delete touched[modelAttr];
+            state.errors.value = errors; state.touched.value = touched;
+            updateFormState(state);
+        }
         el.removeEventListener('blur', blurListener);
         el.removeEventListener('input', inputListener);
         clearTimeout(timeout);
@@ -415,7 +452,8 @@ export function processFormValidation(root: HTMLElement, scope: any): void {
     }
 
     // Then process g-validate
-    root.querySelectorAll('[g-validate]').forEach(el => {
+    [root, ...root.querySelectorAll('[g-validate]')].forEach(el => {
+        if (!el.hasAttribute('g-validate')) return;
         if (isInIgnoredTree(el)) return;
         if (el instanceof HTMLElement) {
             processValidateDirective(el);
@@ -423,7 +461,8 @@ export function processFormValidation(root: HTMLElement, scope: any): void {
     });
 
     // Finally process g-errors
-    root.querySelectorAll('[g-errors]').forEach(el => {
+    [root, ...root.querySelectorAll('[g-errors]')].forEach(el => {
+        if (!el.hasAttribute('g-errors')) return;
         if (isInIgnoredTree(el)) return;
         if (el instanceof HTMLElement) {
             processErrorsDirective(el);
