@@ -6,6 +6,12 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Fixed
+
+- Detach unobserved computed values from upstream subscriptions, including chains whose last consumer stops. Later reads validate the cached dependencies and subscriptions can resume; synchronous computed reads and effect/batch scheduling remain unchanged.
+- Deep watches preserve cyclic/shared references and compare Map/Set snapshots instead of treating collections as empty objects. Sparse array lengths are preserved. Native collection mutations are still not reactive: replace the collection to notify consumers. Collection comparison includes iteration order.
+- Honor cleanup during initial template/effect/watch execution. Do not resurrect the scope, run later queued bindings, attach a late disposer, or create its portal after cleanup. Scope observers registered through an old disposed context do not start; an explicit remount creates a new lifetime.
+
 ## [0.5.4] - 2026-11-12
 
 ### Fixed

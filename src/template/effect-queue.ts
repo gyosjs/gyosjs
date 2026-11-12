@@ -1,10 +1,12 @@
 import { effect } from '../reactivity/signal';
+import { cleanupGeneration } from './lifetime';
 
 type EffectRunner = () => void | (() => void);
 
 type QueuedEffect = {
     target: Node;
     runner: EffectRunner;
+    generation: number;
 };
 
 const effectQueueStack: QueuedEffect[][] = [];
@@ -13,10 +15,15 @@ function currentQueue(): QueuedEffect[] | undefined {
     return effectQueueStack[effectQueueStack.length - 1];
 }
 
-function attachDispose(target: Node, runner: EffectRunner): void {
+function attachDispose(target: Node, runner: EffectRunner, generation: number): void {
     // An earlier queued content binding can replace this subtree during flush.
-    if (!target.isConnected) return;
+    if (!target.isConnected || cleanupGeneration(target) !== generation) return;
     const dispose = effect(runner);
+    // The first execution can clean its own scope before effect() returns.
+    if (cleanupGeneration(target) !== generation || !target.isConnected) {
+        dispose();
+        return;
+    }
     if (!(target as any).__gyos_effects__) {
         (target as any).__gyos_effects__ = [];
     }
@@ -38,10 +45,10 @@ export function beginEffectCollection(): void {
 export function queueReactiveEffect(target: Node, runner: EffectRunner): void {
     const queue = currentQueue();
     if (!queue) {
-        attachDispose(target, runner);
+        attachDispose(target, runner, cleanupGeneration(target));
         return;
     }
-    queue.push({ target, runner });
+    queue.push({ target, runner, generation: cleanupGeneration(target) });
 }
 
 /**
@@ -53,8 +60,8 @@ export function flushEffectCollection(): void {
     if (!queue) return;
 
     for (let i = 0; i < queue.length; i++) {
-        const { target, runner } = queue[i];
-        attachDispose(target, runner);
+        const { target, runner, generation } = queue[i];
+        attachDispose(target, runner, generation);
     }
 
     queue.length = 0;

@@ -10,6 +10,7 @@ import { processTextNodes, processTextNodesStatic } from "./text";
 import { beginEffectCollection, flushEffectCollection } from "./effect-queue";
 import { getScopeFromElement } from "../core/scope-registry";
 import { hasStructuralParent, isInIgnoredTree, walkerDOM } from "../utils/helpers";
+import { cleanupGeneration } from './lifetime';
 
 // Mount function injected from component.ts to avoid circular dependency
 let mountFunction: ((el: HTMLElement) => void) | null = null;
@@ -125,6 +126,7 @@ const elementBelongsToAnotherScope = (el: HTMLElement, scope: any): boolean => {
 
 export function processParse(element: HTMLElement, scope: any, fromStructural = false): void {
 	if (isInIgnoredTree(element)) return;
+    const generation = cleanupGeneration(element);
     if (fromStructural && element.hasAttribute('g-scope') && mountFunction) {
         mountFunction(element);
         return;
@@ -147,6 +149,7 @@ export function processParse(element: HTMLElement, scope: any, fromStructural = 
     processStructuralDirectives(allElements, scope);
 
     allElements.forEach(el => {
+		if (cleanupGeneration(element) !== generation) return;
 		// Structural processing may replace an element and detach its original subtree.
 		if (!document.body.contains(el)) return;
         if (el.attributes.length === 0) return; // Skip if no attributes
@@ -180,15 +183,17 @@ export function processParse(element: HTMLElement, scope: any, fromStructural = 
     });
 
     // Process text nodes
-    processTextNodes(element, scope);
-    // Process events
-    processEvents(element, scope);
+    if (cleanupGeneration(element) === generation) {
+        processTextNodes(element, scope);
+        // Process events
+        processEvents(element, scope);
+    }
 
     // Activate all queued effects after scanning
     flushEffectCollection();
 
     // Handle portals last (after everything is processed)
-    if (element.hasAttribute('g-portal')) {
+    if (cleanupGeneration(element) === generation && element.hasAttribute('g-portal')) {
         const targetSelector = element.getAttribute('g-portal')!;
         portalCreate(element, targetSelector);
     }

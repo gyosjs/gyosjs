@@ -585,6 +585,8 @@ If you want to communicate between different scopes, you need to use:
 
 For the example above, `$watch('items.0.count', handler)` can observe the same field. The `$effect` form is useful when the computation reads several fields. Deep watching clones and compares the watched data; avoid watching a large tree when a narrow path is sufficient.
 
+> **Unreleased:** deep watching handles cyclic/shared object references and snapshots `Map`/`Set` contents in iteration order. A native collection is not a reactive proxy: replace it, for example `this.tags = new Set([...this.tags, 'new'])`, to notify the watcher. In-place `.add()`/`.set()` alone does not notify. Cleanup during the first watcher/effect callback also stops that observer; callbacks registered through a disposed context do not start.
+
 ---
 
 5. `$effect` – create manual effects for side-effects

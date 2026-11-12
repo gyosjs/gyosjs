@@ -5,6 +5,7 @@
 import { portalDestroy } from '../core/portal';
 import { unmountScope } from '../core/scope-registry';
 import { untrack } from '../reactivity/signal';
+import { invalidateLifetime } from './lifetime';
 
 /**
  * Dispose all effects attached to an element and its descendants
@@ -21,6 +22,7 @@ export function disposeNode(element: Node, removeElement = false): void {
 }
 
 function disposeNodeInternal(element: Node, removeElement = false): void {
+    invalidateLifetime(element);
     const portal = (element as any).__gyos_portal__ as HTMLElement | undefined;
     if (portal) {
         delete (element as any).__gyos_portal__;

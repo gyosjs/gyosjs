@@ -232,6 +232,8 @@ In which:
 * reading inside a batch returns the value for writes made so far; additional writes can require another calculation
 * computed-only consumers skip unchanged results; keep computed callbacks pure and put side effects in `effect()`
 
+> **Unreleased:** unused computed values also detach from their source subscriptions. Stopping the final consumer releases an entire unused computed chain; reading or subscribing again still works. Dispose effects/subscriptions when finished. This improves lifetime management without changing write/batch timing.
+
 > Computed values are very useful for separating calculation logic from raw data, helping keep code clean and maintainable.
 
 ---

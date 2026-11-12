@@ -34,6 +34,7 @@ type Observer = (() => void) & {
 	__dependencies?: Set<Set<Observer>>;
 	__versions?: Map<ReactiveSource, number>;
 	__invalidate?: boolean;
+	__subscribe?: boolean;
 };
 
 interface ReactiveSource {
@@ -43,12 +44,33 @@ interface ReactiveSource {
 }
 
 let currentEffect: Observer | null = null;
+// Dormant computed chains only need pull validation after an actual write.
+let writeVersion = 0;
 
 function track(source: ReactiveSource): void {
 	if (!currentEffect) return;
-	source.subscribers.add(currentEffect);
-	currentEffect.__dependencies?.add(source.subscribers);
+	// Unobserved computed values retain versions for pull-based validation, but
+	// must not leave a strong subscription from a long-lived source to themselves.
+	if (currentEffect.__subscribe !== false) {
+		source.subscribers.add(currentEffect);
+		currentEffect.__dependencies?.add(source.subscribers);
+	}
 	currentEffect.__versions?.set(source, source.version);
+}
+
+class ComputedSubscribers extends Set<Observer> {
+	constructor(private activate: () => void, private deactivate: () => void) { super(); }
+	add(observer: Observer): this {
+		const empty = this.size === 0;
+		super.add(observer);
+		if (empty) this.activate();
+		return this;
+	}
+	delete(observer: Observer): boolean {
+		const removed = super.delete(observer);
+		if (removed && this.size === 0) this.deactivate();
+		return removed;
+	}
 }
 
 function dependenciesChanged(versions: Map<ReactiveSource, number>): boolean {
@@ -184,7 +206,7 @@ export function signal<T>(initialValue: T, debugOrOptions?: string | SignalOptio
 		if (currentEffect) {
 			const wasSubscribed = subscribers.has(currentEffect);
 			track(source);
-			if (!wasSubscribed) {
+			if (!wasSubscribed && subscribers.has(currentEffect)) {
 
 				if (DEBUG_VERBOSE()) {
 					console.log('[Signal]', formatDebugLabel(debugId, debugLabel), 'Added subscriber, total:', subscribers.size);
@@ -206,6 +228,7 @@ export function signal<T>(initialValue: T, debugOrOptions?: string | SignalOptio
 		// Deep equality is expensive, let user handle it
 		value = newValue;
 		source.version++;
+		writeVersion++;
 
 		DEBUG_VERBOSE() && console.log('[Signal]', formatDebugLabel(debugId, debugLabel), 'Value changed to:', newValue);
 
@@ -322,9 +345,22 @@ export function computed<T>(fn: () => T): Computed<T> {
 	let isDirty = true;
 	let isFirstRun = true;
 	let computing = false;
-	const subscribers = new Set<Observer>();
+	let checkedVersion = -1;
 	const dependencies = new Set<Set<Observer>>();
 	const versions = new Map<ReactiveSource, number>();
+	const subscribers = new ComputedSubscribers(() => {
+		invalidate.__subscribe = true;
+		// The read preceding this subscription already refreshed the cache.
+		// Reconnect the whole upstream chain when a consumer starts observing.
+		for (const dependency of versions.keys()) {
+			dependency.subscribers.add(invalidate);
+			dependencies.add(dependency.subscribers);
+		}
+	}, () => {
+		invalidate.__subscribe = false;
+		dependencies.forEach(dependency => dependency.delete(invalidate));
+		dependencies.clear();
+	});
 	const source: ReactiveSource = { subscribers, version: 0, refresh: () => compute() };
 	const invalidate: Observer = () => {
 		// A later batched write must also move already queued consumers into
@@ -334,11 +370,12 @@ export function computed<T>(fn: () => T): Computed<T> {
 		notifySubscribers(subscribers);
 	};
 	invalidate.__invalidate = true;
+	invalidate.__subscribe = false;
 	invalidate.__dependencies = dependencies;
 	invalidate.__versions = versions;
 
 	const compute = () => {
-		if (!isDirty && !isFirstRun) return;
+		if (!isDirty && !isFirstRun && (subscribers.size > 0 || checkedVersion === writeVersion)) return;
 		if (computing) throw new Error('[Computed] Circular dependency');
 		computing = true;
 		const previousEffect = currentEffect;
@@ -366,6 +403,7 @@ export function computed<T>(fn: () => T): Computed<T> {
 		} finally {
 			currentEffect = previousEffect;
 			computing = false;
+			checkedVersion = writeVersion;
 		}
 	};
 
@@ -389,7 +427,7 @@ export function computed<T>(fn: () => T): Computed<T> {
 		},
 		peek: {
 			get: () => {
-				if (isDirty || isFirstRun) compute();
+				compute();
 				return value;
 			},
 			enumerable: true,
