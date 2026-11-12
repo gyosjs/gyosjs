@@ -4,7 +4,7 @@
  */
 import { getDirective } from '../core/directive';
 import { evaluateExpression } from './expression';
-import { isInIgnoredTree, isInStaticParent } from '../utils/helpers';
+import { isInIgnoredTree, isInStaticTree } from '../utils/helpers';
 import { queueReactiveEffect } from './effect-queue';
 import { applyEnterTransition, applyLeaveTransition, parseTransitionConfig } from './structurals/transition-helpers';
 import { transitionManager } from '../core/transition';
@@ -23,11 +23,8 @@ import { disposeNode } from './cleanup';
  * @param el - Root element to process
  * @param scope - Scope object for evaluation
  */
-export function processDirectives(element: HTMLElement, scope: any, root: HTMLElement): void {
+export function processDirectives(element: HTMLElement, scope: any): void {
 	if (isInIgnoredTree(element)) return;
-
-    // Skip if inside g-static parent
-    if (isInStaticParent(element, root)) return;
 
     // Built-in directives: g-show
     if (element.hasAttribute('g-show')) {
@@ -85,6 +82,9 @@ export function processDirectives(element: HTMLElement, scope: any, root: HTMLEl
         });
     }
 
+    // Static branches render the built-in display bindings, not interactive
+    // custom directives. queueReactiveEffect runs these bindings only once.
+    if (isInStaticTree(element)) return;
     // Process custom directives (g-focus, g-tooltip, g-clickoutside, etc.)
     Array.from(element.attributes).forEach(attr => {
         // Skip built-in and framework directives
@@ -151,42 +151,6 @@ export function processDirectives(element: HTMLElement, scope: any, root: HTMLEl
                     });
                 }
             }
-        }
-    });
-}
-
-/**
- * Process static directives (no reactivity)
- * 
- * @param el - Root element to process
- * @param scope - Scope object for evaluation
- */
-export function processDirectivesStatic(el: HTMLElement, scope: any): void {
-    const directives = [el, ...el.querySelectorAll('[g-show], [g-html], [g-text]')]
-		.filter(element => !isInIgnoredTree(element));
-
-    directives.forEach(elem => {
-        const element = elem as HTMLElement;
-
-        // g-show
-        if (element.hasAttribute('g-show')) {
-            const expr = element.getAttribute('g-show')!;
-            const value = evaluateExpression(expr, scope);
-            element.style.display = value ? '' : 'none';
-        }
-
-        // g-html
-        if (element.hasAttribute('g-html')) {
-            const expr = element.getAttribute('g-html')!;
-            const value = evaluateExpression(expr, scope);
-            element.innerHTML = value;
-        }
-
-        // g-text
-        if (element.hasAttribute('g-text')) {
-            const expr = element.getAttribute('g-text')!;
-            const value = evaluateExpression(expr, scope);
-            element.textContent = value;
         }
     });
 }

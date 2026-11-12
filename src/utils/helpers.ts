@@ -173,6 +173,16 @@ export function isInStaticParent(element: Element, root: HTMLElement): boolean {
 	return false;
 }
 
+/** Includes the root and structural comment anchors as well as ancestors. */
+export function isInStaticTree(node: Node): boolean {
+	let current: Node | null = node;
+	while (current) {
+		if ((current as any).__gyos_static__ || (current as Element).hasAttribute?.('g-static')) return true;
+		current = current.parentNode;
+	}
+	return false;
+}
+
 /**
  * Check whether GyosJS must leave an element and its subtree untouched.
  */

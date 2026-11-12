@@ -576,6 +576,10 @@ Create DOM references on `$refs`.
 
 Render once and skip future reactivity updates for that branch.
 
+> **Unreleased:** static roots and nested branches share the same initial-render path, including `*if`/`*for`/`*switch`, text, attribute bindings and `g-show`/`g-text`/`g-html`. Nested scopes render with their own state and retain their lifecycle hooks, but their templates stay static. The first `*await` request may settle; replacing the request does not start another render, and cleanup invalidates pending work. Template events, `g-model`, form bindings, custom directives and portals are not initialized inside the static boundary. Explicit application effects are not frozen by `g-static`.
+
+> The boundary includes a structural directive on the same element: `<p *for="item in items" g-static>{item}</p>` snapshots the initial list. Put `g-static` inside an outer reactive structural branch if that outer condition/list must keep updating. Keep `g-ignore` for content that must not receive an initial render at all. Neither boundary disables native browser behavior or MPA Boost; use `g-no-boost` separately when needed.
+
 ```html
 <h1 g-static>{title}</h1>
 ```
@@ -1241,6 +1245,8 @@ Exclude an object from deep proxy conversion. The containing property remains re
 ### `Gyos.shallow(object)`
 
 Make only the object's direct properties reactive. Nested objects remain raw.
+
+> **Unreleased — locked nested data:** frozen/locked object, array and function properties can be read without violating JavaScript Proxy invariants. A non-configurable, non-writable data property returns its exact stored value, so its raw child does not gain a deep reactive proxy. Replace the mutable containing field to notify readers. Sealed fields that remain writable stay reactive. Required keys/descriptors remain visible even when their names are reserved by GyosJS. Keep scope/store root definitions mutable and extensible; this fix supports restricted nested data, not freezing a live scope and its lifecycle bookkeeping.
 
 ---
 

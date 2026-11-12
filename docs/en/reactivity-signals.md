@@ -242,6 +242,8 @@ In which:
 
 Objects and arrays in GyosJS are also reactive. Nested deep inside are also signals.
 
+> **Unreleased — frozen nested data:** reading a locked object/array/function field preserves its exact value instead of wrapping it, as required by JavaScript. Such a raw child does not become deeply reactive; replace its mutable containing field to update consumers. Sealed writable fields still work reactively. Keep scope/store root definitions mutable and extensible for lifecycle/context setup.
+
 ```html
 <div g-scope="{user: { name: 'Alice', age: 20 }}" class="card">
     <div class="card-header">Demo Reactive Object</div>

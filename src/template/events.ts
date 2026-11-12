@@ -1,5 +1,5 @@
 import { getScopeFromElement } from '../core/scope-registry';
-import { isInIgnoredTree, isInStaticParent, walkerDOM } from '../utils/helpers';
+import { isInIgnoredTree, isInStaticTree, walkerDOM } from '../utils/helpers';
 import { batch } from '../reactivity/signal';
 import { expressionRuntime } from '../runtime/evaluator';
 
@@ -195,7 +195,7 @@ export function processEvents(el: HTMLElement, scope: any): void {
 
     elementsToProcess.forEach(element => {
         // Skip if inside g-static parent (double check)
-        if (isInStaticParent(element, el)) return;
+        if (isInStaticTree(element)) return;
 		const ownerScope = getScopeFromElement(element as HTMLElement);
 		if (ownerScope && ownerScope !== scope) return;
 
