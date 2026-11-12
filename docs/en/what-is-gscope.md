@@ -209,7 +209,7 @@ Write local state through the reactive scope (`this.query`, `g-model`) rather th
 
 Factory and signal choices are independent: a factory can return ordinary fields, and an explicit signal can be local or deliberately shared. See [Reactivity & Signals](./reactivity-signals.md).
 
-> Published 0.5.2 limitation: factory scope `this.$watch()` / `this.$effect()` and their captured-context equivalents do not attach observers, even in `onMount`. A fix is prepared under **Unreleased**, not published on npm yet. Ordinary fields, template reactivity and `g-model` still work. On 0.5.2, advanced code can use `Gyos.effect()` in `onMount` and dispose it explicitly in `onUnmount`. After the fix, register scope observers in `onMount`, not before the factory returns its state.
+> Fixed in 0.5.3: in version 0.5.2, factory scope `this.$watch()` / `this.$effect()` and their captured-context equivalents do not attach observers, even in `onMount`. Ordinary fields, template reactivity and `g-model` still work. On 0.5.2, advanced code can use `Gyos.effect()` in `onMount` and dispose it explicitly in `onUnmount`. After the fix, register scope observers in `onMount`, not before the factory returns its state.
 
 ---
 

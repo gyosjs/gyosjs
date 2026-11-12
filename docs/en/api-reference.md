@@ -280,7 +280,7 @@ Gyos.scope('SearchBox', {
 
 `$watch` paths use dot notation, including array indices (`items.0.count`); bracket paths (`items[0].count`) are not parsed. Watching an array/object field without `deep` observes replacement. `{ deep: true }` clones and compares nested values, including array mutations; prefer a narrow path or `$effect` for large data.
 
-> **0.5.2 / Unreleased:** Published 0.5.2 cannot attach `$watch` or `$effect` in factory scopes, including calls through the factory context. The fix is in Unreleased and is not on npm yet. Template reactivity is unaffected. On 0.5.2, use `Gyos.effect()` in `onMount` with explicit disposal in `onUnmount` if needed. With the fix, register scope observers after the factory returns, normally in `onMount`; they are bound to that mount and disposed by scope cleanup.
+> **Fixed in 0.5.3:** Version 0.5.2 cannot attach `$watch` or `$effect` in factory scopes, including calls through the factory context. Template reactivity is unaffected. On 0.5.2, use `Gyos.effect()` in `onMount` with explicit disposal in `onUnmount` if needed. With the fix, register scope observers after the factory returns, normally in `onMount`; they are bound to that mount and disposed by scope cleanup.
 
 ### `g-scope-persist`
 
