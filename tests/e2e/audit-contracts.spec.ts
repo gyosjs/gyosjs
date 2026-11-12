@@ -4,7 +4,8 @@ for (const build of ['standard', 'csp']) {
   test(`${build} partial history restores working reactive controls`, async ({ page }) => {
     const errors: string[] = [];
     page.on('pageerror', error => errors.push(error.message));
-    const bundle = build === 'csp' ? 'gyos.csp.auto.min.js' : 'gyos.auto.min.js';
+    page.on('console', message => { if (message.type() === 'error') errors.push(message.text()); });
+    const bundle = build === 'csp' ? 'gyos.csp.auto.js' : 'gyos.auto.js';
     await page.route('**/audit-bundle.js', route => route.fulfill({ contentType: 'text/javascript; charset=utf-8', path: `dist/${bundle}` }));
     await page.route('**/audit-history/*', route => {
       const count = new URL(route.request().url()).pathname.endsWith('/next') ? 10 : 1;
@@ -20,10 +21,13 @@ for (const build of ['standard', 'csp']) {
     await page.locator('main').evaluate(el => (el as any).__auditIdentity = 'retained');
     await page.getByRole('link', { name: 'Next' }).click();
     await expect(page.locator('#panel output')).toHaveText('10');
+    expect(await page.locator('main').evaluate(el => (el as any).__auditIdentity), 'shell after Next').toBe('retained');
     await page.goBack();
     await expect(page.locator('#panel output')).toHaveText('1');
     await page.getByRole('button', { name: 'Increment' }).click();
     await expect(page.locator('#panel output')).toHaveText('2');
+    expect(errors).toEqual([]);
+    expect(await page.locator('main').evaluate(el => (el as any).__auditIdentity), 'shell after Back').toBe('retained');
     await page.goForward();
     await expect(page.locator('#panel output')).toHaveText('10');
     await page.getByRole('button', { name: 'Increment' }).click();
