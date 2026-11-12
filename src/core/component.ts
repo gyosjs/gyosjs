@@ -353,8 +353,9 @@ function mountScopeInternal(el: HTMLElement, definition: ScopeDefinition): void 
 		instance = makeReactive(definition);
 	}
 
-	// Create component context (needs instance for $watch)
-	const context = createContext(el, instance);
+	// Factories receive context before their reactive instance exists. Resolve it
+	// when an observer is registered so captured context also works in onMount.
+	const context = createContext(el, () => instance);
 
 	// If function component, call it now with context
 	if (typeof definition === 'function' && !instance) {
@@ -418,7 +419,7 @@ function mountScopeInternal(el: HTMLElement, definition: ScopeDefinition): void 
 /**
  * Create component context
  */
-function createContext(el: HTMLElement, instance: any): ComponentContext {
+function createContext(el: HTMLElement, getInstance: () => any): ComponentContext {
 	const refs: Record<string, HTMLElement> = {};
 	const events = new Map<string, Set<Function>>();
 
@@ -473,6 +474,7 @@ function createContext(el: HTMLElement, instance: any): ComponentContext {
 
 		$watch: (key: string, handler: Function, options: WatchOptions = {}) => {
 			// Watch a reactive property for changes (supports nested paths like 'xxx.count')
+			const instance = getInstance();
 			if (!instance) {
 				DEBUG() && console.warn('[Component] $watch called before instance created');
 				return () => { };
@@ -551,6 +553,7 @@ function createContext(el: HTMLElement, instance: any): ComponentContext {
 
 		$effect: (fn: () => void | (() => void)) => {
 			// Shorthand for effect with auto cleanup on unmount
+			const instance = getInstance();
 			if (!instance) {
 				DEBUG() && console.warn('[Component] $effect called before instance created');
 				return () => { };

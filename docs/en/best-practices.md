@@ -247,6 +247,18 @@ Use `g-scope` when state belongs to one widget or one page section.
 </div>
 ```
 
+### Create fresh state for each reusable widget
+
+```js
+Gyos.scope('ProductForm', () => ({
+  name: '',
+  errors: [],
+  reset() { this.name = ''; this.errors = []; }
+}));
+```
+
+A named object definition is reused, not cloned. Use a fresh factory when repeated elements or MPA routes need independent state and context helpers. Allocate nested arrays/objects inside the factory too. Use an explicit store or shared signal for data that really is common; a factory can contain ordinary fields and does not require low-level signals. See [G-Scope](./what-is-gscope.md) for the two-input comparison and the published 0.5.2 observer limitation.
+
 ### Use stores only when multiple scopes truly share state
 
 ```html

@@ -19,7 +19,7 @@ It's where you **declare state**, **logic**, and **reactive context** for a piec
 
 ---
 
-`g-scope` is used to **create an independent data scope** for a piece of HTML.
+`g-scope` establishes a reactive context for a piece of HTML. Whether its state is independent depends on how that state is created or shared.
 
 Inside this scope, you can:
 
@@ -62,9 +62,9 @@ No build steps needed. No complex classes, components, or lifecycle required.
 
 Each `g-scope`:
 
-* has its own **state**
-* does not affect other scopes
-* is only reactive to the DOM inside it
+* owns the bindings in its subtree, excluding separately mounted child scopes
+* uses the state supplied by its declaration
+* has independent data when that declaration creates fresh state; shared objects, stores and signals can connect scopes
 
 ```html
 <div class="card">
@@ -172,6 +172,47 @@ This approach helps to:
 
 ---
 
+#### Object definitions and factories: who owns the state?
+
+A scope boundary determines which context evaluates a template. It does not guarantee that its data object is unique.
+
+| Declaration | State ownership |
+| --- | --- |
+| Inline `g-scope="{ query: '' }"` | A new object is parsed for each mount. |
+| `Gyos.scope('Inventory', { query: '' })` | The registry reuses that object for every mount of this name. |
+| `Gyos.scope('Inventory', () => ({ query: '' }))` | Each mount calls the factory and receives a new object. |
+
+Use the same markup to compare the two named definitions below. Try one registration at a time, then mount the page:
+
+```html
+<section g-scope="Inventory"><input g-model="query"><p>{query}</p></section>
+<section g-scope="Inventory"><input g-model="query"><p>{query}</p></section>
+```
+
+```js
+// Shared object: typing in either input updates both sections.
+Gyos.scope('Inventory', { query: '' });
+
+// Alternative: fresh object per mount; each section changes independently.
+// Gyos.scope('Inventory', () => ({ query: '' }));
+```
+
+With the manual runtime, call `Gyos.mountAll()` after registration and after the markup exists. Registering a name alone does not mount it. The auto build mounts at DOM ready.
+
+The arrow syntax is optional: `function () { return { query: '' }; }` is also a factory. What matters is returning fresh state. `() => sharedObject` still shares that object, and `{ ...defaults }` still shares nested objects/arrays from `defaults`. Allocate local nested state inside the factory too.
+
+On a normal cleanup/remount, a factory creates fresh state; a registered object can retain previous mutations for the lifetime of the registry. Persisted instances and snapshot navigation have their own restoration rules: do not assume every navigation calls the factory again.
+
+For reusable widgets and per-route forms, prefer a fresh factory. A direct object is valid for a single scope. When several mounted widgets need shared data but separate `$refs`, observers and lifecycle, use factories with an explicit store/shared signal rather than mounting the entire same object repeatedly. Reusing an object also reuses the instance on which mount context helpers are attached.
+
+Write local state through the reactive scope (`this.query`, `g-model`) rather than mutating the original raw object from outside it. Raw writes can bypass notifications.
+
+Factory and signal choices are independent: a factory can return ordinary fields, and an explicit signal can be local or deliberately shared. See [Reactivity & Signals](./reactivity-signals.md).
+
+> Published 0.5.2 limitation: factory scope `this.$watch()` / `this.$effect()` and their captured-context equivalents do not attach observers, even in `onMount`. A fix is prepared under **Unreleased**, not published on npm yet. Ordinary fields, template reactivity and `g-model` still work. On 0.5.2, advanced code can use `Gyos.effect()` in `onMount` and dispose it explicitly in `onUnmount`. After the fix, register scope observers in `onMount`, not before the factory returns its state.
+
+---
+
 #### Declare the scope using `gm-` and `gd-`
 
 Besides the above declaration methods, you can also use directives:
@@ -211,7 +252,7 @@ Note when using `gd-`:
 
 Note when using `gm-`:
 * `gm-increment="count++"` creates a void method `increment()` with no parameters
-* `gm-set-name:newName="name = newName"` creates a method `setName(newName)` & parameter `newName`
+* `gm-set-name:new-name="name = newName"` creates a method `setName(newName)` & parameter `newName`
 * `gm-get-name="return name"` creates a method `getName()` that returns the value of `name`
 * no need to use `this` because GyosJS automatically binds the correct context for you.
 * you can URL-encode logic like `gm-hello="alert%28%27Hello%20GyosJS%27%29%0A"`
@@ -300,13 +341,15 @@ All expressions are evaluated **within the context of the current scope**.
 
 Applies the `uppercase` filter to `message` before displaying.
 
-You can chain multiple filters: `{value | trim | lowercase}`.
+You can chain multiple filters: `{value | lowercase | truncate(20)}`.
 
 Details about pipes filters will be covered in the [Template Syntax](template-syntax.md) section.
 
 ---
 
 #### Computed value in `g-scope`
+
+Ordinary writes queue effect reruns in a microtask; computed reads see current state immediately. Getters and template methods also track reads, but do not have the cached-value contract of `Gyos.computed()`.
 
 Properties in the Scope are automatically reactive. Therefore, you can use functions or getters as computed values. When a function or getter is accessed in the template, GyosJS will automatically track the signals it depends on.
 
@@ -371,8 +414,8 @@ When the application grows larger, you can organize the code into smaller scopes
 ```
 
 Each child scope:
-* has its own state and logic
-* does not affect the parent scope or other scopes
+* evaluates its own template context without automatically inheriting parent fields
+* can share data intentionally through stores, signals or provided values
 * helps clearly separate responsibilities
 * accesses values and emits events between scopes via props or custom events
 
@@ -496,7 +539,7 @@ If you want to communicate between different scopes, you need to use:
 
 `$watch` is very useful when you need to perform side-effects or complex logic when a specific signal changes, without wanting to write that logic directly in computed or effect.
 
->Note: `$watch` does not track arrays. If you need to watch changes in an array (such as adding or removing elements), use `$effect` instead of `$watch`.
+> `$watch` accepts dot-separated paths, including numeric segments: `this.$watch('items.0.count', handler)`. Bracket syntax such as `'items[0].count'` is not parsed. Watching `'items'` without `deep` observes replacement; use `{ deep: true }` for nested changes and array mutations, or `$effect` to track only values you read.
 
 **See the following case:**
 
@@ -540,7 +583,7 @@ If you want to communicate between different scopes, you need to use:
 * `$watch('user.name', ...)` watches `user.name` normally
 * `$effect(() => { ... })` watches `items[0].count` inside effect
 
-When you click to increase `items[0].count`, you cannot use `$watch('items[0].count', ...)` because GyosJS doesn't support watching arrays with `$watch`. Instead, you use `$effect` to watch inside the effect.
+For the example above, `$watch('items.0.count', handler)` can observe the same field. The `$effect` form is useful when the computation reads several fields. Deep watching clones and compares the watched data; avoid watching a large tree when a narrow path is sufficient.
 
 ---
 
@@ -573,39 +616,28 @@ Allows you to write custom side-effects that will automatically re-run when the 
 * `$effect(this.logCount)` creates an effect from the `logCount` method
 * when `count` changes, `logCount` will automatically re-run and log the new value of `count`
 
-`$effect` is very useful when you need to perform complex side-effects or when you want to watch signals that cannot be watched with `$watch`, such as elements in an array.
+`$effect` tracks the reactive values read by its callback, including array elements. Use it for side effects depending on multiple values; use a getter or `Gyos.computed()` for derived data.
 
 **Some other examples with `Gyos.effect`:**
 
 ```js
-// create signals count, doubleCount
 const count = Gyos.signal(0);
-const doubleCount = Gyos.signal(0);
-
-// when count changes, doubleCount automatically updates
-const dispose = Gyos.effect(() => {
-  doubleCount.value = count() * 2;
-});
-
-count.value = 5; // change count
-console.log(doubleCount()); // logs 10
-
-// when no longer needed, dispose effect to avoid memory leaks
-dispose(); // dispose effect
+const doubleCount = Gyos.computed(() => count() * 2);
+count(5);
+console.log(doubleCount()); // 10: computed reads are synchronous
 
 const firstName = Gyos.signal('John');
 const lastName = Gyos.signal('Doe');
-
-Gyos.effect(() => {
+const dispose = Gyos.effect(() => {
   console.log(`Name: ${firstName()} ${lastName()}`);
-});
+}); // Name: John Doe
 
-// Batch multiple updates → only trigger once:
 Gyos.batch(() => {
   firstName('Alice');
   lastName('Johnson');
-});
-// Logs "Name: Alice Johnson" (only once!)
+}); // Name: Alice Johnson (one rerun at batch end)
+
+dispose();
 ```
 
 **In which:**
@@ -690,7 +722,7 @@ Supporting flexible scope declaration methods (inline object, `Gyos.scope()`, di
 #### Summary
 
 * `g-scope` is the foundation of GyosJS
-* each scope is an independent reactive context
+* scope boundaries and state ownership are separate: fresh objects isolate state; reused data shares it
 * scopes help make code clear, manageable, and less buggy
 * declare inline objects for small logic
 * declare `Gyos.scope()` for larger logic
