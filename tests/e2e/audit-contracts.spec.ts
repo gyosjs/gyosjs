@@ -1,11 +1,12 @@
 import { expect, test } from '@playwright/test';
 
 for (const build of ['standard', 'csp']) {
-  test(`${build} partial history restores working reactive controls`, async ({ page }) => {
+  for (const minified of [false, true]) {
+  test(`${build}${minified ? ' minified' : ''} partial history restores working reactive controls`, async ({ page }) => {
     const errors: string[] = [];
     page.on('pageerror', error => errors.push(error.message));
     page.on('console', message => { if (message.type() === 'error') errors.push(message.text()); });
-    const bundle = build === 'csp' ? 'gyos.csp.auto.js' : 'gyos.auto.js';
+    const bundle = `gyos.${build === 'csp' ? 'csp.' : ''}auto${minified ? '.min' : ''}.js`;
     await page.route('**/audit-bundle.js', route => route.fulfill({ contentType: 'text/javascript; charset=utf-8', path: `dist/${bundle}` }));
     await page.route('**/audit-history/*', route => {
       const count = new URL(route.request().url()).pathname.endsWith('/next') ? 10 : 1;
@@ -35,6 +36,7 @@ for (const build of ['standard', 'csp']) {
     expect(await page.locator('main').evaluate(el => (el as any).__auditIdentity)).toBe('retained');
     expect(errors).toEqual([]);
   });
+  }
 
   test(`${build} bundle respects structural ownership and async cleanup`, async ({ page }) => {
     const errors: string[] = [];

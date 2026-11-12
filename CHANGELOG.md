@@ -17,6 +17,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - Register dynamically rendered validation controls and unregister removed controls. Ignore stale async validation results, revalidate values edited during a pending validation, and reject invalid integer/calendar values while enforcing numeric bounds on zero.
 - Resolve router fragments as decoded element IDs, including numeric IDs, punctuation and Unicode, instead of treating fragments as CSS selectors.
 - Reconstruct reactive partial targets from response HTML on history navigation instead of replaying a DOM clone whose bindings were already consumed. Static partial history keeps its fragment cache. Reactive targets may require a fresh GET when no response snapshot exists; arbitrary client state is not serialized.
+- Preserve parsed directive attributes such as `@click` and `*if` during DOM morphs on browsers whose `setAttribute` rejects those names, preventing history restoration from falling back to a full page load.
 
 ### Documentation
 
