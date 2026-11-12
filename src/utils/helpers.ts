@@ -66,26 +66,30 @@ export function throttle<T extends (...args: any[]) => any>(
 /**
  * Deep clone object
  */
-export function clone<T>(obj: T): T {
+export function clone<T>(obj: T, seen = new WeakMap<object, any>()): T {
 	if (obj === null || typeof obj !== 'object') {
 		return obj;
 	}
-
-	if (obj instanceof Date) {
-		return new Date(obj.getTime()) as any;
-	}
-
-	if (obj instanceof Array) {
-		return obj.map(item => clone(item)) as any;
-	}
-
-	const cloned: any = {};
-	for (const key in obj) {
-		if (Object.prototype.hasOwnProperty.call(obj, key)) {
-			cloned[key] = clone(obj[key]);
+	if (seen.has(obj)) return seen.get(obj);
+	let cloned: any;
+	if (obj instanceof Date) cloned = new Date(obj.getTime());
+	else if (obj instanceof Map) cloned = new Map();
+	else if (obj instanceof Set) cloned = new Set();
+	else if (Array.isArray(obj)) cloned = new Array(obj.length);
+	else cloned = {};
+	seen.set(obj, cloned);
+	if (obj instanceof Map) {
+		obj.forEach((value, key) => cloned.set(clone(key, seen), clone(value, seen)));
+	} else if (obj instanceof Set) {
+		obj.forEach(value => cloned.add(clone(value, seen)));
+	} else {
+		for (const key of Object.keys(obj)) {
+			// An own __proto__ data key must not mutate the snapshot's prototype.
+			Object.defineProperty(cloned, key, {
+				value: clone((obj as any)[key], seen), enumerable: true, writable: true, configurable: true
+			});
 		}
 	}
-
 	return cloned;
 }
 
@@ -111,7 +115,7 @@ export function uniqueId(prefix = 'gyos'): string {
 	return `${prefix}-${++uniqueIdCounter}`;
 }
 
-export function deepEqual(a: any, b: any): boolean {
+export function deepEqual(a: any, b: any, pairs = new WeakMap<object, object>(), reverse = new WeakMap<object, object>()): boolean {
 	if (Object.is(a, b)) return true;
 	if (typeof a !== 'object' || typeof b !== 'object' || a == null || b == null) {
 		return false;
@@ -119,14 +123,36 @@ export function deepEqual(a: any, b: any): boolean {
 	if (a instanceof Date || b instanceof Date) {
 		return a instanceof Date && b instanceof Date && Object.is(a.getTime(), b.getTime());
 	}
+	if (pairs.has(a) || reverse.has(b)) return pairs.get(a) === b && reverse.get(b) === a;
+	pairs.set(a, b);
+	reverse.set(b, a);
+	// Iteration order is observable for both collections; compare ordered snapshots.
+	if (a instanceof Map || b instanceof Map) {
+		if (!(a instanceof Map && b instanceof Map) || a.size !== b.size) return false;
+		const entries = b.entries();
+		for (const [key, value] of a) {
+			const [otherKey, otherValue] = entries.next().value!;
+			if (!deepEqual(key, otherKey, pairs, reverse) || !deepEqual(value, otherValue, pairs, reverse)) return false;
+		}
+		return true;
+	}
+	if (a instanceof Set || b instanceof Set) {
+		if (!(a instanceof Set && b instanceof Set) || a.size !== b.size) return false;
+		const values = b.values();
+		for (const value of a) {
+			if (!deepEqual(value, values.next().value, pairs, reverse)) return false;
+		}
+		return true;
+	}
 	if (Array.isArray(a) !== Array.isArray(b)) return false;
+	if (Array.isArray(a) && a.length !== b.length) return false;
 	const keysA = Object.keys(a);
 	const keysB = Object.keys(b);
 	if (keysA.length !== keysB.length) {
 		return false;
 	}
 	for (const key of keysA) {
-		if (!Object.prototype.hasOwnProperty.call(b, key) || !deepEqual(a[key], b[key])) {
+		if (!Object.prototype.hasOwnProperty.call(b, key) || !deepEqual(a[key], b[key], pairs, reverse)) {
 			return false;
 		}
 	}

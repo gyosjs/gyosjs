@@ -8,6 +8,7 @@ import { makeReactive, SCOPE_VERSION } from './reactive';
 import { deepEqual, clone, DEBUG, walkerDOM, hasStructuralParent, hasUnsafePropertyPath, isInIgnoredTree } from '../utils/helpers';
 import { processParse, setMountFunction } from '../template/process';
 import { disposeEffects } from '../template/cleanup';
+import { cleanupGeneration } from '../template/lifetime';
 import { evaluateExpression } from '../template/expression';
 import { expressionRuntime } from '../runtime/evaluator';
 
@@ -371,13 +372,14 @@ function mountScopeInternal(el: HTMLElement, definition: ScopeDefinition): void 
 	}
 
 	// Setup onUpdate watcher - track all reactive properties
+	let templateReady = false;
 	if (instance.onUpdate) {
 		const version = (instance as any)[SCOPE_VERSION];
 		const disposeUpdate = effect(() => {
 			if (!version) return;
 			// Track version signal - use value in condition so terser won't remove it
 			version.value;
-			if (getMountedScope(el)) instance.onUpdate.call(instance);
+			if (templateReady && getMountedScope(el) === instance) instance.onUpdate.call(instance);
 		});
 
 		// Store cleanup for unmount
@@ -398,10 +400,11 @@ function mountScopeInternal(el: HTMLElement, definition: ScopeDefinition): void 
 
 	// Parse and bind template (portals will be processed inside *if)
 	// Pass onMount callback to be called after parsing (or after hydration triggers)
+	// Initial template expressions can call cleanup before parsing has finished.
+	registerMountedScope(el, instance);
 	parseTemplate(el, instance, () => {
-		// The hook may inspect or clean up its own mount. Register before calling
-		// user code, and do not register again if the hook disposes the scope.
-		registerMountedScope(el, instance);
+		if (getMountedScope(el) !== instance) return;
+		templateReady = true;
 		// Call lifecycle hook after template is parsed
 		if (instance.onMount) {
 			try {
@@ -426,6 +429,8 @@ function mountScopeInternal(el: HTMLElement, definition: ScopeDefinition): void 
  * Create component context
  */
 function createContext(el: HTMLElement, getInstance: () => any): ComponentContext {
+	const generation = cleanupGeneration(el);
+	const isActive = () => cleanupGeneration(el) === generation;
 	const refs: Record<string, HTMLElement> = {};
 	const events = new Map<string, Set<Function>>();
 
@@ -479,6 +484,7 @@ function createContext(el: HTMLElement, getInstance: () => any): ComponentContex
 		},
 
 		$watch: (key: string, handler: Function, options: WatchOptions = {}) => {
+			if (!isActive()) return () => {};
 			// Watch a reactive property for changes (supports nested paths like 'xxx.count')
 			const instance = getInstance();
 			if (!instance) {
@@ -557,6 +563,7 @@ function createContext(el: HTMLElement, getInstance: () => any): ComponentContex
 			};
 
 			// Store cleanup for unmount
+			if (!isActive()) { stopWatching(); return stopWatching; }
 			if (!instance.__gyos_effects__) {
 				instance.__gyos_effects__ = [];
 			}
@@ -567,6 +574,7 @@ function createContext(el: HTMLElement, getInstance: () => any): ComponentContex
 		},
 
 		$effect: (fn: () => void | (() => void)) => {
+			if (!isActive()) return () => {};
 			// Shorthand for effect with auto cleanup on unmount
 			const instance = getInstance();
 			if (!instance) {
@@ -575,6 +583,7 @@ function createContext(el: HTMLElement, getInstance: () => any): ComponentContex
 			}
 
 			const dispose = effect(fn);
+			if (!isActive()) { dispose(); return dispose; }
 
 			// Auto track for cleanup
 			if (!instance.__gyos_effects__) {
