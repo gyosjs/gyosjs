@@ -28,11 +28,12 @@ const RESERVED_MODIFIERS = new Set(['prevent', 'stop', 'once', 'capture', 'passi
 /**
  * Execute handler with modifiers (prevent, stop)
  */
-function executeHandler(handler: string, scope: any, e: Event, modifiers: string[]): void {
-    // Handle prevent/stop modifiers
+function applyEventModifiers(e: Event, modifiers: string[]): void {
     if (modifiers.includes('prevent')) e.preventDefault();
     if (modifiers.includes('stop')) e.stopPropagation();
+}
 
+function executeHandler(handler: string, scope: any, e: Event): void {
     try {
         expressionRuntime().execute(handler, scope, e);
     } catch (err) {
@@ -133,9 +134,10 @@ function setupClickOutsideHandler(
 		if (target instanceof Element && target.closest('[g-ignore-outside-click]')) return;
 
         if (element !== target && !element.contains(target)) {
+            applyEventModifiers(e, modifiers);
             const currentScope = getScopeFromElement(element) || scope;
 			if (modifiers.includes('once')) cleanup();
-            executeHandler(handler, currentScope, e, modifiers);
+            executeHandler(handler, currentScope, e);
         }
     };
 
@@ -228,12 +230,13 @@ export function processEvents(el: HTMLElement, scope: any): void {
                     }
 
                     // Execute handler with optional debounce
+                    applyEventModifiers(e, modifiers);
                     const execute = () => {
 						if (modifiers.includes('once')) cleanup();
                         // Batch in case handler mutates multiple signals
                         batch(() => {
                             const currentScope = getScopeFromElement(element as HTMLElement) || scope;
-                            executeHandler(handler, currentScope, e, modifiers);
+                            executeHandler(handler, currentScope, e);
                         });
                     };
 

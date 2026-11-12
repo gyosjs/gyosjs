@@ -10,7 +10,7 @@ It has two major parts:
 If you are reading this page inside the GyosJS docs site, the inline HTML examples should work directly. If you are copying them into a standalone page, load GyosJS first.
 
 ```html
-<script src="https://cdn.jsdelivr.net/npm/gyosjs@0.5.3/dist/gyos.auto.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gyosjs@0.5.4/dist/gyos.auto.min.js"></script>
 ```
 
 ## Part 1. Build One Practical UI With One Scope
@@ -375,7 +375,7 @@ At minimum, a boosted page usually starts like this:
         ...
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/gyosjs@0.5.3/dist/gyos.auto.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gyosjs@0.5.4/dist/gyos.auto.min.js"></script>
 </body>
 ```
 
@@ -397,7 +397,7 @@ If your server already returns complete HTML pages, the first upgrade is simple.
 <head>
     <meta charset="UTF-8" />
     <title>Home</title>
-    <script src="https://cdn.jsdelivr.net/npm/gyosjs@0.5.3/dist/gyos.auto.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gyosjs@0.5.4/dist/gyos.auto.min.js"></script>
 </head>
 <body g-boost>
     <div id="app" g-outlet g-snapshot>
@@ -424,7 +424,7 @@ If your server already returns complete HTML pages, the first upgrade is simple.
 <head>
     <meta charset="UTF-8" />
     <title>Pricing</title>
-    <script src="https://cdn.jsdelivr.net/npm/gyosjs@0.5.3/dist/gyos.auto.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gyosjs@0.5.4/dist/gyos.auto.min.js"></script>
 </head>
 <body g-boost>
     <div id="app" g-outlet g-snapshot>
@@ -528,7 +528,7 @@ Use this pattern for:
     <button
         g-router-link="/articles/page.html"
         g-router-method="GET"
-        g-router-params="{ page: page + 1, tag }"
+        g-router-params="{ page: page, tag }"
         g-target="#feed-items"
         g-swap="append"
         g-router-spin
@@ -546,7 +546,7 @@ What to notice here:
 - `g-target` narrows the swap to one region
 - `append` is useful when the server returns the next page fragment
 - router-link style partial requests do not change browser history by default
-- router capture evaluates `page + 1` before the bubbling `@click="page++"` advances local state
+- The element’s `@click="page++"` runs before the document router listener during bubbling. `g-router-params` therefore reads the incremented `page`, without adding one again. This example advances optimistically on click; applications must handle rollback/retry after failed requests.
 
 This is a strong fit for:
 

@@ -712,7 +712,7 @@ Use the `g-outlet` directive:
 GyosJS keeps parts outside `g-outlet` intact (header, sidebar, footer, already-loaded scripts…), and only replaces the content inside the outlet.
 
 * You can control whether scripts outside `g-outlet` re-run or not
-* Elements in `<head>` are always compared and updated safely
+* Head reconciliation applies to the first global outlet unless `g-current-head` is set; partial targets retain the current head
 
 ---
 
@@ -724,7 +724,7 @@ GyosJS keeps parts outside `g-outlet` intact (header, sidebar, footer, already-l
 <head>
     <meta charset="UTF-8">
     <title>Home Page</title>
-    <script src="https://cdn.jsdelivr.net/npm/gyosjs@0.5.3/dist/gyos.auto.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gyosjs@0.5.4/dist/gyos.auto.min.js"></script>
     <meta name="description" content="Home Page description">
     <link rel="stylesheet" href="styles.css">
     <style id="theme-colors">
@@ -800,9 +800,9 @@ When clicking a link:
 
 ---
 
-#### Preserve state when going back with g-snapshot
+#### Restore cached HTML when going back with g-snapshot
 
-The `g-snapshot` directive lets GyosJS **save the outlet state**:
+The `g-snapshot` directive lets GyosJS cache response HTML for history navigation:
 
 ```html
 <div g-outlet g-snapshot>
@@ -810,9 +810,9 @@ The `g-snapshot` directive lets GyosJS **save the outlet state**:
 
 When you navigate back:
 
-* the DOM is restored
-* inputs, scroll, and state persist
-* no need to refetch content
+* cached HTML is restored when a matching snapshot exists; otherwise Gyos fetches the page
+* scroll restoration is handled separately
+* snapshots do not serialize arbitrary scope state or guarantee unsaved input preservation; use explicit application storage or `g-persist` when those values must survive
 
 This mechanism is super useful for dashboards, admin panels, and documentation sites.
 

@@ -372,7 +372,12 @@ function getHistoryFragment(entryId: string, neighbourId: string): HTMLElement |
 	return fragment?.cloneNode(true) as HTMLElement | undefined;
 }
 
-function cloneHistoryTarget(target: HTMLElement): HTMLElement {
+function cloneHistoryTarget(target: HTMLElement): HTMLElement | null {
+	// Mounted templates have already consumed event/model attributes and text
+	// expressions. A DOM clone cannot recreate their observers. Restore these
+	// targets from response HTML (snapshot or fetch) instead of caching inert UI.
+	if (getScopeFromElement(target) || Array.from(target.querySelectorAll('*'))
+		.some(element => (element as any).__gyos_scope__)) return null;
 	const clone = target.cloneNode(true) as HTMLElement;
 	clone.querySelectorAll('.gyos-target-spinner').forEach(spinner => spinner.remove());
 	return clone;

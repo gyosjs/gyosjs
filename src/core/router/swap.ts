@@ -13,7 +13,10 @@ function syncAttributes(target: Element, source: Element): void {
 	Array.from(source.attributes).forEach(attribute => {
 		sourceAttributes.add(attribute.name);
 		if (target.getAttribute(attribute.name) !== attribute.value) {
-			target.setAttribute(attribute.name, attribute.value);
+			// HTML permits directive names such as @click and *if, while older
+			// DOM implementations apply XML name validation in setAttribute.
+			// Transfer the already-parsed Attr without validating its name again.
+			target.setAttributeNodeNS(target.ownerDocument.importNode(attribute, true));
 		}
 	});
 	Array.from(target.attributes).forEach(attribute => {

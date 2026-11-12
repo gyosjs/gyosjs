@@ -927,7 +927,7 @@ Because it is a `GET` form:
     <button
         g-router-link="/feed-page-2.html"
         g-router-method="GET"
-        g-router-params="{ page: page + 1 }"
+        g-router-params="{ page: page }"
         @click="page++"
         g-target="#feed"
         g-swap="append"

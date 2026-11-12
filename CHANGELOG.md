@@ -6,6 +6,29 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.5.4] - 2026-11-12
+
+### Fixed
+
+- Keep array length/index readers current after implicit growth or truncation, and notify readers when a scope field switches to another store. Accept null-prototype data and fields named `hasOwnProperty`; deep watches distinguish Date values and changed undefined-valued keys.
+- Preserve debounced watcher context and cancel pending callbacks on disposal. Release effects even when stopped during execution or from their previous cleanup. Contain throwing scope lifecycle hooks, support self-cleanup in `onMount`, and consume global once listeners before reentrant callbacks.
+- Give the latest `useFetch`/`useAsync` execution ownership of data, errors and loading. Their new `onUnmount` hooks invalidate pending results; `onMount` reactivates the composable. Requests themselves are not aborted. Compose lifecycle hooks explicitly when combining multiple composables.
+- Dispose structural comment effects, replaced `g-html`/`g-text` children and owner-linked portals. Keep unrelated siblings when unkeyed lists rerender; mount branch-root child scopes once; keep await aliases connected to parent state and discard late await results after cleanup.
+- Render static scope roots once, confine refs to their declared scope, preserve custom CSS property case, and apply prevent/stop event modifiers before debouncing callbacks.
+- Evaluate quoted expressions normally. Accept literal percent signs in scope definitions. Align CSP call evaluation order, optional-call argument skipping and postfix numeric coercion with JavaScript behavior.
+- Register dynamically rendered validation controls and unregister removed controls. Ignore stale async validation results, revalidate values edited during a pending validation, and reject invalid integer/calendar values while enforcing numeric bounds on zero.
+- Resolve router fragments as decoded element IDs, including numeric IDs, punctuation and Unicode, instead of treating fragments as CSS selectors.
+- Reconstruct reactive partial targets from response HTML on history navigation instead of replaying a DOM clone whose bindings were already consumed. Static partial history keeps its fragment cache. Reactive targets may require a fresh GET when no response snapshot exists; arbitrary client state is not serialized.
+- Preserve parsed directive attributes such as `@click` and `*if` during DOM morphs on browsers whose `setAttribute` rejects those names, preventing history restoration from falling back to a full page load.
+
+### Documentation
+
+- Correct load-more page increments, router bubbling and validated form submission descriptions; repair dynamic class and rejected-promise examples. Add executable documentation regressions.
+
+### Compatibility
+
+- Object/factory scope sharing and reactive scheduling remain unchanged. When composing async helpers with other lifecycle hooks, forward their onMount/onUnmount hooks explicitly.
+
 ## [0.5.3] - 2026-11-12
 
 ### Fixed
@@ -219,7 +242,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 - This is an experimental `0.x` release. Router, morphing, expression evaluation, and browser edge cases should be evaluated against an application's requirements before production adoption.
 
-[Unreleased]: https://github.com/gyosjs/gyosjs/compare/v0.5.3...HEAD
+[Unreleased]: https://github.com/gyosjs/gyosjs/compare/v0.5.4...HEAD
+[0.5.4]: https://github.com/gyosjs/gyosjs/compare/v0.5.3...v0.5.4
 [0.5.3]: https://github.com/gyosjs/gyosjs/compare/v0.5.2...v0.5.3
 [0.5.2]: https://github.com/gyosjs/gyosjs/compare/v0.5.1...v0.5.2
 [0.5.1]: https://github.com/gyosjs/gyosjs/compare/v0.5.0...v0.5.1

@@ -43,6 +43,8 @@ export function unmountScope(el: HTMLElement): void {
 	let instance = mountedScopes.get(el);
 
 	if (!instance) return;
+	// A hook may call cleanup again; each mount is disposed at most once.
+	mountedScopes.delete(el);
 
 	// Cleanup all effects
 	if (instance.__gyos_effects__) {
@@ -58,7 +60,11 @@ export function unmountScope(el: HTMLElement): void {
 
 	// Call lifecycle hook
 	if (instance.onUnmount) {
-		instance.onUnmount.call(instance);
+		try {
+			instance.onUnmount.call(instance);
+		} catch (error) {
+			console.error('[Component] Error in onUnmount:', error);
+		}
 	}
 
 	// Clear reference on element

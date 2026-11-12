@@ -29,7 +29,7 @@ In GyosJS, you can bind data to HTML and attributes as follows:
     <p :style="'color: red'">{ message }</p>
     <p :style="{ fontSize, color: 'blue' }">This text has dynamic font size.</p>
     <img :src="imageUrl" alt="Image"
-        :class="{'active': isActive, otherClass}"/>
+        :class="{'active': isActive, [otherClass]: true}"/>
     <button :disabled="!isActive">Click Me</button>
 </div>
 ```
@@ -37,7 +37,7 @@ In GyosJS, you can bind data to HTML and attributes as follows:
 **In which:**
 * `{ message }` displays the value of the variable `message`.
 * `:src="imageUrl"` binds the value of the variable `imageUrl` to the `src` attribute.
-* `:class="{'active': isActive, otherClass}"` 
+* `:class="{'active': isActive, [otherClass]: true}"`
     * adds the class `active` if `isActive` is true.
     * also adds the class `highlight`.
 * `:disabled="!isActive"` disables the button if `isActive` is false.
@@ -124,7 +124,7 @@ With the `*if` block, you can easily control the display of content based on con
         error: 'error',
         unknown: 'unknown'
     },
-    status, transition: 'slide-up',
+    status: null, transition: 'slide-up',
     onMount() { 
         this.status = this.state.loading;
         setTimeout(() => { this.status = this.state.success; }, 500); 
@@ -202,11 +202,12 @@ Unlike `If-else`, the `Switch-Case` structure helps you manage multiple conditio
 
     // Fetch posts with artificial delay
     loadPosts() {
-      this.postsPromise = new Promise((resolve) => {
+      this.postsPromise = new Promise((resolve, reject) => {
         setTimeout(() => {
           fetch('https://jsonplaceholder.typicode.com/posts')
             .then(res => res.json())
-            .then(data => resolve(data.slice(0, 3))); // Only 3 posts
+            .then(data => resolve(data.slice(0, 3))) // Only 3 posts
+            .catch(reject);
         }, 1500); // 1.5s delay
       });
     },
@@ -572,7 +573,7 @@ This boundary applies to component and template initialization, not to the globa
 
 `g-transition` adds transition effects when an element appears or disappears.
 * applies animation effects when an element is added to or removed from the DOM.
-* only works when used together with structural directives like `*if`, `*for`, `*switch`, `*await`.
+* works with structural directives like `*if`, `*for`, `*switch`, `*await`, and with `g-show` while keeping the element in the DOM.
 
 **Example:**
 ```html

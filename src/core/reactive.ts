@@ -18,7 +18,7 @@ function bumpScopeVersion(target: object) {
     const bumpSignal = (ver: Signal<number>) => {
         if (visited.has(ver)) return;
         visited.add(ver);
-        ver.value = ver.value + 1;
+        ver.update(value => value + 1);
         const parents = versionParents.get(ver);
         if (parents) {
             parents.forEach(parentVer => bumpSignal(parentVer));
@@ -68,7 +68,7 @@ function getFieldSignal(
 const STORE_MARKER = Symbol.for('gyos.store');
 
 export function markStore<T extends object>(obj: T): T {
-    if (obj.hasOwnProperty(STORE_MARKER)) return obj;
+    if (Object.prototype.hasOwnProperty.call(obj, STORE_MARKER)) return obj;
     Reflect.defineProperty(obj, STORE_MARKER, {
         value: true,
         enumerable: false,
@@ -84,7 +84,7 @@ export function isStoreObject(val: any): boolean {
 const RAW_MARKER = Symbol.for('gyos.raw');
 
 export function markRaw<T extends object>(obj: T): T {
-    if (obj.hasOwnProperty(RAW_MARKER)) return obj;
+    if (Object.prototype.hasOwnProperty.call(obj, RAW_MARKER)) return obj;
     Reflect.defineProperty(obj, RAW_MARKER, {
         value: true,
         enumerable: false,
@@ -100,7 +100,7 @@ function isRawObject(val: any): boolean {
 const SHALLOW_MARKER = Symbol.for('gyos.shallow');
 
 export function shallow<T extends object>(obj: T): T {
-    if (obj.hasOwnProperty(SHALLOW_MARKER)) return obj;
+    if (Object.prototype.hasOwnProperty.call(obj, SHALLOW_MARKER)) return obj;
     Reflect.defineProperty(obj, SHALLOW_MARKER, {
         value: true,
         enumerable: false,
@@ -137,6 +137,24 @@ function linkParentVersion(child: object, parentVersion: Signal<number>): void {
         versionParents.set(childVersion, versionParentsSet);
     }
     versionParentsSet.add(parentVersion);
+}
+
+// Array [[DefineOwnProperty]] can change length or remove indices without
+// entering their individual Proxy traps. Keep already observed fields current.
+function syncArrayFields(target: object, previousLength: number | undefined): void {
+    if (previousLength === undefined) return;
+    const array = target as unknown[];
+    if (array.length === previousLength) return;
+    const signals = fieldSignals.get(target);
+    signals?.get('length')?.update(() => array.length);
+    if (array.length < previousLength) {
+        signals?.forEach((sig, key) => {
+            if (typeof key === 'string' && /^(0|[1-9]\d*)$/.test(key)
+                && Number(key) >= array.length && Number(key) < previousLength) {
+                sig.update(() => Reflect.get(target, key));
+            }
+        });
+    }
 }
 
 export function reactive<T extends object>(raw: T): T {
@@ -181,6 +199,7 @@ export function reactive<T extends object>(raw: T): T {
             }
 
             if (isStoreObject(value)) {
+                if (hasCurrentEffect()) getFieldSignal(target, key, value).value;
                 return value;
             }
 
@@ -265,11 +284,6 @@ export function reactive<T extends object>(raw: T): T {
             // capture old value BEFORE write to detect real changes
             const oldValue = (target as any)[key];
 
-            // VALUE LÀ STORE → set thẳng, KHÔNG tạo signal, KHÔNG trigger
-            if (isStoreObject(value)) {
-                return Reflect.set(target, key, value, receiver);
-            }
-
             const ok = Reflect.set(target, key, value, receiver);
             if (!ok) return false;
 
@@ -319,8 +333,9 @@ export function reactive<T extends object>(raw: T): T {
             const oldDesc = Object.getOwnPropertyDescriptor(target, key);
             const oldValue = oldDesc && "value" in oldDesc ? oldDesc.value : undefined;
             const newValue = "value" in descriptor ? descriptor.value : oldValue;
-
+            const previousLength = Array.isArray(target) ? target.length : undefined;
             const ok = Reflect.defineProperty(target, key, descriptor);
+            syncArrayFields(target, previousLength);
             if (!ok) return false;
 
             if ('value' in descriptor) {
@@ -354,7 +369,7 @@ export function makeReactive<T extends object>(source: T): T {
 
     const proxy = reactive(source);
 
-    if (!proxy.hasOwnProperty(SCOPE_VERSION)) {
+    if (!Object.prototype.hasOwnProperty.call(proxy, SCOPE_VERSION)) {
         Object.defineProperty(proxy, SCOPE_VERSION, {
             value: version,
             enumerable: false,

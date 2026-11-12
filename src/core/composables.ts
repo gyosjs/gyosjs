@@ -13,25 +13,31 @@ export function useFetch<T = any>(
 	const data = signal<T | null>(null);
 	const loading = signal(true);
 	const error = signal<Error | null>(null);
+	let generation = 0;
+	let active = true;
 
 	const fetchData = async () => {
+		if (!active) return;
+		const requestId = ++generation;
 		loading.value = true;
 		error.value = null;
 		data.value = null;
 
 		try {
 			const request = typeof url === 'function' ? await url() : url;
+			if (requestId !== generation) return;
 			const response = typeof request === 'string' ? await fetch(request) : request;
 
 			if (!response.ok) {
 				throw new Error(`HTTP error! status: ${response.status}`);
 			}
 
-			data.value = await response.json();
+			const result = await response.json();
+			if (requestId === generation) data.value = result;
 		} catch (e) {
-			error.value = e as Error;
+			if (requestId === generation) error.value = e as Error;
 		} finally {
-			loading.value = false;
+			if (requestId === generation) loading.value = false;
 		}
 	};
 
@@ -40,7 +46,8 @@ export function useFetch<T = any>(
 		loading,
 		error,
 		refetch: fetchData,
-		onMount: fetchData
+		onMount: () => { active = true; return fetchData(); },
+		onUnmount: () => { active = false; generation++; loading.value = false; }
 	};
 }
 
@@ -346,17 +353,22 @@ export function useAsync<T>(asyncFn: () => Promise<T>, immediate = true) {
 	const data = signal<T | null>(null);
 	const loading = signal(false);
 	const error = signal<Error | null>(null);
+	let generation = 0;
+	let active = true;
 
 	const execute = async () => {
+		if (!active) return;
+		const requestId = ++generation;
 		loading.value = true;
 		error.value = null;
 
 		try {
-			data.value = await asyncFn();
+			const result = await asyncFn();
+			if (requestId === generation) data.value = result;
 		} catch (e) {
-			error.value = e as Error;
+			if (requestId === generation) error.value = e as Error;
 		} finally {
-			loading.value = false;
+			if (requestId === generation) loading.value = false;
 		}
 	};
 
@@ -366,7 +378,9 @@ export function useAsync<T>(asyncFn: () => Promise<T>, immediate = true) {
 		error,
 		execute,
 		onMount: () => {
-			if (immediate) execute();
-		}
+			active = true;
+			return immediate ? execute() : undefined;
+		},
+		onUnmount: () => { active = false; generation++; loading.value = false; }
 	};
 }

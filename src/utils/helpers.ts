@@ -81,7 +81,7 @@ export function clone<T>(obj: T): T {
 
 	const cloned: any = {};
 	for (const key in obj) {
-		if (obj.hasOwnProperty(key)) {
+		if (Object.prototype.hasOwnProperty.call(obj, key)) {
 			cloned[key] = clone(obj[key]);
 		}
 	}
@@ -112,17 +112,21 @@ export function uniqueId(prefix = 'gyos'): string {
 }
 
 export function deepEqual(a: any, b: any): boolean {
-	if (a === b) return true;
+	if (Object.is(a, b)) return true;
 	if (typeof a !== 'object' || typeof b !== 'object' || a == null || b == null) {
 		return false;
 	}
+	if (a instanceof Date || b instanceof Date) {
+		return a instanceof Date && b instanceof Date && Object.is(a.getTime(), b.getTime());
+	}
+	if (Array.isArray(a) !== Array.isArray(b)) return false;
 	const keysA = Object.keys(a);
 	const keysB = Object.keys(b);
 	if (keysA.length !== keysB.length) {
 		return false;
 	}
 	for (const key of keysA) {
-		if (!deepEqual(a[key], b[key])) {
+		if (!Object.prototype.hasOwnProperty.call(b, key) || !deepEqual(a[key], b[key])) {
 			return false;
 		}
 	}

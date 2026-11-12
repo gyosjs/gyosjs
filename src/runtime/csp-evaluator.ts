@@ -122,25 +122,24 @@ function resolveReference(node: AstNode, context: EvaluationContext, expression:
 }
 
 function evaluateCall(node: AstNode, context: EvaluationContext, expression: string): any {
+	let receiver = context.scope;
+	let callable: any;
+	if (node.callee.type === 'MemberExpression') {
+		const [object, property] = memberParts(node.callee, context, expression);
+		if (object === optionalChainMiss) return optionalChainMiss;
+		receiver = object;
+		callable = object[property];
+	} else {
+		callable = evaluateNode(node.callee, context, expression);
+	}
+	if (callable === optionalChainMiss) return optionalChainMiss;
+	if (callable == null && node.optional) return optionalChainMiss;
 	const args = node.arguments.map((argument: AstNode) => {
 		if (argument.type === 'SpreadElement') throw cspError('Spread arguments are not supported', expression, argument);
 		return evaluateNode(argument, context, expression);
 	});
-
-	if (node.callee.type === 'MemberExpression') {
-		const [object, property] = memberParts(node.callee, context, expression);
-		if (object === optionalChainMiss) return optionalChainMiss;
-		const method = object[property];
-		if (method == null && node.optional) return optionalChainMiss;
-		if (typeof method !== 'function') throw cspError('Called value is not a function', expression, node.callee);
-		return method.apply(object, args);
-	}
-
-	const callable = evaluateNode(node.callee, context, expression);
-	if (callable === optionalChainMiss) return optionalChainMiss;
-	if (callable == null && node.optional) return optionalChainMiss;
 	if (typeof callable !== 'function') throw cspError('Called value is not a function', expression, node.callee);
-	return callable.apply(context.scope, args);
+	return callable.apply(receiver, args);
 }
 
 function applyAssignment(operator: string, current: any, value: any, expression: string, node: AstNode): any {
@@ -255,10 +254,10 @@ function evaluateNode(node: AstNode, context: EvaluationContext, expression: str
 		}
 		case 'UpdateExpression': {
 			const reference = resolveReference(node.argument, context, expression);
-			const current = reference.get();
-			const next = node.operator === '++' ? current + 1 : current - 1;
+			let next = reference.get();
+			const previous = node.operator === '++' ? next++ : next--;
 			reference.set(next);
-			return node.prefix ? next : current;
+			return node.prefix ? next : previous;
 		}
 		case 'SequenceExpression': {
 			let value: any;

@@ -42,6 +42,7 @@ export function portalCreate(sourceEl: HTMLElement, targetSelector: string): voi
 	// Store original parent for restoration
 	(sourceEl as any).__portal_placeholder__ = placeholder;
 	(sourceEl as any).__portal_target__ = target;
+	(placeholder as any).__gyos_portal__ = sourceEl;
 
 	// Move the entire element to target
 	target.appendChild(sourceEl);
@@ -62,6 +63,7 @@ export function portalDestroy(sourceEl: HTMLElement): void {
 	const placeholder = (sourceEl as any).__portal_placeholder__;
 
 	if (placeholder && placeholder.parentNode) {
+		delete (placeholder as any).__gyos_portal__;
 		// Move element back to original position
 		placeholder.parentNode.insertBefore(sourceEl, placeholder);
 		placeholder.remove();

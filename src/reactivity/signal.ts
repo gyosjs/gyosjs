@@ -505,14 +505,32 @@ export function effect(fn: () => void | (() => void)): () => void {
 		execute.__versions = versions;
 
 		try {
-			const nextCleanup = fn();
-			cleanup = typeof nextCleanup === 'function' ? nextCleanup : undefined;
+			// The previous cleanup can dispose this effect before the next run.
+			if (active) {
+				const nextCleanup = fn();
+				cleanup = typeof nextCleanup === 'function' ? nextCleanup : undefined;
+			}
 		} catch (error) {
 			console.error('[Effect] Error in effect:', error);
 			// Don't throw - allow other effects to continue
 		} finally {
 			initialized = true;
 			currentEffect = prevEffect;
+			// stop() may have been called inside fn, before its cleanup was returned
+			// or before later reads registered more dependencies.
+			if (!active) {
+				dependencies.forEach(dependency => dependency.delete(execute));
+				dependencies.clear();
+				versions.clear();
+				effectQueue.delete(execute);
+				batchedEffects.delete(execute);
+				const finalCleanup = cleanup;
+				cleanup = undefined;
+				if (finalCleanup) {
+					try { untrack(finalCleanup); }
+					catch (error) { console.error('[Effect] Error in final cleanup:', error); }
+				}
+			}
 			effectDepth--;
 			runningEffects.delete(execute);
 
@@ -541,8 +559,10 @@ export function effect(fn: () => void | (() => void)): () => void {
 		versions.clear();
 
 		if (cleanup) {
+			const finalCleanup = cleanup;
+			cleanup = undefined;
 			try {
-				untrack(cleanup);
+				untrack(finalCleanup);
 			} catch (error) {
 				console.error('[Effect] Error in final cleanup:', error);
 			}

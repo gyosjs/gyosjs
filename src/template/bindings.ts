@@ -77,7 +77,8 @@ function readStyleValues(style: CSSStyleDeclaration): Map<string, StyleValue> {
 }
 
 function normalizeStyleProperty(property: string): string {
-	if (property.startsWith('--') || property.includes('-')) return property.toLowerCase();
+	if (property.startsWith('--')) return property;
+	if (property.includes('-')) return property.toLowerCase();
 	return property.replace(/[A-Z]/g, match => `-${match.toLowerCase()}`);
 }
 
