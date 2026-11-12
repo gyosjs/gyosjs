@@ -6,11 +6,12 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.5.5] - 2026-11-13
+
 ### Fixed
 
 - Respect Proxy invariants for nested frozen/locked data: return exact locked property values and preserve keys/descriptors that cannot legally be hidden. Replacing a mutable containing field remains reactive; sealed writable fields still update.
 - Use one template pipeline for `g-static` roots and descendants. Render initial conditions, lists, switches and bindings once, preserve nested-scope ownership, and settle only the initial await request with cleanup protection. Static branches do not install template interaction handlers; an outer reactive structural directive can still remove/recreate them.
-
 - Detach unobserved computed values from upstream subscriptions, including chains whose last consumer stops. Later reads validate the cached dependencies and subscriptions can resume; synchronous computed reads and effect/batch scheduling remain unchanged.
 - Deep watches preserve cyclic/shared references and compare Map/Set snapshots instead of treating collections as empty objects. Sparse array lengths are preserved. Native collection mutations are still not reactive: replace the collection to notify consumers. Collection comparison includes iteration order.
 - Honor cleanup during initial template/effect/watch execution. Do not resurrect the scope, run later queued bindings, attach a late disposer, or create its portal after cleanup. Scope observers registered through an old disposed context do not start; an explicit remount creates a new lifetime.
@@ -251,7 +252,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 - This is an experimental `0.x` release. Router, morphing, expression evaluation, and browser edge cases should be evaluated against an application's requirements before production adoption.
 
-[Unreleased]: https://github.com/gyosjs/gyosjs/compare/v0.5.4...HEAD
+[Unreleased]: https://github.com/gyosjs/gyosjs/compare/v0.5.5...HEAD
+[0.5.5]: https://github.com/gyosjs/gyosjs/compare/v0.5.4...v0.5.5
 [0.5.4]: https://github.com/gyosjs/gyosjs/compare/v0.5.3...v0.5.4
 [0.5.3]: https://github.com/gyosjs/gyosjs/compare/v0.5.2...v0.5.3
 [0.5.2]: https://github.com/gyosjs/gyosjs/compare/v0.5.1...v0.5.2
