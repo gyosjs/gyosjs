@@ -46,12 +46,16 @@ For example:
 
 When `count` changes:
 
-* `{count}` in the DOM updates immediately
+* `{count}` in the DOM updates automatically; ordinary writes schedule effect reruns in a microtask
 * no need to call `render()`
 * no need for setState
 * no complex lifecycle needed
 
 ---
+
+Scope fields and explicit signals use the same reactive foundation, with different access syntax. A field such as `this.count` reads a value through the scope proxy. An explicit `const count = Gyos.signal(0)` gives you a callable handle (`count()`, `count(1)`, `.value`, `.subscribe()`) that can be passed to other functions. Neither style is required to be shared: creating a signal inside a factory keeps it local; returning the same outside signal deliberately shares it.
+
+A scope array is deeply reactive through its proxy. A plain array stored in `Gyos.signal([])` is not automatically a deep proxy: replace it with `items.update(list => [...list, next])` to notify consumers.
 
 #### What is a Signal?
 
@@ -137,8 +141,10 @@ const count = Gyos.signal(0);
 const stopLoggingDouble = Gyos.effect(() => {
     console.log('Double is', count() * 2);
 });
-count(1); // Console: Double is 2
-count(2); // Console: Double is 4
+Gyos.batch(() => {
+    count(1);
+    count(2);
+}); // Double is 4: one rerun at batch end (initial run logged 0)
 
 stopLoggingDouble(); // Dispose the effect when it is no longer needed
 count(3); // No log: the effect is no longer tracking
@@ -148,7 +154,7 @@ In which:
 * `count` is a signal that can be read/written
 * the effect callback depends on `count`
 * `stopLoggingDouble` is the disposer returned by `Gyos.effect()`
-* each time `count` changes, the callback re-runs and logs the new value
+* ordinary writes coalesce effect reruns in a microtask; a batch flushes once at its end
 
 > Effect will re-run **only when the signals it depends on change**. This helps optimize performance and avoid unnecessary re-renders.
 
@@ -502,16 +508,16 @@ When to use a store?
     <button @click="counter.count = 0">Reset</button>
     <button @click="counter.increment()">Increment</button>
 </div>
-<div g-scope>
+<div g-scope="{counter: Gyos.store('CounterStore')}">
     <h5>Scope B</h5>
-    <p>Count: {counterStore.count}</p>
-    <button @click="counterStore.decrement()">Decrement</button>
-    <button @click="counterStore.count = 0">Reset</button>
-    <button @click="counterStore.increment()">Increment</button>
+    <p>Count: {counter.count}</p>
+    <button @click="counter.decrement()">Decrement</button>
+    <button @click="counter.count = 0">Reset</button>
+    <button @click="counter.increment()">Increment</button>
 </div>
 
 <script g-script-once>
-    var counterStore = Gyos.store('CounterStore', {
+    Gyos.store('CounterStore', {
         count: 0,
         increment() {
             this.count++;
@@ -538,20 +544,20 @@ When to use a store?
         <button class="btn btn-primary" @click="counter.increment()">Increment</button>
     </ul>
 </div>
-<div g-scope>
+<div g-scope="{counter: Gyos.store('CounterStore')}">
     <div>Scope B</div>
     <ul>
-        <p>Count: {counterStore.count}</p>
-        <button class="btn btn-danger" @click="counterStore.decrement()">Decrement</button>
-        <button class="btn btn-info" @click="counterStore.count = 0">Reset</button>
-        <button class="btn btn-primary" @click="counterStore.increment()">Increment</button>
+        <p>Count: {counter.count}</p>
+        <button class="btn btn-danger" @click="counter.decrement()">Decrement</button>
+        <button class="btn btn-info" @click="counter.count = 0">Reset</button>
+        <button class="btn btn-primary" @click="counter.increment()">Increment</button>
     </ul>
 </div>
 </div>
 </div>
 
 <script g-script-once>
-    var counterStore = Gyos.store('CounterStore', {
+    Gyos.store('CounterStore', {
         count: 0,
         increment() {
             this.count++;
@@ -566,21 +572,21 @@ When to use a store?
 **In which:**
 * both scopes share the same `CounterStore`
 * `Gyos.store('StoreName', initialState)` creates a global store reactivity
-* `counterStore` is a store with state `count` and methods `increment`, `decrement`
+* `counter` is the explicit store reference in each scope
 * when `count` changes in scope A → scope B automatically updates and vice versa
-* `g-script-once` script runs only once, avoiding duplicate `const counterStore` errors when navigating pages
+* `g-script-once` avoids rerunning the store definition on boosted navigation; register the store before mounting its consumers
 
 Store reactivity is very useful for managing global state in GyosJS applications. It helps share data between multiple scopes easily and efficiently.
 
->Note: It is not recommended to use `const counterStore` and use `counterStore` directly, as it may cause unexpected errors. You should use `Gyos.store('StoreName')` to get the store within a scope.
+> Holding a store reference in JavaScript is valid. Expose it explicitly on the scope, or look it up with `Gyos.store(name)`; do not rely on a top-level variable being visible in template evaluation (especially modules and CSP).
 
 ---
 
 #### Things to note
 
-* Reactivity only works **inside `g-scope`**
-* Only fields inside the scope are signals
-* Always get the store via `Gyos.store('StoreName')` to avoid errors
+* Template bindings need a mounted scope; signals, computed values, effects and stores also work outside a template.
+* Ordinary scope fields use internal signals through a proxy; reading a field returns its value, not a callable `Gyos.signal()` handle.
+* Share store references explicitly through scope fields; `Gyos.store(name)` retrieves the registered instance.
 * Plain JS variables outside the scope are **not reactive**
 * Avoid heavy side-effects in computed / getter
 
@@ -590,7 +596,7 @@ If you want to use reactivity outside of `g-scope`, use the signals/effects API 
 * `Gyos.effect(fn)` to create an effect that tracks signals
 * `Gyos.computed(fn)` to create a computed value
 * `Gyos.batch(fn)` to batch update multiple signals
-* `Gyos.signal.subscribe(fn)` to listen for signal changes
+* `mySignal.subscribe(fn)` to listen for signal changes
 
 **See the following example:**
 
@@ -600,21 +606,24 @@ const countEff = Gyos.effect(() => {
     console.log('Count is', count());
 });
 
-count(1); // Console: Count is 1
-count(2); // Console: Count is 2
+Gyos.batch(() => {
+    count(1);
+    count(2);
+}); // Count is 2: one rerun at batch end (initial run logged 0)
 
 const items = Gyos.signal(['Apple', 'Banana']);
 const dispose = items.subscribe(() => {
     console.log('Items changed:', items());
 });
 
-items(['Apple', 'Banana', 'Orange']);
+Gyos.batch(() => items(['Apple', 'Banana', 'Orange']));
 // Console: Items changed: [ 'Apple', 'Banana', 'Orange' ]
 
 items.value.push('Grapes');
 // Does not trigger subscribe because the array reference does not change
 
 dispose(); // Stop listening for changes
+countEff(); // Dispose the logging effect too
 ```
 
 **In which:**

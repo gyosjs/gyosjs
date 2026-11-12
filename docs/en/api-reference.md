@@ -141,6 +141,8 @@ Gyos.scope('BookingWizard', (context) => ({
 }));
 ```
 
+A factory must allocate fresh local state to isolate instances: `() => sharedObject` still shares the object, and shallow spreading keeps nested references shared. Scope methods and `g-model` write through the reactive proxy; writing to the original raw object can bypass updates. For separate widget lifecycles with shared data, return fresh scope objects containing the same store or signal. See [G-Scope](./what-is-gscope.md).
+
 ### `Gyos.scope(element, definition)`
 
 You can also register a scope directly on a specific element.
@@ -275,6 +277,10 @@ Gyos.scope('SearchBox', {
 ```
 
 `$watch` accepts `{ immediate, debounce, deep }` and returns a disposer. `$effect(fn)` also returns a disposer; a cleanup returned by its callback runs before the next execution and on disposal. `$on` returns an unsubscribe function.
+
+`$watch` paths use dot notation, including array indices (`items.0.count`); bracket paths (`items[0].count`) are not parsed. Watching an array/object field without `deep` observes replacement. `{ deep: true }` clones and compares nested values, including array mutations; prefer a narrow path or `$effect` for large data.
+
+> **0.5.2 / Unreleased:** Published 0.5.2 cannot attach `$watch` or `$effect` in factory scopes, including calls through the factory context. The fix is in Unreleased and is not on npm yet. Template reactivity is unaffected. On 0.5.2, use `Gyos.effect()` in `onMount` with explicit disposal in `onUnmount` if needed. With the fix, register scope observers after the factory returns, normally in `onMount`; they are bound to that mount and disposed by scope cleanup.
 
 ### `g-scope-persist`
 

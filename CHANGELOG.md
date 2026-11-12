@@ -6,6 +6,14 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Fixed
+
+- Resolve the mounted reactive instance when registering scope `$watch` and `$effect`. Factory scopes can register observers in `onMount` through either `this` or the captured factory context; observers are cleaned up with their own mount.
+
+### Documentation
+
+- Clarify object reuse versus fresh factory state, explicit state sharing, array watch paths, and signal/effect scheduling in the scope and reactivity guides.
+
 ## [0.5.2] - 2026-11-12
 
 ### Fixed
