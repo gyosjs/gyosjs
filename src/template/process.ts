@@ -1,15 +1,15 @@
 import { portalCreate } from "../core/portal";
 import { processFormValidation } from "../form/form-validation";
 import { StructuralElement } from "../types";
-import { processBindings, processBindingsStatic } from "./bindings";
-import { processDirectives, processDirectivesStatic } from "./directives";
+import { processBindings } from "./bindings";
+import { processDirectives } from "./directives";
 import { processEvents } from "./events";
 import { processModel } from "./model";
 import { processAwaitDirective, processForDirective, processIfChain, processSwitchDirective, setProcessFunction } from "./structurals/structural";
-import { processTextNodes, processTextNodesStatic } from "./text";
+import { processTextNodes } from "./text";
 import { beginEffectCollection, flushEffectCollection } from "./effect-queue";
 import { getScopeFromElement } from "../core/scope-registry";
-import { hasStructuralParent, isInIgnoredTree, walkerDOM } from "../utils/helpers";
+import { hasStructuralParent, isInIgnoredTree, isInStaticTree, walkerDOM } from "../utils/helpers";
 import { cleanupGeneration } from './lifetime';
 
 // Mount function injected from component.ts to avoid circular dependency
@@ -21,21 +21,6 @@ export function setMountFunction(fn: (el: HTMLElement) => void): void {
 
 // Inject process function into structural directives module
 setProcessFunction(processParse);
-
-/**
- * Pre-process g-static elements (find and render them before reactive processing)
- */
-function processStaticElements(el: HTMLElement, scope: any): void {
-
-    el.removeAttribute('g-static');
-    // Mark element as static so children know to skip
-    (el as any).__gyos_static__ = true;
-
-    // Render once with initial values (no effects)
-    processTextNodesStatic(el, scope);
-    processDirectivesStatic(el, scope);
-    processBindingsStatic(el, scope);
-}
 
 /**
  * Process structural directives (*if and *for) in a single pass
@@ -160,26 +145,21 @@ export function processParse(element: HTMLElement, scope: any, fromStructural = 
 
         const attrs = Array.from(el.attributes);
 
-        if (el.hasAttribute('g-static')) {
-            // Pre-process g-static elements (mark and render them before reactive processing)
-            processStaticElements(el, scope);
-            return;
-        }
-
-        if (el.hasAttribute('g-form') || el.hasAttribute('g-validate') || el.hasAttribute('g-errors')) {
+        const isStatic = isInStaticTree(el);
+        if (!isStatic && (el.hasAttribute('g-form') || el.hasAttribute('g-validate') || el.hasAttribute('g-errors'))) {
             // Process form validation (g-form, g-validate, g-errors)
             processFormValidation(el, scope);
         }
 
         const hasDirective = attrs.some(attr => 
             attr.name.startsWith('g-') && !attr.name.startsWith('g-portal'));
-        if (hasDirective) processDirectives(el, scope, element);
+        if (hasDirective) processDirectives(el, scope);
 
         const hasBinding = attrs.some(attr => attr.name.startsWith(':'));
-        if (hasBinding) processBindings(el, scope, element);
+        if (hasBinding) processBindings(el, scope);
 
         const hasModel = attrs.some(attr => attr.name.match(/^g-model($|[.])/));
-        if (hasModel) processModel(el, scope, element);
+        if (hasModel && !isStatic) processModel(el, scope, element);
     });
 
     // Process text nodes
@@ -193,7 +173,7 @@ export function processParse(element: HTMLElement, scope: any, fromStructural = 
     flushEffectCollection();
 
     // Handle portals last (after everything is processed)
-    if (cleanupGeneration(element) === generation && element.hasAttribute('g-portal')) {
+    if (cleanupGeneration(element) === generation && !isInStaticTree(element) && element.hasAttribute('g-portal')) {
         const targetSelector = element.getAttribute('g-portal')!;
         portalCreate(element, targetSelector);
     }

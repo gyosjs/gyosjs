@@ -3,7 +3,7 @@
  */
 import { evaluateExpression } from './expression';
 import { getScopeFromElement } from '../core/scope-registry';
-import { isInIgnoredTree, isInStaticParent, DEBUG, walkerDOM } from '../utils/helpers';
+import { isInIgnoredTree, DEBUG } from '../utils/helpers';
 import { queueReactiveEffect } from './effect-queue';
 
 interface ClassBindingState {
@@ -219,8 +219,8 @@ function boundAttributes(element: Element): Attr[] {
 	return Array.from(element.attributes).filter(attribute => attribute.name.startsWith(':'));
 }
 
-export function processBindings(element: HTMLElement, scope: any, root: HTMLElement): void {
-	if (isInIgnoredTree(element) || isInStaticParent(element, root)) return;
+export function processBindings(element: HTMLElement, scope: any): void {
+	if (isInIgnoredTree(element)) return;
 	if (element.hasAttribute('*if') || element.hasAttribute('*for')) return;
 
 	for (const attribute of boundAttributes(element)) {
@@ -235,19 +235,5 @@ export function processBindings(element: HTMLElement, scope: any, root: HTMLElem
 			else if (attrName === 'style') handleStyleBinding(element, value, styleState!);
 			else applyAttributeBinding(element, attrName, value);
 		});
-	}
-}
-
-export function processBindingsStatic(root: HTMLElement, scope: any): void {
-	const elements = [root, ...walkerDOM(root, element => !isInIgnoredTree(element), NodeFilter.FILTER_REJECT)];
-	for (const element of elements) {
-		if (isInIgnoredTree(element)) continue;
-		for (const attribute of boundAttributes(element)) {
-			const attrName = attribute.name.slice(1);
-			const value = evaluateExpression(attribute.value, scope);
-			if (attrName === 'class') handleClassBinding(element, value, createClassBindingState(element));
-			else if (attrName === 'style') handleStyleBinding(element, value, createStyleBindingState(element));
-			else applyAttributeBinding(element, attrName, value);
-		}
 	}
 }

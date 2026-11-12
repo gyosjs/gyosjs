@@ -491,6 +491,8 @@ The default is one-shot. Use `g-reveal:repeat` to remove the reveal state when t
 
 > In some cases, using `g-static` helps optimize performance by minimizing unnecessary re-renders of elements.
 
+> **Unreleased:** the entire static template, including initial structural branches/lists and nested scope bindings, renders once with the correct owning scope. An initial `*await` may finish, but later request replacements are ignored. Template events, models, forms, custom directives and portals are not initialized there. Scope lifecycle hooks and explicit application effects still run. A structural directive on the same element is static too; place the static content inside an outer reactive branch when that branch must remain dynamic.
+
 ---
 
 `g-ignore` creates a hard boundary that GyosJS does not parse or mount.

@@ -198,13 +198,22 @@ export function reactive<T extends object>(raw: T): T {
                 return value;
             }
 
+            const descriptor = Object.getOwnPropertyDescriptor(target, key);
+            // Proxy invariants require the exact value of a locked data field.
+            // Wrapping its object or binding its function would throw on read.
+            if (descriptor && !descriptor.configurable && (
+                ('value' in descriptor && !descriptor.writable) ||
+                (!('value' in descriptor) && descriptor.get === undefined)
+            )) {
+                return value;
+            }
+
             if (isStoreObject(value)) {
                 if (hasCurrentEffect()) getFieldSignal(target, key, value).value;
                 return value;
             }
 
             // Check if this is a getter property (computed property)
-            const descriptor = Object.getOwnPropertyDescriptor(target, key);
             if (descriptor && descriptor.get) {
                 // It's a getter - just return value, getter will track its own dependencies
                 return value;
@@ -300,12 +309,15 @@ export function reactive<T extends object>(raw: T): T {
 
         ownKeys(target) {
 			ensureVersion(target).value;
-            return Reflect.ownKeys(target).filter(key => !isReservedKey(key));
+            const extensible = Reflect.isExtensible(target);
+            return Reflect.ownKeys(target).filter(key => !isReservedKey(key)
+                || !extensible || !Reflect.getOwnPropertyDescriptor(target, key)!.configurable);
         },
 
         getOwnPropertyDescriptor(target, key) {
-            if (typeof key === "string" && isReservedKey(key)) return undefined;
-            return Reflect.getOwnPropertyDescriptor(target, key);
+            const descriptor = Reflect.getOwnPropertyDescriptor(target, key);
+            if (isReservedKey(key) && descriptor?.configurable && Reflect.isExtensible(target)) return undefined;
+            return descriptor;
         },
 
         deleteProperty(target, key) {

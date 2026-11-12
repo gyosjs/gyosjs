@@ -12,7 +12,7 @@ import {
 	applyLeaveTransition,
 	parseTransitionConfig
 } from './transition-helpers';
-import { isInIgnoredTree } from '../../utils/helpers';
+import { isInIgnoredTree, isInStaticTree } from '../../utils/helpers';
 import { queueReactiveEffect } from '../effect-queue';
 import { signal, untrack } from '../../reactivity/signal';
 import { getScopeVersion } from '../../core/reactive';
@@ -144,6 +144,7 @@ export function processForDirective(element: HTMLElement, currentScope: any): vo
 	if (hasKey) template.removeAttribute('g-key');
 
 	const placeholder = document.createComment('*for');
+	(placeholder as any).__gyos_static__ = isInStaticTree(element);
 	element.parentNode?.replaceChild(placeholder, element);
 	const end = document.createComment('/*for');
 	placeholder.parentNode?.insertBefore(end, placeholder.nextSibling);
@@ -430,6 +431,7 @@ export function processIfChain(element: HTMLElement, currentScope: any): void {
 	});
 
 	const placeholder = document.createComment('*if-chain');
+	(placeholder as any).__gyos_static__ = isInStaticTree(element);
 	element.parentNode?.replaceChild(placeholder, element);
 
 	let currentElement: HTMLElement | null = null;
@@ -485,6 +487,8 @@ export function processIfChain(element: HTMLElement, currentScope: any): void {
 			const { template } = templates[matchedIndex];
 			currentElement = getCachedTemplate(template);
 			currentIndex = matchedIndex;
+			// An else/elseif template may not carry the first branch's g-static.
+			(currentElement as any).__gyos_static__ = isInStaticTree(placeholder);
 
 			setRootScope(currentElement, currentScope);
 

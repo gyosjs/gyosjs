@@ -1,5 +1,6 @@
-import { effect } from '../reactivity/signal';
+import { effect, untrack } from '../reactivity/signal';
 import { cleanupGeneration } from './lifetime';
+import { isInStaticTree } from '../utils/helpers';
 
 type EffectRunner = () => void | (() => void);
 
@@ -18,7 +19,22 @@ function currentQueue(): QueuedEffect[] | undefined {
 function attachDispose(target: Node, runner: EffectRunner, generation: number): void {
     // An earlier queued content binding can replace this subtree during flush.
     if (!target.isConnected || cleanupGeneration(target) !== generation) return;
-    const dispose = effect(runner);
+    let dispose: () => void;
+    if (isInStaticTree(target)) {
+        // Evaluate the initial template without subscribing to its inputs. Keep
+        // returned cleanup (notably pending await work) owned by the DOM lifetime.
+        let cleanup: ReturnType<EffectRunner> = undefined;
+        try { cleanup = untrack(runner); }
+        catch (error) { console.error('[GyosJS] Error in static binding:', error); }
+        if (typeof cleanup !== 'function') return;
+        dispose = () => {
+            const previous = cleanup;
+            cleanup = undefined;
+            if (typeof previous === 'function') untrack(previous);
+        };
+    } else {
+        dispose = effect(runner);
+    }
     // The first execution can clean its own scope before effect() returns.
     if (cleanupGeneration(target) !== generation || !target.isConnected) {
         dispose();
