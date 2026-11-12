@@ -189,7 +189,7 @@ const Gyos = {
 	portalCreate,
 	portalDestroy,
 	setCspNonce,
-	version: '0.5.2'
+	version: '0.5.3'
 };
 
 export default Gyos;

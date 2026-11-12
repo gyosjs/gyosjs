@@ -724,7 +724,7 @@ GyosJS keeps parts outside `g-outlet` intact (header, sidebar, footer, already-l
 <head>
     <meta charset="UTF-8">
     <title>Home Page</title>
-    <script src="https://cdn.jsdelivr.net/npm/gyosjs@0.5.2/dist/gyos.auto.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gyosjs@0.5.3/dist/gyos.auto.min.js"></script>
     <meta name="description" content="Home Page description">
     <link rel="stylesheet" href="styles.css">
     <style id="theme-colors">

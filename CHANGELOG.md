@@ -6,6 +6,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.5.3] - 2026-11-12
+
 ### Fixed
 
 - Resolve the mounted reactive instance when registering scope `$watch` and `$effect`. Factory scopes can register observers in `onMount` through either `this` or the captured factory context; observers are cleaned up with their own mount.
@@ -217,7 +219,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 - This is an experimental `0.x` release. Router, morphing, expression evaluation, and browser edge cases should be evaluated against an application's requirements before production adoption.
 
-[Unreleased]: https://github.com/gyosjs/gyosjs/compare/v0.5.2...HEAD
+[Unreleased]: https://github.com/gyosjs/gyosjs/compare/v0.5.3...HEAD
+[0.5.3]: https://github.com/gyosjs/gyosjs/compare/v0.5.2...v0.5.3
 [0.5.2]: https://github.com/gyosjs/gyosjs/compare/v0.5.1...v0.5.2
 [0.5.1]: https://github.com/gyosjs/gyosjs/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/gyosjs/gyosjs/compare/v0.4.1...v0.5.0
