@@ -1,5 +1,7 @@
 # Examples with GyosJS
 
+> [Build an editor with undo/redo](./editor-history): scope factory, signals/computed, snapshots, lifecycle — Sumboard.
+
 To help you get familiar with GyosJS, we'll go through some basic examples. Each example will focus on a specific aspect of the framework, from simple state management to building more complex applications.
 
 **Now let's start with the first example!**
