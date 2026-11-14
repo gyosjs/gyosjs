@@ -13,7 +13,11 @@ afterEach(() => {
 
 describe('executable documentation examples', () => {
   it('renders the dynamic class name described by the binding example', async () => {
-    document.body.innerHTML = templateGuide.match(/```html\s*([\s\S]*?)```/)![1];
+    // Select the binding section; earlier sections may have their own examples.
+    const bindingSection = templateGuide.split('### Data Binding Syntax')[1]?.split(/\r?\n### /)[0];
+    const example = bindingSection?.match(/```html\s*([\s\S]*?)```/)?.[1];
+    expect(example, 'Data Binding Syntax must contain its executable HTML example').toBeTruthy();
+    document.body.innerHTML = example!;
     Gyos.mountAll();
     const root = document.querySelector('div')!;
     const state = Gyos.mountedScopes().get(root);
