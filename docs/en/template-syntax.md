@@ -14,6 +14,64 @@ Okay, now let's get started! Today is a great day to learn something new!
 
 ---
 
+### HTML formatters and quoted strings
+
+An HTML formatter may treat `{expression}` as ordinary text. Prettier 3.9.6 with parser `html` and `printWidth: 80` changes this valid paragraph:
+
+```html
+<p>{ready ? 'Your changes have been saved successfully and you can continue editing this document whenever you are ready.' : 'Waiting'}</p>
+```
+
+into text containing a raw newline **inside** the JavaScript string:
+
+```html
+<p>
+  {ready ? 'Your changes have been saved successfully and you can continue
+  editing this document whenever you are ready.' : 'Waiting'}
+</p>
+```
+
+The second expression is invalid. In the checked GyosJS 0.5.5 standard and CSP builds, it renders empty. Newlines between expression tokens are fine; a raw newline inside a single/double-quoted string is not. Changing Prettier `htmlWhitespaceSensitivity` to `strict` or `ignore` still breaks this sample.
+
+Keep long display text in a scope field/getter and leave a short binding in HTML. This works with the ordinary object scope API:
+
+```html
+<section g-scope="SaveNotice">
+  <button @click="ready = !ready">Toggle status</button>
+  <p>{message}</p>
+</section>
+```
+
+```js
+Gyos.scope('SaveNotice', {
+  ready: true,
+  get message() {
+    return this.ready
+      ? 'Your changes have been saved successfully and you can continue editing this document whenever you are ready.'
+      : 'Waiting';
+  }
+});
+```
+
+Register before mounting when using a manual entry; use your existing initialization when loading the auto build. An existing controller may instead expose a computed signal and bind `{message()}`. No change of state architecture is required just to keep a label readable.
+
+Two local alternatives were also checked with this formatter configuration:
+
+```html
+<p g-text="ready ? 'Your changes have been saved successfully and you can continue editing this document whenever you are ready.' : 'Waiting'"></p>
+```
+
+```html
+<!-- prettier-ignore -->
+<p>{ready ? 'Your changes have been saved successfully and you can continue editing this document whenever you are ready.' : 'Waiting'}</p>
+```
+
+`g-text` keeps the expression in an attribute and replaces the element content; normal HTML quote escaping still applies. Prettier supports an [HTML ignore comment](https://prettier.io/docs/ignore#html) immediately before an element. It is unrelated to `g-ignore`, which prevents GyosJS from rendering the branch. Other formatters, including Blade formatters, need their own verification.
+
+HTML is parsed before expressions: use `&lt;` for a less-than operator in text, or move the comparison into a getter. Do not ask the runtime to repair malformed quotes or whitespace: that could change the intended string. Check rendered output after formatting; the absence of a thrown browser error does not establish that every expression succeeded.
+
+The [VS Code extension development source](https://github.com/gyosjs/gyosjs-vscode) adds a targeted `multiline-interpolation-string` warning for closed quoted strings with raw line breaks in scoped text. It does not replace your formatter or auto-rewrite text; check its release notes for published availability. The [reproduction and diagnostic limits](https://github.com/gyosjs/gyosjs-vscode/blob/main/docs/FORMATTING.md) describe skipped regions and syntax. This is not a complete JavaScript/CSP validator.
+
 ### Data Binding Syntax
 
 In GyosJS, you can bind data to HTML and attributes as follows:
