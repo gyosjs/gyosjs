@@ -1,5 +1,7 @@
 # Reactivity & Signals in GyosJS
 
+> [Engine integration](./external-engines): plain engine state, small signal snapshots, computed UI and cleanup.
+
 > [Build an editor with undo/redo](./editor-history): scope factory, signals/computed, snapshots, lifecycle — Sumboard.
 
 We've already learned about [What is G-Scope?](./what-is-gscope.md) – one of the three core concepts of GyosJS. In this section, we'll delve into **reactivity** and **signals** – how GyosJS monitors and updates the DOM when data changes.
