@@ -1,5 +1,7 @@
 # Reference app performance follow-up — 2026-11-15
 
+> Release follow-up: the measured binding optimization is included in the 0.5.6 release candidate. The measurements below retain their original 0.5.5 baselines and pre-release provenance; they are not a rerun against the final package.
+
 This pass measures existing applications before proposing another API or project. It produced two app improvements and a small **unreleased core candidate**. Public runtime/package versions have not changed.
 
 ## Workloads and provenance
