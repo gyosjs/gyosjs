@@ -1,6 +1,6 @@
 # Reference application follow-up
 
-Reviewed 2026-11-14 against the four standalone projects and the GyosJS 0.5.5 contract. Historical app notes describe the runtime at the time of their measurements; an old note saying a candidate is unreleased does not supersede the release changelog.
+Reviewed 2026-11-15 against the four standalone projects and the GyosJS 0.5.5 contract. Historical app notes describe the runtime at the time of their measurements; an old note saying a candidate is unreleased does not supersede the release changelog.
 
 | Evidence | Classification and current status | Follow-up |
 | --- | --- | --- |
@@ -10,7 +10,7 @@ Reviewed 2026-11-14 against the four standalone projects and the GyosJS 0.5.5 co
 | Sumboard: validated drafts, snapshot history, computed totals and browser resources | Application structure; no new API required | Covered by the editor-history recipe |
 | Mosswatch: continuous Canvas simulation beside reactive controls | Application structure; no isolated core defect | Covered by the external-engines recipe; distinguish frame, bridge-check, signal-write and DOM-update rates |
 | Rivergate + Sumboard: generic HTML formatting can split a quoted string inside interpolation | Reproduced with Prettier 3.9.6, HTML parser, width 80; all three whitespace modes break the sample | Template Syntax now covers safe authoring choices; extension development adds a conservative warning, without changing runtime syntax |
-| Rivergate Worker results and Sumboard file imports can finish after state changes | Application async ownership, not automatic signal semantics | A later Worker recipe can teach cancellation plus request/generation checks; current engine recipe points to the real client |
+| Rivergate Worker results and Sumboard file imports can finish after state changes | Application async ownership, not automatic signal semantics | Covered by the async/Worker recipe: disposable Worker, request/input validation, timeout and cleanup; success, error and loading writes all need ownership checks |
 | Bloomfall CSP bundle size and large-document projection costs | Measured tradeoffs, not established need for another entry/API | Profile production imports and actual workloads before proposing smaller entries, per-row state or virtualization |
 
 ## Completed investigation: template formatting
@@ -27,6 +27,8 @@ The focused investigation established:
 See the extension's [reproduction and limits](https://github.com/gyosjs/gyosjs-vscode/blob/main/docs/FORMATTING.md) and [Template Syntax](./en/template-syntax.md). Check extension release notes for registry availability: development source is not a published Marketplace release. No runtime change or npm version bump is required. A full formatter is not justified by this one issue.
 
 ## Evidence sources
+
+The [async/Worker recipe](./en/async-workers.md) is extracted from Rivergate's client/controller boundary. Executable documentation tests run real module Workers and deliberately deliver captured callbacks after replacement, cancellation and unmount. They cover standard/CSP builds, input identity, duplicate messages, errors, timeout, retry and repeated remount. No new core API or npm version bump is needed.
 
 - [Bloomfall findings](https://github.com/hohphu8/bloomfall/blob/main/docs/GYOSJS-DOGFOOD.md), including historical benchmark environments and limits.
 - [Rivergate findings](https://github.com/hohphu8/rivergate/blob/main/docs/DOGFOOD.md), including the isolated 0.5.1/0.5.2 signal reproduction.

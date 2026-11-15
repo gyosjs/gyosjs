@@ -1,5 +1,7 @@
 # Integrating an engine or external library
 
+> [Async work and Workers](./async-workers): cancellation, obsolete replies and scope cleanup, with a runnable Worker recipe.
+
 [Mosswatch](https://github.com/hohphu8/mosswatch) runs a tower-defense simulation and Canvas renderer beside GyosJS controls. The engine owns moving objects; GyosJS owns the UI projection. This recipe reduces that boundary to a marker moving across a Canvas over ten simulation seconds.
 
 Use this structure when a game engine, chart, editor or media library already owns its internal state. A simple form can still start with `Gyos.scope('Profile', { name: '' })`: ordinary scope fields are already reactive. There is no requirement to extract a controller or use explicit signals everywhere.

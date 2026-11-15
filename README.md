@@ -107,6 +107,7 @@ With `g-boost`, same-origin links and forms can be intercepted and swapped into 
 - [Built with GyosJS](./docs/en/built-with-gyosjs.md)
 - [Editor with Undo/Redo](./docs/en/editor-history.md)
 - [External Engines and Libraries](./docs/en/external-engines.md)
+- [Async Work and Workers](./docs/en/async-workers.md)
 - [Tutorial Guide](./docs/en/tutorial-guide.md)
 - [API Reference](./docs/en/api-reference.md)
 - [MPA Boost Deep Dive](./docs/en/mpa-boost-deep-dive.md)
