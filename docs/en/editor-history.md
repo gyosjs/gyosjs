@@ -155,3 +155,44 @@ In the full app, data validation and history are separate from the scope, with m
 A single document signal keeps undo/redo straightforward, but changes invalidate document-wide projections. If real workloads outgrow this approach, profile them before adding per-row signals or rendering only visible rows. No extra GyosJS API is required for this recipe.
 
 Continue with [scope ownership](./what-is-gscope), [reactivity and signals](./reactivity-signals), or [lifecycle](./layouts-scripts-lifecycle).
+
+## Larger editable tables: paginate the view
+
+Sumboard keeps a maximum of 500 rows but renders 50 by default, with an option for 100. This is application view state built with existing GyosJS signals/computed values; no new runtime API is needed. Render all rows when the measured workload is comfortably small. For a larger editable table, pagination bounds the number of mounted controls. Virtual scrolling is a separate design that must also handle keyboard focus, row heights and accessibility.
+
+Keep the pipeline explicit: **document → filter/sort all rows → slice the current page → keyed DOM**. Whole-document totals and JSON/CSV exports read the document. A filtered subtotal reads all matching rows, not the page slice. Page/size/query changes do not belong in document undo history or saved data.
+
+Given a computed `matches()` containing the full filtered and sorted result, this controller helper creates a paged view. Expose its returned signals/methods from your scope factory:
+
+```js
+function createPages(matches) {
+  const requested = Gyos.signal(1);
+  const size = Gyos.signal(50);
+  const count = Gyos.computed(() => Math.max(1, Math.ceil(matches().length / size())));
+  const page = Gyos.computed(() => Math.min(requested(), count()));
+  const offset = Gyos.computed(() => (page() - 1) * size());
+  const pageRows = Gyos.computed(() => matches().slice(offset(), offset() + size()));
+  function go(next) {
+    if (Number.isInteger(next)) requested(Math.max(1, Math.min(next, count())));
+  }
+  function resize(next) {
+    if (![50, 100].includes(next)) return;
+    const first = offset();
+    Gyos.batch(() => { size(next); go(Math.floor(first / next) + 1); });
+  }
+  return { page, size, count, offset, pageRows, go, resize };
+}
+```
+
+Render `pageRows()` using `g-key="row.id"`; display row numbers as `offset() + index + 1`. On a filter/sort command, batch the query change with `go(1)`. After publishing a changed document (including undo/redo), call `go(page())` to store the clamped page: deleting the final row on the last page should not make an old requested page reappear unexpectedly after undo. Changing page size preserves the previous page's first-row position where possible.
+
+Focus is part of the feature, not just pagination markup:
+
+- Commit or explicitly cancel the active input draft before removing its page. Sumboard commits on native `change`; it never treats page navigation as a document edit.
+- For Enter/Shift+Enter, find the adjacent row in the **full matching list**, select its page, then focus its input after Gyos has updated the DOM. Add/duplicate follows the new row the same way. Do not query a row that is still on an unmounted page.
+- On deletion, move focus to a surviving neighbor; clamp to the remaining pages. For import/reset, return to page one. Undo restores document data without restoring a hidden page request.
+- Keep labeled previous/next buttons and the page-size select outside the replaced rows. Announce the current page with a polite status; if navigation disables its own focused button, move focus to that status. Show an empty state for zero matches and preserve horizontal scrolling on narrow screens.
+
+Keys preserve DOM identity for rows that remain mounted; pagination deliberately removes off-page controls. Keep committed state in the document, not only in those controls. View state may reset on reload while the saved document remains intact.
+
+See Sumboard's [controller](https://github.com/hohphu8/sumboard/blob/main/src/sheet.js), [focus adapter](https://github.com/hohphu8/sumboard/blob/main/src/main.js), [browser regressions](https://github.com/hohphu8/sumboard/blob/main/tests/browser/pagination.spec.js) and [measured comparison](https://github.com/hohphu8/sumboard/blob/main/docs/PAGINATION.md). GyosJS 0.5.6 avoids unchanged binding writes, but mounting hundreds of real controls still has a cost. Measure your actual workload before choosing page size or changing state architecture.
