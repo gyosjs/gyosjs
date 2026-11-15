@@ -1,5 +1,7 @@
 # Examples with GyosJS
 
+> [Async work and Workers](./async-workers): cancellation, obsolete replies and scope cleanup, with a runnable Worker recipe.
+
 > [Explore four complete applications](./built-with-gyosjs), or [connect an external engine](./external-engines) with a runnable Canvas recipe.
 
 > [Build an editor with undo/redo](./editor-history): scope factory, signals/computed, snapshots, lifecycle — Sumboard.

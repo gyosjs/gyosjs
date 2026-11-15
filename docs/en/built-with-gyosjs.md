@@ -21,6 +21,8 @@ Read the [findings and measured workload](https://github.com/hohphu8/bloomfall/b
 
 ## Rivergate: asynchronous work with a clear owner
 
+> [Async work and Workers](./async-workers): cancellation, obsolete replies and scope cleanup, with a runnable Worker recipe.
+
 Play Xiangqi, undo, inspect or replay history, and import/export a game. A basic bot searches in a module Worker so computation is separated from the board UI.
 
 The [game controller](https://github.com/hohphu8/rivergate/blob/main/src/game.js) separates the live position from historical viewing. The [Worker client](https://github.com/hohphu8/rivergate/blob/main/src/bot-client.js) terminates obsolete work, checks request/position identity and validates a returned move against the current game. Reactive state alone cannot decide whether an asynchronous answer is still relevant. Piece IDs preserve DOM identity while pieces move.
