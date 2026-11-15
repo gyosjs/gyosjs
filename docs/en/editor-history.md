@@ -9,7 +9,7 @@ For a small form, `Gyos.scope('Profile', { name: '', ... })` remains a good star
 In a Vite vanilla JavaScript project, install the runtime:
 
 ```sh
-npm install gyosjs@0.5.5
+npm install gyosjs@0.5.6
 ```
 
 Put this markup in the body of `index.html`. Create `src/editor.js` with the JavaScript below, then start Vite. The manual CSP entry does not auto-mount: the final `Gyos.mountAll()` runs after registration and after the module's HTML has been parsed. Do not also load the auto build.

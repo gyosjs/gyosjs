@@ -114,6 +114,8 @@ Use `null`, `undefined`, or `false` to remove an ordinary attribute. ARIA and da
 
 > Note: attribute binding must be a string `'...'`, an object `{ ... }`, or an expression that returns the corresponding value.
 
+> **Since 0.5.6:** attribute bindings skip writes when the live DOM value already matches, including control values and boolean properties. Effects still reevaluate normally. External DOM edits are reconciled on the next binding refresh; this is not a cache of the previous expression value. No template or scope API changes are required.
+
 ---
 
 ### Directives Syntax

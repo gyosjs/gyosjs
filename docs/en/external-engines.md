@@ -8,7 +8,7 @@ Use this structure when a game engine, chart, editor or media library already ow
 
 ## Run the example
 
-In a Vite vanilla JavaScript project, install `gyosjs@0.5.5`. Put the following markup in `index.html` and the JavaScript in `src/motion.js`. This uses the manual CSP entry: register the scope, then call `Gyos.mountAll()`. Do not also load the auto build.
+In a Vite vanilla JavaScript project, install `gyosjs@0.5.6`. Put the following markup in `index.html` and the JavaScript in `src/motion.js`. This uses the manual CSP entry: register the scope, then call `Gyos.mountAll()`. Do not also load the auto build.
 
 ```html
 <section g-scope="Motion">

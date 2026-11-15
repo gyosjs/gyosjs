@@ -6,7 +6,7 @@ Keep three decisions separate: **stop unnecessary work**, **reject obsolete call
 
 ## Run the example
 
-In a Vite vanilla JavaScript project with `gyosjs@0.5.5`, use these three files. The manual CSP entry registers the scope before `Gyos.mountAll()`; do not also load an auto build. Serve through Vite, not `file://`. Run your normal production build/preview too so the emitted Worker URL is checked.
+In a Vite vanilla JavaScript project with `gyosjs@0.5.6`, use these three files. The manual CSP entry registers the scope before `Gyos.mountAll()`; do not also load an auto build. Serve through Vite, not `file://`. Run your normal production build/preview too so the emitted Worker URL is checked.
 
 Put this in `index.html`:
 

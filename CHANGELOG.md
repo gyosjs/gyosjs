@@ -6,6 +6,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.5.6] - 2026-11-15
+
 ### Performance
 
 - Skip redundant ordinary attribute, control value and boolean-property writes during binding refresh. Compare live DOM values so user edits and external changes are still reconciled; URL/name safety checks remain in place. Keyed-list effects still run when their list context changes.
@@ -256,7 +258,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 - This is an experimental `0.x` release. Router, morphing, expression evaluation, and browser edge cases should be evaluated against an application's requirements before production adoption.
 
-[Unreleased]: https://github.com/gyosjs/gyosjs/compare/v0.5.5...HEAD
+[Unreleased]: https://github.com/gyosjs/gyosjs/compare/v0.5.6...HEAD
+[0.5.6]: https://github.com/gyosjs/gyosjs/compare/v0.5.5...v0.5.6
 [0.5.5]: https://github.com/gyosjs/gyosjs/compare/v0.5.4...v0.5.5
 [0.5.4]: https://github.com/gyosjs/gyosjs/compare/v0.5.3...v0.5.4
 [0.5.3]: https://github.com/gyosjs/gyosjs/compare/v0.5.2...v0.5.3
