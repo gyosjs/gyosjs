@@ -6,6 +6,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Performance
+
+- Skip redundant ordinary attribute, control value and boolean-property writes during binding refresh. Compare live DOM values so user edits and external changes are still reconciled; URL/name safety checks remain in place. Keyed-list effects still run when their list context changes.
+
 ## [0.5.5] - 2026-11-13
 
 ### Fixed

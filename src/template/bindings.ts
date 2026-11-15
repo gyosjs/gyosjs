@@ -176,7 +176,7 @@ function syncBooleanProperty(element: HTMLElement, attrName: string, value: bool
 	const propertyName = booleanPropertyNames[attrName] || attrName;
 	if (propertyName in element) {
 		try {
-			(element as any)[propertyName] = value;
+			if ((element as any)[propertyName] !== value) (element as any)[propertyName] = value;
 		} catch {
 			// Some reflected DOM properties are read-only in older engines.
 		}
@@ -210,9 +210,13 @@ function applyAttributeBinding(element: HTMLElement, rawAttrName: string, value:
 
 	const stringValue = String(value);
 	if (attrName === 'value' && 'value' in element) {
-		(element as HTMLInputElement).value = stringValue;
+		// Compare the live control, not a cached expression: user edits and
+		// external DOM changes still need reconciliation on the next update.
+		if ((element as HTMLInputElement).value !== stringValue) {
+			(element as HTMLInputElement).value = stringValue;
+		}
 	}
-	element.setAttribute(attrName, stringValue);
+	if (element.getAttribute(attrName) !== stringValue) element.setAttribute(attrName, stringValue);
 }
 
 function boundAttributes(element: Element): Attr[] {

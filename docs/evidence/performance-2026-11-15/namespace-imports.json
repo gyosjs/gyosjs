@@ -1,0 +1,36 @@
+{
+  "date": "2026-11-15T09:28:36.366Z",
+  "variant": "actual namespace import source, CSP unchanged",
+  "results": [
+    {
+      "app": "bloomfall",
+      "gyos": "0.5.1",
+      "assets": [
+        {
+          "file": "index-DqQhzLVo.js",
+          "raw": 203371,
+          "gzip": 64641,
+          "brotli": 54576
+        }
+      ]
+    },
+    {
+      "app": "rivergate",
+      "gyos": "0.5.5",
+      "assets": [
+        {
+          "file": "bot.worker-Cr6ANdk9.js",
+          "raw": 3591,
+          "gzip": 1771,
+          "brotli": 1639
+        },
+        {
+          "file": "index-DlvM56Sx.js",
+          "raw": 208711,
+          "gzip": 66221,
+          "brotli": 56005
+        }
+      ]
+    }
+  ]
+}
