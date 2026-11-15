@@ -41,6 +41,18 @@ import 'gyosjs/auto';
 
 Both npm entrypoints are browser-only. Import them from browser bundles or client-only modules; direct Node.js or SSR evaluation currently accesses `window` during router initialization.
 
+### Static imports and bundle size
+
+With a bundler, named exports or a namespace used through static properties can remove more unused API code than the default all-API object:
+
+```js
+import * as Gyos from 'gyosjs/csp';
+Gyos.scope('Counter', { count: 0 });
+Gyos.mountAll();
+```
+
+This is the manual CSP entry; use `gyosjs` for the standard equivalent. Keep the entry appropriate for your site's policy. The namespace is not identical to the default object: `version` is not a named runtime export. If tooling needs the installed version, read `gyosjs/package.json`. Passing the whole namespace around or using dynamic property names can limit tree-shaking; compare your actual production artifacts. Existing object scopes and default imports remain supported.
+
 ### Strict CSP
 
 Use the CSP distribution when `script-src` cannot include `unsafe-eval`:

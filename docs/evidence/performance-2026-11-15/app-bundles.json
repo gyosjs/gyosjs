@@ -1,0 +1,504 @@
+{
+  "date": "2026-11-15T09:14:07.445Z",
+  "node": "v22.18.0",
+  "vite": "6.4.6",
+  "note": "Controlled Vite builds using each installed pinned runtime; standard and selected-import builds are experiments, not deployments. Per-module rendered sizes are before final minification and are not additive gzip attribution. Worker assets listed separately. No download/parse timing claim.",
+  "results": [
+    {
+      "app": "bloomfall",
+      "version": "0.5.1",
+      "entry": "csp",
+      "imports": "default",
+      "commit": "08ae61ca7dece68d0bc6f032fc3b00ec31289a07",
+      "assets": [
+        {
+          "file": "assets/index-DwhK0C7x.js",
+          "raw": 245880,
+          "gzip": 77741,
+          "brotli": 66071
+        },
+        {
+          "file": "assets/index-DdelP2lu.css",
+          "raw": 16141,
+          "gzip": 4586,
+          "brotli": 4014
+        },
+        {
+          "file": "index.html",
+          "raw": 18702,
+          "gzip": 4988,
+          "brotli": 4138
+        }
+      ],
+      "modules": [
+        {
+          "id": "../Gyosjs/\u0000vite/modulepreload-polyfill.js",
+          "renderedBytes": 1280
+        },
+        {
+          "id": "node_modules/gyosjs/dist/gyos.csp.esm.js",
+          "renderedBytes": 556196
+        },
+        {
+          "id": "src/engine.js",
+          "renderedBytes": 6529
+        },
+        {
+          "id": "src/style.css",
+          "renderedBytes": 0
+        },
+        {
+          "id": "src/main.js",
+          "renderedBytes": 22194
+        },
+        {
+          "id": "index.html",
+          "renderedBytes": 0
+        }
+      ]
+    },
+    {
+      "app": "bloomfall",
+      "version": "0.5.1",
+      "entry": "csp",
+      "imports": "selected",
+      "commit": "08ae61ca7dece68d0bc6f032fc3b00ec31289a07",
+      "assets": [
+        {
+          "file": "assets/index-DuZ8R64I.js",
+          "raw": 203482,
+          "gzip": 64703,
+          "brotli": 54590
+        },
+        {
+          "file": "assets/index-DdelP2lu.css",
+          "raw": 16141,
+          "gzip": 4586,
+          "brotli": 4014
+        },
+        {
+          "file": "index.html",
+          "raw": 18702,
+          "gzip": 4988,
+          "brotli": 4137
+        }
+      ],
+      "modules": [
+        {
+          "id": "../Gyosjs/\u0000vite/modulepreload-polyfill.js",
+          "renderedBytes": 1280
+        },
+        {
+          "id": "node_modules/gyosjs/dist/gyos.csp.esm.js",
+          "renderedBytes": 449271
+        },
+        {
+          "id": "src/engine.js",
+          "renderedBytes": 6529
+        },
+        {
+          "id": "src/style.css",
+          "renderedBytes": 0
+        },
+        {
+          "id": "src/main.js",
+          "renderedBytes": 22320
+        },
+        {
+          "id": "index.html",
+          "renderedBytes": 0
+        }
+      ]
+    },
+    {
+      "app": "bloomfall",
+      "version": "0.5.1",
+      "entry": "standard",
+      "imports": "default",
+      "commit": "08ae61ca7dece68d0bc6f032fc3b00ec31289a07",
+      "assets": [
+        {
+          "file": "assets/index-CPhW8G0T.js",
+          "raw": 121767,
+          "gzip": 40752,
+          "brotli": 35931
+        },
+        {
+          "file": "assets/index-DdelP2lu.css",
+          "raw": 16141,
+          "gzip": 4586,
+          "brotli": 4014
+        },
+        {
+          "file": "index.html",
+          "raw": 18702,
+          "gzip": 4989,
+          "brotli": 4142
+        }
+      ],
+      "modules": [
+        {
+          "id": "../Gyosjs/\u0000vite/modulepreload-polyfill.js",
+          "renderedBytes": 1280
+        },
+        {
+          "id": "node_modules/gyosjs/dist/gyos.esm.js",
+          "renderedBytes": 309936
+        },
+        {
+          "id": "src/engine.js",
+          "renderedBytes": 6529
+        },
+        {
+          "id": "src/style.css",
+          "renderedBytes": 0
+        },
+        {
+          "id": "src/main.js",
+          "renderedBytes": 22194
+        },
+        {
+          "id": "index.html",
+          "renderedBytes": 0
+        }
+      ]
+    },
+    {
+      "app": "bloomfall",
+      "version": "0.5.1",
+      "entry": "standard",
+      "imports": "selected",
+      "commit": "08ae61ca7dece68d0bc6f032fc3b00ec31289a07",
+      "assets": [
+        {
+          "file": "assets/index-B02CcSEZ.js",
+          "raw": 79459,
+          "gzip": 27691,
+          "brotli": 24549
+        },
+        {
+          "file": "assets/index-DdelP2lu.css",
+          "raw": 16141,
+          "gzip": 4586,
+          "brotli": 4014
+        },
+        {
+          "file": "index.html",
+          "raw": 18702,
+          "gzip": 4989,
+          "brotli": 4145
+        }
+      ],
+      "modules": [
+        {
+          "id": "../Gyosjs/\u0000vite/modulepreload-polyfill.js",
+          "renderedBytes": 1280
+        },
+        {
+          "id": "node_modules/gyosjs/dist/gyos.esm.js",
+          "renderedBytes": 203011
+        },
+        {
+          "id": "src/engine.js",
+          "renderedBytes": 6529
+        },
+        {
+          "id": "src/style.css",
+          "renderedBytes": 0
+        },
+        {
+          "id": "src/main.js",
+          "renderedBytes": 22320
+        },
+        {
+          "id": "index.html",
+          "renderedBytes": 0
+        }
+      ]
+    },
+    {
+      "app": "rivergate",
+      "version": "0.5.5",
+      "entry": "csp",
+      "imports": "default",
+      "commit": "7a02a20deb0c255282497d88f7db2c179b1851b9",
+      "assets": [
+        {
+          "file": "assets/index-i319t2yD.js",
+          "raw": 252822,
+          "gzip": 79820,
+          "brotli": 67935
+        },
+        {
+          "file": "assets/index-Lq4BXbaG.css",
+          "raw": 13822,
+          "gzip": 4007,
+          "brotli": 3471
+        },
+        {
+          "file": "assets/bot.worker-Cr6ANdk9.js",
+          "raw": 3591,
+          "gzip": 1771,
+          "brotli": 1639
+        },
+        {
+          "file": "index.html",
+          "raw": 17628,
+          "gzip": 4994,
+          "brotli": 4262
+        }
+      ],
+      "modules": [
+        {
+          "id": "../Gyosjs/\u0000vite/modulepreload-polyfill.js",
+          "renderedBytes": 1280
+        },
+        {
+          "id": "node_modules/gyosjs/dist/gyos.csp.esm.js",
+          "renderedBytes": 568241
+        },
+        {
+          "id": "src/engine.js",
+          "renderedBytes": 7090
+        },
+        {
+          "id": "src/bot-client.js",
+          "renderedBytes": 2111
+        },
+        {
+          "id": "src/game.js",
+          "renderedBytes": 6419
+        },
+        {
+          "id": "src/board-drag.js",
+          "renderedBytes": 3923
+        },
+        {
+          "id": "src/style.css",
+          "renderedBytes": 0
+        },
+        {
+          "id": "src/main.js",
+          "renderedBytes": 11567
+        },
+        {
+          "id": "index.html",
+          "renderedBytes": 0
+        }
+      ]
+    },
+    {
+      "app": "rivergate",
+      "version": "0.5.5",
+      "entry": "csp",
+      "imports": "selected",
+      "commit": "7a02a20deb0c255282497d88f7db2c179b1851b9",
+      "assets": [
+        {
+          "file": "assets/index-3OJxNp65.js",
+          "raw": 208795,
+          "gzip": 66258,
+          "brotli": 56098
+        },
+        {
+          "file": "assets/index-Lq4BXbaG.css",
+          "raw": 13822,
+          "gzip": 4007,
+          "brotli": 3471
+        },
+        {
+          "file": "assets/bot.worker-Cr6ANdk9.js",
+          "raw": 3591,
+          "gzip": 1771,
+          "brotli": 1639
+        },
+        {
+          "file": "index.html",
+          "raw": 17628,
+          "gzip": 4995,
+          "brotli": 4273
+        }
+      ],
+      "modules": [
+        {
+          "id": "../Gyosjs/\u0000vite/modulepreload-polyfill.js",
+          "renderedBytes": 1280
+        },
+        {
+          "id": "node_modules/gyosjs/dist/gyos.csp.esm.js",
+          "renderedBytes": 454475
+        },
+        {
+          "id": "src/engine.js",
+          "renderedBytes": 7090
+        },
+        {
+          "id": "src/bot-client.js",
+          "renderedBytes": 2111
+        },
+        {
+          "id": "src/game.js",
+          "renderedBytes": 6419
+        },
+        {
+          "id": "src/board-drag.js",
+          "renderedBytes": 3923
+        },
+        {
+          "id": "src/style.css",
+          "renderedBytes": 0
+        },
+        {
+          "id": "src/main.js",
+          "renderedBytes": 11673
+        },
+        {
+          "id": "index.html",
+          "renderedBytes": 0
+        }
+      ]
+    },
+    {
+      "app": "rivergate",
+      "version": "0.5.5",
+      "entry": "standard",
+      "imports": "default",
+      "commit": "7a02a20deb0c255282497d88f7db2c179b1851b9",
+      "assets": [
+        {
+          "file": "assets/index-ClhJmJhH.js",
+          "raw": 128844,
+          "gzip": 42898,
+          "brotli": 37817
+        },
+        {
+          "file": "assets/index-Lq4BXbaG.css",
+          "raw": 13822,
+          "gzip": 4007,
+          "brotli": 3471
+        },
+        {
+          "file": "assets/bot.worker-Cr6ANdk9.js",
+          "raw": 3591,
+          "gzip": 1771,
+          "brotli": 1639
+        },
+        {
+          "file": "index.html",
+          "raw": 17628,
+          "gzip": 4994,
+          "brotli": 4259
+        }
+      ],
+      "modules": [
+        {
+          "id": "../Gyosjs/\u0000vite/modulepreload-polyfill.js",
+          "renderedBytes": 1280
+        },
+        {
+          "id": "node_modules/gyosjs/dist/gyos.esm.js",
+          "renderedBytes": 322161
+        },
+        {
+          "id": "src/engine.js",
+          "renderedBytes": 7090
+        },
+        {
+          "id": "src/bot-client.js",
+          "renderedBytes": 2111
+        },
+        {
+          "id": "src/game.js",
+          "renderedBytes": 6419
+        },
+        {
+          "id": "src/board-drag.js",
+          "renderedBytes": 3923
+        },
+        {
+          "id": "src/style.css",
+          "renderedBytes": 0
+        },
+        {
+          "id": "src/main.js",
+          "renderedBytes": 11567
+        },
+        {
+          "id": "index.html",
+          "renderedBytes": 0
+        }
+      ]
+    },
+    {
+      "app": "rivergate",
+      "version": "0.5.5",
+      "entry": "standard",
+      "imports": "selected",
+      "commit": "7a02a20deb0c255282497d88f7db2c179b1851b9",
+      "assets": [
+        {
+          "file": "assets/index-B7LbopYa.js",
+          "raw": 84882,
+          "gzip": 29257,
+          "brotli": 25950
+        },
+        {
+          "file": "assets/index-Lq4BXbaG.css",
+          "raw": 13822,
+          "gzip": 4007,
+          "brotli": 3471
+        },
+        {
+          "file": "assets/bot.worker-Cr6ANdk9.js",
+          "raw": 3591,
+          "gzip": 1771,
+          "brotli": 1639
+        },
+        {
+          "file": "index.html",
+          "raw": 17628,
+          "gzip": 4994,
+          "brotli": 4254
+        }
+      ],
+      "modules": [
+        {
+          "id": "../Gyosjs/\u0000vite/modulepreload-polyfill.js",
+          "renderedBytes": 1280
+        },
+        {
+          "id": "node_modules/gyosjs/dist/gyos.esm.js",
+          "renderedBytes": 208395
+        },
+        {
+          "id": "src/engine.js",
+          "renderedBytes": 7090
+        },
+        {
+          "id": "src/bot-client.js",
+          "renderedBytes": 2111
+        },
+        {
+          "id": "src/game.js",
+          "renderedBytes": 6419
+        },
+        {
+          "id": "src/board-drag.js",
+          "renderedBytes": 3923
+        },
+        {
+          "id": "src/style.css",
+          "renderedBytes": 0
+        },
+        {
+          "id": "src/main.js",
+          "renderedBytes": 11673
+        },
+        {
+          "id": "index.html",
+          "renderedBytes": 0
+        }
+      ]
+    }
+  ]
+}
